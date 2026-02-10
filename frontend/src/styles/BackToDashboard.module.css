@@ -1,0 +1,44 @@
+/**
+ * Back to Dashboard Styles
+ */
+.backLink,
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.backLink:hover,
+.backButton:hover {
+  color: var(--primary-dark);
+  background: var(--bg-secondary);
+  text-decoration: none;
+}
+
+.backLink:focus,
+.backButton:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.backLink:active,
+.backButton:active {
+  transform: translateY(1px);
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .backLink:hover,
+[data-theme="dark"] .backButton:hover {
+  background: var(--bg-tertiary);
+}

@@ -1,0 +1,53 @@
+# Single-container (all-in-one) production deploy: one app image + Postgres.
+# Usage: docker compose -f docker-compose.standalone.yml up -d
+# Set DB_PASSWORD and SECRET_KEY in .env (see .env.prod.example).
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-emr_db}
+      POSTGRES_USER: ${DB_USER:-emr_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-emr_user} -d ${DB_NAME:-emr_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: emr-app:latest
+    env_file: .env
+    environment:
+      DEBUG: "false"
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: ${DB_NAME:-emr_db}
+      DB_USER: ${DB_USER:-emr_user}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      DB_HOST: db
+      DB_PORT: "5432"
+    ports:
+      - "80:80"
+    volumes:
+      - media_data:/app/backend/media
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  postgres_data:
+  media_data:

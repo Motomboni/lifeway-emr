@@ -1,0 +1,720 @@
+/**
+ * SpeechToTextButton Styles
+ * 
+ * Modern, accessible styles for speech-to-text functionality
+ * Optimized for both desktop and mobile devices
+ */
+
+.container {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  z-index: 10;
+}
+
+/* Position variants - button positioned ABOVE the textarea */
+.top-right {
+  position: absolute;
+  top: -2.25rem; /* Position above the textarea */
+  right: 0;
+}
+
+.bottom-right {
+  position: absolute;
+  bottom: calc(100% + 0.5rem); /* Position above the bottom of parent */
+  right: 0;
+}
+
+.inline {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+}
+
+/* Main button - compact by default */
+.button {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 0.375rem;
+  color: #374151;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  min-width: auto;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.button:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.button:active {
+  transform: scale(0.98);
+}
+
+.button:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+/* Listening state */
+.button.listening {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #dc2626;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+}
+
+/* Microphone icon */
+.micIcon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.micIcon .pulse {
+  animation: pulse-ring 1.5s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+.buttonText {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Expanded panel */
+.panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 280px;
+  max-width: 400px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  padding: 0.875rem;
+  z-index: 1000;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Preview section */
+.preview {
+  margin-bottom: 0.75rem;
+  padding: 0.625rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.previewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.375rem;
+}
+
+.previewLabel {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.previewText {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #111827;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.interim {
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Status indicator */
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  margin-bottom: 0.625rem;
+  background: #eff6ff;
+  border-radius: 0.375rem;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  background: #3b82f6;
+  border-radius: 50%;
+  animation: blink 1.5s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.statusText {
+  font-size: 0.8125rem;
+  color: #1e40af;
+  font-weight: 500;
+}
+
+/* Action buttons */
+.actions {
+  display: flex;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.actionButton {
+  flex: 1;
+  min-width: 70px;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  background: white;
+  color: #374151;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.actionButton:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.actionButton:active {
+  transform: scale(0.98);
+}
+
+.insertButton {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
+.insertButton:hover {
+  background: #059669;
+  border-color: #059669;
+}
+
+.clearButton {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.clearButton:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.stopButton {
+  background: #ef4444;
+  color: white;
+  border-color: #ef4444;
+}
+
+.stopButton:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+/* Error message */
+.error {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 220px;
+  max-width: 320px;
+  padding: 0.625rem 0.75rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
+  animation: slideDown 0.2s ease-out;
+}
+
+.errorIcon {
+  font-size: 0.875rem;
+  flex-shrink: 0;
+  margin-top: 0.0625rem;
+}
+
+.errorText {
+  flex: 1;
+  font-size: 0.8125rem;
+  color: #991b1b;
+  line-height: 1.4;
+}
+
+.errorClose {
+  background: none;
+  border: none;
+  color: #991b1b;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  transition: background 0.2s;
+}
+
+.errorClose:hover {
+  background: rgba(153, 27, 27, 0.1);
+}
+
+/* Language Selector */
+.languageSelector {
+  position: relative;
+  margin-bottom: 0.625rem;
+}
+
+.langButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.625rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.langButton:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.langIcon {
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.langText {
+  flex: 1;
+  text-align: left;
+  font-weight: 500;
+}
+
+.langArrow {
+  font-size: 0.625rem;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.langDropdown {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  max-height: 250px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
+}
+
+.langGroup {
+  padding: 0.375rem 0;
+}
+
+.langGroupTitle {
+  padding: 0.375rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.langOption {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.5rem 0.625rem;
+  background: white;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 0.8125rem;
+}
+
+.langOption:hover {
+  background: #f3f4f6;
+}
+
+.langOptionActive {
+  background: #eff6ff;
+  color: #1e40af;
+  font-weight: 500;
+}
+
+.langOptionActive:hover {
+  background: #dbeafe;
+}
+
+.langOptionName {
+  font-weight: 500;
+  color: inherit;
+  margin-bottom: 0.0625rem;
+}
+
+.langOptionCode {
+  font-size: 0.6875rem;
+  color: #6b7280;
+}
+
+.langOptionActive .langOptionCode {
+  color: #3b82f6;
+}
+
+/* Unsupported state */
+.unsupported {
+  padding: 0.375rem 0.5rem;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  font-size: 0.6875rem;
+  color: #6b7280;
+}
+
+.unsupportedText {
+  display: block;
+}
+
+/* ===== MOBILE OPTIMIZATION ===== */
+@media (max-width: 768px) {
+  /* Position button above textarea on mobile too */
+  .top-right {
+    top: -2rem;
+    right: 0;
+  }
+
+  .bottom-right {
+    bottom: calc(100% + 0.375rem);
+    right: 0;
+  }
+
+  /* More compact button on mobile */
+  .button {
+    padding: 0.5rem 0.625rem;
+    font-size: 0.75rem;
+    gap: 0.25rem;
+    border-radius: 0.375rem;
+    /* Larger touch target */
+    min-height: 36px;
+  }
+
+  .micIcon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .buttonText {
+    font-size: 0.75rem;
+  }
+
+  /* Panel adjustments for mobile */
+  .panel {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    min-width: 100%;
+    max-width: 100%;
+    border-radius: 1rem 1rem 0 0;
+    padding: 1rem;
+    max-height: 60vh;
+    overflow-y: auto;
+    animation: slideUp 0.25s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Better touch targets on mobile */
+  .actionButton {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    min-height: 44px; /* iOS recommended touch target */
+  }
+
+  .actions {
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+
+  .langButton {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    min-height: 44px;
+  }
+
+  .langOption {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    min-height: 44px;
+  }
+
+  .langDropdown {
+    max-height: 200px;
+  }
+
+  /* Error message on mobile */
+  .error {
+    position: fixed;
+    top: auto;
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+    min-width: auto;
+    max-width: none;
+  }
+
+  .preview {
+    max-height: 100px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .button {
+    padding: 0.5rem;
+  }
+
+  /* Icon-only button on very small screens */
+  .buttonText {
+    display: none;
+  }
+
+  .micIcon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .panel {
+    padding: 0.875rem;
+  }
+}
+
+/* ===== DARK MODE SUPPORT ===== */
+@media (prefers-color-scheme: dark) {
+  .button {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f3f4f6;
+  }
+
+  .button:hover {
+    background: #374151;
+    border-color: #4b5563;
+  }
+
+  .button.listening {
+    background: #450a0a;
+    border-color: #dc2626;
+    color: #fca5a5;
+  }
+
+  .panel {
+    background: #1f2937;
+    border-color: #374151;
+  }
+
+  .preview {
+    background: #111827;
+    border-color: #374151;
+  }
+
+  .previewText {
+    color: #f3f4f6;
+  }
+
+  .previewLabel {
+    color: #9ca3af;
+  }
+
+  .status {
+    background: #1e3a5f;
+  }
+
+  .statusText {
+    color: #93c5fd;
+  }
+
+  .actionButton {
+    background: #374151;
+    border-color: #4b5563;
+    color: #f3f4f6;
+  }
+
+  .actionButton:hover {
+    background: #4b5563;
+  }
+
+  .langButton {
+    background: #111827;
+    border-color: #374151;
+    color: #f3f4f6;
+  }
+
+  .langButton:hover {
+    background: #1f2937;
+  }
+
+  .langDropdown {
+    background: #1f2937;
+    border-color: #374151;
+  }
+
+  .langGroupTitle {
+    background: #111827;
+    border-color: #374151;
+    color: #9ca3af;
+  }
+
+  .langOption {
+    background: #1f2937;
+    color: #f3f4f6;
+  }
+
+  .langOption:hover {
+    background: #374151;
+  }
+
+  .langOptionCode {
+    color: #9ca3af;
+  }
+
+  .unsupported {
+    background: #1f2937;
+    border-color: #374151;
+    color: #9ca3af;
+  }
+
+  .error {
+    background: #450a0a;
+    border-color: #dc2626;
+  }
+
+  .errorText {
+    color: #fca5a5;
+  }
+
+  .errorClose {
+    color: #fca5a5;
+  }
+}
+
+/* ===== TOUCH DEVICE OPTIMIZATIONS ===== */
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover effects on touch devices */
+  .button:hover {
+    background: #ffffff;
+    border-color: #e5e7eb;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  .button.listening:hover {
+    background: #fef2f2;
+    border-color: #ef4444;
+  }
+
+  /* Larger touch targets */
+  .button {
+    min-height: 40px;
+    min-width: 40px;
+  }
+
+  .actionButton {
+    min-height: 48px;
+  }
+
+  .langOption {
+    min-height: 48px;
+  }
+}

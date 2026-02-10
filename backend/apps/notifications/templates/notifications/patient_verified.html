@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #27ae60;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+        .verification-details {
+            background-color: white;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #27ae60;
+        }
+        .button {
+            display: inline-block;
+            background-color: #27ae60;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Account Verified</h1>
+    </div>
+    <div class="content">
+        <p>Dear {{ patient_name }},</p>
+        
+        <p>Great news! Your patient portal account has been verified and is now active.</p>
+        
+        <div class="verification-details">
+            <p><strong>Patient ID:</strong> {{ patient_id }}</p>
+            <p><strong>Verified By:</strong> {{ verified_by_name }}</p>
+            <p><strong>Verified On:</strong> {{ verified_date }}</p>
+        </div>
+        
+        <p>You can now access your patient portal to:</p>
+        <ul>
+            <li>View your medical records and visit history</li>
+            <li>Check your lab and radiology results</li>
+            <li>View your prescriptions</li>
+            <li>Schedule and manage appointments</li>
+            <li>Join telemedicine sessions</li>
+        </ul>
+        
+        <p>To access your portal, simply log in with your username and password at:</p>
+        <p style="text-align: center;">
+            <a href="{{ portal_url }}" class="button">Access Patient Portal</a>
+        </p>
+        
+        <p>If you have any questions or need assistance, please contact our reception desk.</p>
+        
+        <p>Thank you for choosing our healthcare services.</p>
+    </div>
+    <div class="footer">
+        <p>This is an automated message. Please do not reply to this email.</p>
+        <p>&copy; {{ current_year }} EMR System. All rights reserved.</p>
+    </div>
+</body>
+</html>

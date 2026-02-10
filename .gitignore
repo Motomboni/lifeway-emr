@@ -1,0 +1,38 @@
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.prod.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+backend/db.sqlite3
+backend/staticfiles/
+*.log
+logs/
+
+# Node
+node_modules/
+frontend/node_modules/
+frontend/build/
+npm-debug.log*
+
+# IDE and OS
+.cursor/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Media and uploads (optional: remove if you want them in repo)
+media/
+
+# Test and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+frontend/test-results/
+frontend/playwright-report/

@@ -1,0 +1,293 @@
+/* Billing Summary Styles */
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .metricsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .metricsGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.metricCard {
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.metricCardBlue {
+  background: #eff6ff;
+  border-color: #dbeafe;
+}
+
+.metricCardGreen {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.metricCardPurple {
+  background: #faf5ff;
+  border-color: #e9d5ff;
+}
+
+.metricCardEmerald {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.metricCardOrange {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.metricContent {
+  flex: 1;
+}
+
+.metricLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.metricLabelBlue {
+  color: #1e3a8a;
+}
+
+.metricLabelGreen {
+  color: #166534;
+}
+
+.metricLabelPurple {
+  color: #581c87;
+}
+
+.metricLabelEmerald {
+  color: #064e3b;
+}
+
+.metricLabelOrange {
+  color: #9a3412;
+}
+
+.metricValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
+}
+
+.metricValueBlue {
+  color: #2563eb;
+}
+
+.metricValueGreen {
+  color: #16a34a;
+}
+
+.metricValuePurple {
+  color: #9333ea;
+}
+
+.metricValueEmerald {
+  color: #10b981;
+}
+
+.metricValueOrange {
+  color: #ea580c;
+}
+
+.metricIcon {
+  font-size: 1.875rem;
+}
+
+.metricSubtext {
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.metricSubtextGreen {
+  color: #15803d;
+}
+
+.metricSubtextOrange {
+  color: #9a3412;
+}
+
+.outstandingCard {
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 2px solid;
+}
+
+.outstandingCardCleared {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.outstandingCardPending {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.outstandingCardInsurance {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.outstandingHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.outstandingTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.outstandingTitleCleared {
+  color: #166534;
+}
+
+.outstandingTitlePending {
+  color: #991b1b;
+}
+
+.outstandingTitleInsurance {
+  color: #1e40af;
+}
+
+.outstandingAmount {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.outstandingAmountCleared {
+  color: #16a34a;
+}
+
+.outstandingAmountPending {
+  color: #dc2626;
+}
+
+.outstandingAmountInsurance {
+  color: #2563eb;
+}
+
+.outstandingIcon {
+  font-size: 2.5rem;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.statusBadgeCleared {
+  background: #bbf7d0;
+  color: #166534;
+}
+
+.statusBadgePending {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.statusBadgeInsurance {
+  background: #bfdbfe;
+  color: #1e40af;
+}
+
+.statusInfo {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid;
+}
+
+.statusInfoCleared {
+  border-color: #bbf7d0;
+}
+
+.statusInfoPending {
+  border-color: #fecaca;
+}
+
+.statusInfoInsurance {
+  border-color: #bfdbfe;
+}
+
+.statusInfoText {
+  font-size: 0.875rem;
+  margin: 0.25rem 0;
+}
+
+.statusInfoTextCleared {
+  color: #166534;
+}
+
+.statusInfoTextPending {
+  color: #991b1b;
+}
+
+.statusInfoTextInsurance {
+  color: #1e40af;
+}
+
+.paymentStatusGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .paymentStatusGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.paymentStatusItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.paymentStatusLabel {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.paymentStatusValue {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+

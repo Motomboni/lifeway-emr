@@ -1,0 +1,100 @@
+/* Outstanding Balance Styles */
+.container {
+  border-radius: 8px;
+  padding: 1rem;
+  border: 2px solid;
+}
+
+.containerCleared {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.containerPending {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.left {
+  flex: 1;
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.labelCleared {
+  color: #166534;
+}
+
+.labelPending {
+  color: #991b1b;
+}
+
+.amount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
+}
+
+.amountCleared {
+  color: #16a34a;
+}
+
+.amountPending {
+  color: #dc2626;
+}
+
+.statusText {
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.statusTextCleared {
+  color: #166534;
+}
+
+.statusTextPending {
+  color: #991b1b;
+}
+
+.statusValue {
+  font-weight: 500;
+}
+
+.visitClosedBadge {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+}
+
+.icon {
+  font-size: 2.5rem;
+}
+
+.warningSection {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid;
+}
+
+.warningSectionPending {
+  border-color: #fecaca;
+}
+
+.warningText {
+  font-size: 0.875rem;
+  color: #991b1b;
+}
+

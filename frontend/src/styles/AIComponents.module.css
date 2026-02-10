@@ -1,0 +1,433 @@
+/**
+ * AI Components Styles
+ */
+.aiInline {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  padding: 24px;
+  margin: 24px 0;
+  box-shadow: 0 2px 8px var(--shadow);
+  border: 1px solid var(--border-color);
+}
+
+.aiHeader {
+  margin-bottom: 20px;
+}
+
+.aiHeader h3 {
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+  font-size: 1.5rem;
+}
+
+.aiSubtitle {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.aiTabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.aiTab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--bg-secondary);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.aiTab:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary);
+}
+
+.aiTab.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.tabIcon {
+  font-size: 1.2rem;
+}
+
+.tabLabel {
+  font-weight: 500;
+}
+
+.aiContent {
+  min-height: 200px;
+}
+
+.aiComponent {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.aiComponent .aiHeader {
+  margin-bottom: 16px;
+}
+
+.aiComponent .aiHeader h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.2rem;
+  color: var(--text-primary);
+}
+
+.aiDescription {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.aiOptions {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.checkboxLabel input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.select {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  margin-left: 8px;
+}
+
+.aiButton {
+  padding: 12px 24px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aiButton:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.aiButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.aiResult {
+  margin-top: 24px;
+  padding: 20px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.resultSection {
+  margin-bottom: 20px;
+}
+
+.resultSection:last-child {
+  margin-bottom: 0;
+}
+
+.resultSection h4 {
+  margin: 0 0 12px 0;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+}
+
+.resultSection ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.resultSection li {
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.confidence {
+  margin-left: 8px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.code {
+  display: block;
+  margin-top: 4px;
+  color: var(--primary);
+  font-size: 0.85rem;
+}
+
+.codeList {
+  list-style: none;
+  padding: 0;
+}
+
+.codeItem {
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  border-left: 3px solid var(--primary);
+}
+
+.codeItem strong {
+  color: var(--primary);
+  margin-right: 8px;
+}
+
+.summaryText {
+  line-height: 1.8;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+.warnings {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.warnings h4 {
+  color: #856404;
+  margin: 0 0 12px 0;
+}
+
+.warning {
+  color: #856404;
+  margin-bottom: 8px;
+}
+
+.rawResponse {
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.rawResponse h4 {
+  margin: 0 0 12px 0;
+}
+
+.rawResponse pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.drugInputSection {
+  margin-bottom: 20px;
+}
+
+.inputGroup {
+  margin-bottom: 16px;
+}
+
+.inputGroup label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.inputGroup input[type="text"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.medicationList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.medicationTag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(33, 150, 243, 0.1);
+  color: var(--primary);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.removeButton {
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.removeButton:hover {
+  color: var(--error);
+}
+
+.addMedication {
+  display: flex;
+  gap: 8px;
+}
+
+.addMedication input {
+  flex: 1;
+}
+
+.addMedication button {
+  padding: 10px 20px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.addMedication button:hover {
+  background: var(--primary-dark);
+}
+
+.interactionWarning {
+  padding: 16px;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  color: #721c24;
+}
+
+.noInteraction {
+  padding: 16px;
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 8px;
+  color: #155724;
+}
+
+.severity {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-left: 12px;
+}
+
+.severity.mild {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.severity.moderate {
+  background: #ffeaa7;
+  color: #856404;
+}
+
+.severity.severe {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.severity.contraindicated {
+  background: #f5c6cb;
+  color: #721c24;
+}
+
+.aiMessage {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+/* Dark mode support */
+[data-theme='dark'] .warnings {
+  background: #664d03;
+  border-color: #ffc107;
+}
+
+[data-theme='dark'] .warnings h4,
+[data-theme='dark'] .warning {
+  color: #ffc107;
+}
+
+[data-theme='dark'] .interactionWarning {
+  background: #721c24;
+  border-color: #f5c6cb;
+  color: #f5c6cb;
+}
+
+[data-theme='dark'] .noInteraction {
+  background: #155724;
+  border-color: #c3e6cb;
+  color: #c3e6cb;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .aiTabs {
+    flex-direction: column;
+  }
+
+  .aiTab {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .aiOptions {
+    flex-direction: column;
+    gap: 12px;
+  }
+}

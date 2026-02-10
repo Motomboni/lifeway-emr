@@ -1,0 +1,93 @@
+/**
+ * Theme Variables
+ * 
+ * CSS variables for light and dark themes.
+ */
+:root {
+  /* Light theme colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
+  --bg-hover: #f1f3f5;
+  --card-bg: #ffffff;
+  --input-bg: #ffffff;
+  --border: #dee2e6;
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --text-muted: #adb5bd;
+  --border-color: #dee2e6;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --shadow-lg: rgba(0, 0, 0, 0.15);
+  
+  /* Accent colors */
+  --primary: #2196f3;
+  --primary-hover: #1976d2;
+  --primary-dark: #1976d2;
+  --success: #4caf50;
+  --warning: #ff9800;
+  --error: #f44336;
+  --info: #00bcd4;
+}
+
+[data-theme="dark"] {
+  /* Dark theme colors */
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #3d3d3d;
+  --bg-hover: #383838;
+  --card-bg: #252525;
+  --input-bg: #2d2d2d;
+  --border: #404040;
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --text-muted: #707070;
+  --border-color: #404040;
+  --shadow: rgba(0, 0, 0, 0.3);
+  --shadow-lg: rgba(0, 0, 0, 0.5);
+  
+  /* Accent colors (slightly adjusted for dark mode) */
+  --primary: #42a5f5;
+  --primary-hover: #1e88e5;
+  --primary-dark: #1e88e5;
+  --success: #66bb6a;
+  --warning: #ffa726;
+  --error: #ef5350;
+  --info: #26c6da;
+}
+
+/* Apply theme to html and body */
+html {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+body {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#root {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Theme-aware components */
+.card {
+  background-color: var(--bg-primary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.input, .select, .textarea {
+  background-color: var(--bg-primary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.input:focus, .select:focus, .textarea:focus {
+  border-color: var(--primary);
+  outline-color: var(--primary);
+}

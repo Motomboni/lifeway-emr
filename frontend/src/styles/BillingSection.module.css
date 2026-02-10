@@ -1,0 +1,450 @@
+.section {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  color: #333;
+}
+
+.refreshButton {
+  padding: 0.5rem 1rem;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.refreshButton:hover {
+  background: #0056b3;
+}
+
+.refreshButton:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.infoBox {
+  padding: 1rem;
+  background: #f8f9fa;
+  border-left: 4px solid #007bff;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.infoBox p {
+  margin: 0.5rem 0;
+}
+
+.warning {
+  color: #856404;
+  background: #fff3cd;
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+}
+
+.billingSummaryCard {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.summaryRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.summaryItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.summaryItem label {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.summaryItem .amount {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.summaryItem .amount.negative {
+  color: #dc3545;
+}
+
+.summaryItem .amount.positive {
+  color: #28a745;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.statusBadge.cleared {
+  background: #d4edda;
+  color: #155724;
+}
+
+.statusBadge.partial {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.statusBadge.pending {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: #007bff;
+  background: #f8f9fa;
+}
+
+.tab.active {
+  color: #007bff;
+  border-bottom-color: #007bff;
+  font-weight: 600;
+}
+
+.tabContent {
+  min-height: 200px;
+}
+
+.tabHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.tabHeader h3 {
+  margin: 0;
+  color: #333;
+}
+
+.addButton {
+  padding: 0.5rem 1rem;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.addButton:hover {
+  background: #218838;
+}
+
+.formCard {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.formCard h4 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.formGroup {
+  margin-bottom: 1rem;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.formGroup input,
+.formGroup select,
+.formGroup textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.formGroup input:focus,
+.formGroup select:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.formGroup small {
+  display: block;
+  margin-top: 0.25rem;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.formActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.submitButton {
+  padding: 0.75rem 1.5rem;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.submitButton:hover {
+  background: #0056b3;
+}
+
+.submitButton:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  padding: 0.75rem 1.5rem;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.cancelButton:hover {
+  background: #5a6268;
+}
+
+.loading {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+}
+
+.summaryTab h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.summaryDetails {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.summaryGroup {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.summaryGroup h4 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  color: #007bff;
+  font-size: 1rem;
+}
+
+.summaryGroup p {
+  margin: 0.5rem 0;
+  color: #333;
+}
+
+.chargesTab,
+.paymentsTab,
+.insuranceTab,
+.walletTab {
+  /* Tab-specific styles */
+}
+
+.chargesList {
+  margin-top: 1.5rem;
+}
+
+.chargesTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.chargesTable th,
+.chargesTable td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.chargesTable th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+}
+
+.chargesTable tfoot {
+  font-weight: 600;
+  background: #f8f9fa;
+}
+
+.categoryBadge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.amountCell {
+  text-align: right;
+  font-weight: 500;
+}
+
+.paymentIntentsList {
+  margin-top: 1.5rem;
+}
+
+.paymentIntentCard {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border-left: 4px solid #007bff;
+}
+
+.paymentIntentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.paymentIntentDetails {
+  margin-top: 0.5rem;
+}
+
+.paymentIntentDetails p {
+  margin: 0.25rem 0;
+}
+
+.paymentIntentActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.insuranceCard {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.insuranceHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.insuranceHeader h4 {
+  margin: 0;
+  color: #333;
+}
+
+.insuranceDetails p {
+  margin: 0.5rem 0;
+  color: #333;
+}
+
+.approvalForm {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 8px;
+  border: 2px solid #007bff;
+}
+
+.approvalForm h5 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #007bff;
+}
+
+.approvalActions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .summaryRow {
+    grid-template-columns: 1fr;
+  }
+  
+  .tabs {
+    flex-wrap: wrap;
+  }
+  
+  .tab {
+    flex: 1;
+    min-width: 100px;
+  }
+  
+  .summaryDetails {
+    grid-template-columns: 1fr;
+  }
+}
+

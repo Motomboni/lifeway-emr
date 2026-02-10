@@ -1,0 +1,63 @@
+# Production Docker Compose: Django + React + Postgres
+# Usage: cp .env.prod.example .env && docker compose -f docker-compose.prod.yml up -d
+# Build: docker compose -f docker-compose.prod.yml build
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-emr_db}
+      POSTGRES_USER: ${DB_USER:-emr_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-emr_user} -d ${DB_NAME:-emr_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: emr-backend:latest
+    env_file: .env
+    environment:
+      DEBUG: "false"
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: ${DB_NAME:-emr_db}
+      DB_USER: ${DB_USER:-emr_user}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      DB_HOST: db
+      DB_PORT: "5432"
+    volumes:
+      - media_data:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: emr-frontend:latest
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  media_data:

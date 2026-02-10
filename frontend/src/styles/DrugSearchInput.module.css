@@ -1,0 +1,103 @@
+.drugSearchContainer {
+  position: relative;
+  width: 100%;
+}
+
+.drugSearchInput {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.drugSearchInput:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.drugSearchInput:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.loadingIndicator {
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  font-style: italic;
+}
+
+.suggestionsList {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  margin-top: 0.25rem;
+}
+
+.suggestionItem {
+  padding: 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.2s;
+}
+
+.suggestionItem:last-child {
+  border-bottom: none;
+}
+
+.suggestionItem:hover,
+.suggestionItem.selected {
+  background: #f0f7ff;
+}
+
+.suggestionName {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.25rem;
+}
+
+.suggestionGeneric {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+  margin-bottom: 0.25rem;
+}
+
+.suggestionCode {
+  font-size: 0.85rem;
+  color: #3498db;
+  margin-bottom: 0.25rem;
+}
+
+.suggestionDetails {
+  font-size: 0.8rem;
+  color: #95a5a6;
+  margin-top: 0.25rem;
+}
+
+.noResults {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  padding: 1rem;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-top: 0.25rem;
+  color: #7f8c8d;
+  font-style: italic;
+  z-index: 1000;
+}
+

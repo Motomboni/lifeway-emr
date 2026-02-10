@@ -1,0 +1,3 @@
+department,service_code,name,amount,description,category,workflow_type,requires_visit,requires_consultation,auto_bill,bill_timing,allowed_roles,is_active
+RADIOLOGY,RAD-TEST-001,Test Radiology Service,5000.00,Test service for debugging,RADIOLOGY,RADIOLOGY_STUDY,TRUE,TRUE,TRUE,BEFORE,DOCTOR,TRUE
+

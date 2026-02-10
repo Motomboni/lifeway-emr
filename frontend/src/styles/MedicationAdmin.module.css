@@ -1,0 +1,507 @@
+/* Medication Administration Page Styles */
+
+.pageContainer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.loading, .error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 16px;
+}
+
+.error button {
+  padding: 10px 24px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.headerContent {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.backButton {
+  padding: 8px 16px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #495057;
+  transition: background 0.2s;
+}
+
+.backButton:hover {
+  background: #e9ecef;
+}
+
+.header h1 {
+  margin: 0 0 4px 0;
+  font-size: 24px;
+  color: #212529;
+}
+
+.patientInfo {
+  margin: 0;
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  margin-left: 12px;
+  background: #17a2b8;
+  color: white;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.addButton {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #28a745, #218838);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.addButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+/* Section */
+.section {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.section h2 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  color: #343a40;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px;
+  color: #6c757d;
+}
+
+/* Medication Grid */
+.medicationGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.medicationCard {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.medicationCard:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.categoryBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #6c757d;
+  color: white;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.activeBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #28a745;
+  color: white;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.cardBody {
+  padding: 16px;
+}
+
+.cardBody h3 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  color: #212529;
+}
+
+.doseInfo {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.dose {
+  font-size: 24px;
+  font-weight: 700;
+  color: #007bff;
+}
+
+.route {
+  padding: 4px 12px;
+  background: #e9ecef;
+  border-radius: 16px;
+  font-size: 12px;
+  color: #495057;
+}
+
+.frequency {
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #495057;
+}
+
+.dates {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: #6c757d;
+  margin-bottom: 12px;
+}
+
+.instructions {
+  padding: 12px;
+  background: #fff3cd;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.instructions strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #856404;
+}
+
+.instructions p {
+  margin: 0;
+  color: #856404;
+}
+
+.prescribedBy {
+  font-size: 12px;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.cardActions {
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+.adminNote {
+  display: flex;
+  gap: 8px;
+}
+
+.adminNote input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.adminButton {
+  padding: 8px 16px;
+  background: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.adminButton:hover {
+  background: #138496;
+}
+
+/* Schedule Table */
+.scheduleTable {
+  overflow-x: auto;
+}
+
+.scheduleTable table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.scheduleTable th,
+.scheduleTable td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.scheduleTable th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+.scheduleTable tr:hover {
+  background: #f8f9fa;
+}
+
+.smallBadge {
+  display: inline-block;
+  padding: 2px 6px;
+  margin-left: 8px;
+  color: white;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+/* Past Medications */
+.pastMedicationsTable {
+  overflow-x: auto;
+}
+
+.pastMedicationsTable table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.pastMedicationsTable th,
+.pastMedicationsTable td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.pastMedicationsTable th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+.pastMedicationsTable tr {
+  opacity: 0.7;
+}
+
+/* Notes Section */
+.notesSection {
+  background: #e7f3ff;
+  border-radius: 8px;
+  padding: 20px;
+  border-left: 4px solid #007bff;
+}
+
+.notesSection h3 {
+  margin: 0 0 12px 0;
+  color: #0056b3;
+}
+
+.notesSection ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.notesSection li {
+  margin-bottom: 8px;
+  color: #495057;
+  font-size: 14px;
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #6c757d;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.closeButton:hover {
+  color: #343a40;
+}
+
+/* Form */
+.form {
+  padding: 24px;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroup label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #495057;
+}
+
+.formGroup input,
+.formGroup select,
+.formGroup textarea {
+  padding: 10px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.formGroup input:focus,
+.formGroup select:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.formGroup textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e9ecef;
+}
+
+.formActions button {
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.formActions button:first-child {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  color: #495057;
+}
+
+.formActions button:first-child:hover {
+  background: #e9ecef;
+}
+
+.submitButton {
+  background: linear-gradient(135deg, #28a745, #218838) !important;
+  border: none !important;
+  color: white !important;
+  font-weight: 500;
+}
+
+.submitButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.submitButton:disabled,
+.formActions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

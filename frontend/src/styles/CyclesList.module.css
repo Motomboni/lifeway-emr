@@ -1,0 +1,303 @@
+/**
+ * IVF Cycles List Page Styles
+ */
+
+.pageContainer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: #6c757d;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.headerContent {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.backButton {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-primary);
+  transition: all 0.2s;
+}
+
+.backButton:hover {
+  background: var(--bg-secondary);
+  border-color: var(--text-muted);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.primaryButton {
+  padding: 12px 24px;
+  background: #0d6efd;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.primaryButton:hover {
+  background: #0b5ed7;
+}
+
+/* Filters */
+.filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.searchContainer {
+  flex: 1;
+  min-width: 250px;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+}
+
+.filterSelect {
+  padding: 10px 16px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fff;
+  cursor: pointer;
+  min-width: 160px;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: #0d6efd;
+}
+
+.clearButton {
+  padding: 10px 16px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #495057;
+  transition: all 0.2s;
+}
+
+.clearButton:hover {
+  background: #e9ecef;
+}
+
+/* Error Banner */
+.errorBanner {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  padding: 16px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #721c24;
+}
+
+.errorBanner button {
+  padding: 8px 16px;
+  background: #dc3545;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 60px 24px;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.emptyState h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  color: #212529;
+}
+
+.emptyState p {
+  margin: 0 0 24px;
+  color: #6c757d;
+}
+
+/* Table */
+.tableContainer {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dataTable th,
+.dataTable td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.dataTable th {
+  background: #f8f9fa;
+  font-weight: 600;
+  font-size: 12px;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dataTable td {
+  font-size: 14px;
+  color: #212529;
+}
+
+.dataTable tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.dataTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Type Tag */
+.typeTag {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #e9ecef;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #495057;
+}
+
+/* Status Badge */
+.statusBadge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+}
+
+/* Consent Status */
+.consentSigned {
+  color: #28a745;
+  font-size: 18px;
+}
+
+.consentPending {
+  color: #ffc107;
+  font-size: 18px;
+}
+
+/* Outcome */
+.outcomePositive {
+  color: #28a745;
+  font-weight: 500;
+}
+
+.outcomeNegative {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.outcomeNeutral {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+/* View Button */
+.viewButton {
+  padding: 6px 14px;
+  background: #0d6efd;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.viewButton:hover {
+  background: #0b5ed7;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .filters {
+    flex-direction: column;
+  }
+
+  .searchContainer {
+    width: 100%;
+  }
+
+  .filterSelect {
+    width: 100%;
+  }
+
+  .tableContainer {
+    overflow-x: auto;
+  }
+
+  .dataTable {
+    min-width: 900px;
+  }
+}

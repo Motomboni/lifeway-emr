@@ -1,0 +1,466 @@
+.appointmentsPage {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.createButton {
+  padding: 0.75rem 1.5rem;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.createButton:hover {
+  background: #229954;
+}
+
+.accessDenied {
+  text-align: center;
+  padding: 3rem;
+  color: #e74c3c;
+}
+
+.filtersSection {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.viewModeButtons,
+.statusFilters {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.activeButton,
+.inactiveButton {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.activeButton {
+  background: #3498db;
+  color: white;
+  border-color: #3498db;
+}
+
+.inactiveButton:hover {
+  background: #f8f9fa;
+}
+
+.searchBox {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.searchBox input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.searchBox button {
+  padding: 0.75rem 1.5rem;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.searchBox button:hover {
+  background: #2980b9;
+}
+
+.formContainer {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.formContainer h2 {
+  margin: 0 0 1.5rem 0;
+  color: #2c3e50;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formGroup label {
+  display: block;
+  font-weight: 500;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.formGroup input,
+.formGroup select,
+.formGroup textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.formGroup input:focus,
+.formGroup select:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.patientSearch {
+  position: relative;
+}
+
+.patientSearch input {
+  width: 100%;
+}
+
+.searchResults {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  margin-top: 0.25rem;
+}
+
+.searchResultsHeader {
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.9rem;
+}
+
+.searchResultItem {
+  padding: 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.2s;
+  color: #2c3e50;
+}
+
+.searchResultItem:hover {
+  background: #f0f7ff;
+  color: #1a252f;
+}
+
+.searchResultItem:last-child {
+  border-bottom: none;
+}
+
+.searchResultItem strong {
+  color: #2c3e50;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.patientId {
+  color: #555;
+  font-size: 0.9rem;
+  margin-left: 0.5rem;
+}
+
+.patientMeta {
+  color: #555;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.selectedPatient {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: #e3f2fd;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #0c5460;
+}
+
+.selectedPatient strong {
+  color: #0c5460;
+  font-weight: 600;
+}
+
+.selectedPatient button {
+  padding: 0.25rem 0.75rem;
+  background: #95a5a6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.selectedPatient button:hover {
+  background: #7f8c8d;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.cancelButton,
+.saveButton {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cancelButton {
+  background: #95a5a6;
+  color: white;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background: #7f8c8d;
+}
+
+.saveButton {
+  background: #3498db;
+  color: white;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: #2980b9;
+}
+
+.saveButton:disabled,
+.cancelButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.appointmentsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.appointmentCard {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: box-shadow 0.2s;
+}
+
+.appointmentCard:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.appointmentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.appointmentHeader h3 {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+}
+
+.appointmentDate {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.appointmentBadges {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.statusBadge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.statusScheduled {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.statusConfirmed {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.statusCompleted {
+  background: #d4edda;
+  color: #155724;
+}
+
+.statusCancelled {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.statusNoShow {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+.appointmentDetails {
+  margin-bottom: 1rem;
+}
+
+.appointmentDetails p {
+  margin: 0.5rem 0;
+  color: #555;
+}
+
+.linkButton {
+  background: none;
+  border: none;
+  color: #3498db;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  font-size: inherit;
+}
+
+.linkButton:hover {
+  color: #2980b9;
+}
+
+.appointmentActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.confirmButton,
+.completeButton,
+.editButton {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.confirmButton {
+  background: #17a2b8;
+  color: white;
+}
+
+.confirmButton:hover {
+  background: #138496;
+}
+
+.completeButton {
+  background: #28a745;
+  color: white;
+}
+
+.completeButton:hover {
+  background: #218838;
+}
+
+.editButton {
+  background: #ffc107;
+  color: #212529;
+}
+
+.editButton:hover {
+  background: #e0a800;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem;
+  color: #7f8c8d;
+}
+
+@media (max-width: 768px) {
+  .appointmentsPage {
+    padding: 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .viewModeButtons,
+  .statusFilters {
+    flex-direction: column;
+  }
+
+  .appointmentHeader {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .appointmentActions {
+    flex-direction: column;
+  }
+
+  .appointmentActions button {
+    width: 100%;
+  }
+}

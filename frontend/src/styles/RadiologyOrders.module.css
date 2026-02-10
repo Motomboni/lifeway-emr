@@ -1,0 +1,340 @@
+.radiologyOrdersPage {
+  padding: 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+}
+
+.header p {
+  color: #7f8c8d;
+  margin: 0;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+  height: calc(100vh - 200px);
+}
+
+.visitsPanel {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.orderDetailsModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.orderDetailsModal > div {
+  background: var(--color-card-background);
+  border-radius: var(--border-radius);
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 100%;
+  overflow: auto;
+  box-shadow: var(--shadow-large);
+}
+
+.ordersPanel {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.visitsPanel h2,
+.ordersPanel h2 {
+  margin: 0 0 1.5rem 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
+}
+
+.visitsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.visitItem {
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.visitItem:hover {
+  background-color: #f8f9fa;
+  border-color: #3498db;
+}
+
+.visitItem.selected {
+  background-color: #e3f2fd;
+  border-color: #2196f3;
+}
+
+.visitInfo h3 {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.visitInfo p {
+  margin: 0.25rem 0;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.visitDate {
+  color: #7f8c8d;
+  font-size: 0.85rem;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.ordersTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.ordersTable th,
+.ordersTable td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.ordersTable th {
+  background-color: #f5f5f5;
+  color: #2c3e50;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ordersTable tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.statusPending {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.statusCompleted {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.actionCell {
+  white-space: nowrap;
+}
+
+.actionCell .viewButton,
+.actionCell .updateButton {
+  width: auto;
+  min-width: 6rem;
+}
+
+.formCell {
+  padding: 0 !important;
+  vertical-align: top;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.resultSection {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+}
+
+.resultText {
+  margin-top: 0.5rem;
+  white-space: pre-wrap;
+  color: #2c3e50;
+}
+
+.updateButton {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.updateButton:hover {
+  background-color: #2980b9;
+}
+
+.updateButton:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+
+.viewButton {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.viewButton:hover {
+  background-color: #229954;
+}
+
+.resultForm {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.resultForm h4 {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+}
+
+.formIntro {
+  margin: 0 0 1rem 0;
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.formGroup {
+  margin-bottom: 1rem;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.formGroup textarea,
+.formGroup select,
+.formGroup input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.formGroup textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.formActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.saveButton {
+  flex: 1;
+  padding: 0.75rem;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.saveButton:hover:not(:disabled) {
+  background-color: #229954;
+}
+
+.saveButton:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  flex: 1;
+  padding: 0.75rem;
+  background-color: #95a5a6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background-color: #7f8c8d;
+}
+
+.cancelButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #7f8c8d;
+}
+
+.errorContainer {
+  padding: 2rem;
+  text-align: center;
+  color: #e74c3c;
+}

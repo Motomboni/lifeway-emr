@@ -1,0 +1,152 @@
+.lockIndicator {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--border-radius);
+  background: var(--color-card-background);
+  border: 1px solid var(--color-border);
+  margin: 8px 0;
+}
+
+.lockIndicator.locked {
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  border-color: #ffc107;
+}
+
+.lockIndicator.unlocked {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.lockIndicator.loading {
+  background: var(--color-background-secondary);
+  border-color: var(--color-border);
+}
+
+/* Variants */
+.lockIndicator.inline {
+  margin: 8px 0;
+}
+
+.lockIndicator.button {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  margin: 0;
+}
+
+.lockIndicator.card {
+  padding: 16px 20px;
+  margin: 12px 0;
+}
+
+/* Lock Icon */
+.lockIconContainer {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.lockIcon {
+  color: #ffc107;
+  font-size: 1.2rem;
+}
+
+.unlockIcon {
+  color: #4caf50;
+  font-size: 1rem;
+  margin-right: 6px;
+}
+
+/* Lock Content */
+.lockContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.lockMessage {
+  font-weight: 500;
+  color: #856404;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.unlockActions {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(133, 100, 4, 0.2);
+}
+
+.unlockLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #856404;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.unlockActionsList {
+  margin: 0;
+  padding-left: 20px;
+  color: #856404;
+  font-size: 0.9rem;
+}
+
+.unlockActionsList li {
+  margin-bottom: 4px;
+}
+
+.lockDetails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(133, 100, 4, 0.2);
+}
+
+.detailItem {
+  font-size: 0.85rem;
+  color: #856404;
+}
+
+.detailKey {
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.detailValue {
+  color: #856404;
+}
+
+/* Loading State */
+.loadingText {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .lockIndicator {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .lockIconContainer {
+    align-self: flex-start;
+  }
+
+  .lockDetails {
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+

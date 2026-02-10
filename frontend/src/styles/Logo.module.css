@@ -1,0 +1,79 @@
+/**
+ * Logo Styles for Lifeway Medical Center
+ */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logoImage {
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.logo.small .logoImage {
+  max-height: 40px;
+  max-width: 40px;
+}
+
+.logo.medium .logoImage {
+  max-height: 60px;
+  max-width: 60px;
+}
+
+.logo.large .logoImage {
+  max-height: 100px;
+  max-width: 100px;
+}
+
+.logoFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoIcon {
+  font-size: 2rem;
+}
+
+.logo.small .logoIcon {
+  font-size: 1.5rem;
+}
+
+.logo.medium .logoIcon {
+  font-size: 2rem;
+}
+
+.logo.large .logoIcon {
+  font-size: 3rem;
+}
+
+/* Use theme primary text color so title contrasts in both light and dark mode */
+.logoText {
+  margin: 0;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.logo.small .logoText {
+  font-size: 1rem;
+}
+
+.logo.medium .logoText {
+  font-size: 1.5rem;
+}
+
+.logo.large .logoText {
+  font-size: 2.5rem;
+}
+
+/* Logo only (no text) */
+.logo.logoOnly {
+  gap: 0;
+}
+
+.logo.logoOnly .logoText {
+  display: none;
+}

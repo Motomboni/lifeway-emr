@@ -1,0 +1,312 @@
+/* Payment Options Component Styles */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-height: 400px;
+}
+
+.outstandingBalance {
+  background: #fef2f2;
+  border: 2px solid #fecaca;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.outstandingBalanceContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.outstandingBalanceText {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #991b1b;
+}
+
+.outstandingBalanceAmount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #dc2626;
+  margin-top: 0.25rem;
+}
+
+.paymentMethodsGrid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .paymentMethodsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .paymentMethodsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.paymentMethodButton {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 2px solid #e5e7eb;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.paymentMethodButton:hover:not(:disabled) {
+  border-color: #d1d5db;
+}
+
+.paymentMethodButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.paymentMethodButtonActive {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.paymentMethodIcon {
+  font-size: 1.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.paymentMethodTitle {
+  font-weight: 600;
+  color: #111827;
+}
+
+.paymentMethodDescription {
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin-top: 0.25rem;
+}
+
+.paymentForm {
+  background: #f9fafb;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.paymentFormTitle {
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.formGroup {
+  margin-bottom: 1rem;
+}
+
+.formLabel {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+.formInput {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.formTextarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  resize: vertical;
+  transition: all 0.2s;
+}
+
+.formTextarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.submitButton {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.submitButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.submitButtonCash {
+  background: #16a34a;
+}
+
+.submitButtonCash:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.submitButtonPOS {
+  background: #2563eb;
+}
+
+.submitButtonPOS:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.submitButtonTransfer {
+  background: #4f46e5;
+}
+
+.submitButtonTransfer:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.submitButtonPaystack {
+  background: #9333ea;
+}
+
+.submitButtonPaystack:hover:not(:disabled) {
+  background: #7e22ce;
+}
+
+.submitButtonWallet {
+  background: #059669;
+}
+
+.submitButtonWallet:hover:not(:disabled) {
+  background: #047857;
+}
+
+.walletBalanceInfo {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: #eff6ff;
+  border-radius: 0.5rem;
+}
+
+.walletBalanceText {
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.walletBalanceAmount {
+  font-weight: 600;
+}
+
+.paymentIntentsSection {
+  margin-top: 1.5rem;
+}
+
+.paymentIntentsTitle {
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.paymentIntentsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.paymentIntentCard {
+  background: #fefce8;
+  border: 1px solid #fde047;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.paymentIntentContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.paymentIntentDetails {
+  flex: 1;
+}
+
+.paymentIntentAmount {
+  font-weight: 500;
+  color: #111827;
+}
+
+.paymentIntentReference {
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin-top: 0.25rem;
+}
+
+.paymentIntentStatus {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.paymentIntentStatusValue {
+  font-weight: 500;
+}
+
+.verifyButton {
+  padding: 0.5rem 1rem;
+  background: #2563eb;
+  color: white;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.verifyButton:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.verifyButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.helpText {
+  font-size: 0.75rem;
+  color: #4b5563;
+  margin-top: 0.5rem;
+}
+
+.permissionMessage {
+  text-align: center;
+  padding: 2rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+.permissionText {
+  color: #4b5563;
+}

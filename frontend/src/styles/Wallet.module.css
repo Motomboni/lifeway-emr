@@ -1,0 +1,416 @@
+/**
+ * Wallet Page Styles
+ */
+.walletContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.walletCard {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 2px 8px var(--shadow);
+  border: 1px solid var(--border-color);
+}
+
+.walletHeader {
+  margin-bottom: 32px;
+}
+
+.walletHeader h1 {
+  margin: 0 0 24px 0;
+  color: var(--text-primary);
+  font-size: 2rem;
+}
+
+.balanceCard {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  border-radius: 12px;
+  padding: 32px;
+  color: white;
+  text-align: center;
+}
+
+.balanceLabel {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin-bottom: 8px;
+}
+
+.balanceAmount {
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.walletActions {
+  margin-bottom: 32px;
+  display: flex;
+  justify-content: center;
+}
+
+.topUpButton {
+  padding: 14px 32px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-width: 200px;
+}
+
+.topUpButton:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.topUpButton:active {
+  transform: translateY(0);
+}
+
+.topUpForm {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.topUpForm h3 {
+  margin: 0 0 20px 0;
+  color: var(--text-primary);
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.formGroup input,
+.formGroup select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.submitButton {
+  padding: 12px 24px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  padding: 12px 24px;
+  background: #95a5a6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background: #7f8c8d;
+}
+
+.cancelButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.walletTopUpButton {
+  display: inline-block;
+}
+
+.walletBalanceInfo {
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #2c3e50;
+}
+
+.formActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.transactionsSection {
+  margin-top: 32px;
+}
+
+.transactionsSection h2 {
+  margin: 0 0 20px 0;
+  color: var(--text-primary);
+}
+
+.emptyMessage {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 40px;
+}
+
+.transactionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.transactionItem {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--border-color);
+}
+
+.transactionInfo {
+  flex: 1;
+}
+
+.transactionType {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.transactionType .credit {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.transactionType .debit {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.transactionType .amount {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.transactionDetails p {
+  margin: 4px 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.transactionMeta {
+  font-size: 0.85rem !important;
+  opacity: 0.8;
+}
+
+.transactionStatus {
+  display: flex;
+  align-items: center;
+}
+
+.statusBadge {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.statusBadge.completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusBadge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusBadge.failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.statusBadge.cancelled {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.callbackContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.callbackContent {
+  text-align: center;
+  background: var(--bg-primary);
+  border-radius: 12px;
+  padding: 48px;
+  box-shadow: 0 2px 8px var(--shadow);
+  border: 1px solid var(--border-color);
+}
+
+.successIcon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #10b981;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  margin: 0 auto 24px;
+}
+
+.errorIcon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  margin: 0 auto 24px;
+}
+
+.callbackContent h2 {
+  margin: 0 0 12px 0;
+  color: var(--text-primary);
+}
+
+.callbackContent p {
+  margin: 8px 0;
+  color: var(--text-secondary);
+}
+
+.errorMessage {
+  text-align: center;
+  padding: 40px;
+  color: var(--error);
+}
+
+.walletPaymentButton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.walletBalanceInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.insufficientBalance {
+  color: var(--error);
+  font-weight: 600;
+}
+
+.payWithWalletButton {
+  padding: 10px 20px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.payWithWalletButton:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.payWithWalletButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Dark mode support */
+[data-theme='dark'] .statusBadge.completed {
+  background: #065f46;
+  color: #d1fae5;
+}
+
+[data-theme='dark'] .statusBadge.pending {
+  background: #92400e;
+  color: #fef3c7;
+}
+
+[data-theme='dark'] .statusBadge.failed {
+  background: #991b1b;
+  color: #fee2e2;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .walletContainer {
+    padding: 16px;
+  }
+
+  .walletCard {
+    padding: 20px;
+  }
+
+  .balanceAmount {
+    font-size: 2rem;
+  }
+
+  .transactionItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}

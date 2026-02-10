@@ -1,0 +1,433 @@
+.pageContainer {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.header h1 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 28px;
+}
+
+.headerActions {
+  display: flex;
+  gap: 10px;
+}
+
+.primaryButton,
+.submitButton {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.primaryButton:hover,
+.submitButton:hover {
+  background-color: #0056b3;
+}
+
+.secondaryButton,
+.cancelButton {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.secondaryButton:hover,
+.cancelButton:hover {
+  background-color: #545b62;
+}
+
+.editButton {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.editButton:hover {
+  background-color: #218838;
+}
+
+.errorContainer {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 20px;
+  border-radius: 5px;
+  text-align: center;
+}
+
+.form {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.section {
+  margin-bottom: 30px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.section:last-child {
+  border-bottom: none;
+}
+
+.section h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #2c3e50;
+  font-size: 20px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.formGroup label {
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #495057;
+  font-size: 14px;
+}
+
+.formGroup input[type="text"],
+.formGroup input[type="number"],
+.formGroup input[type="date"],
+.formGroup select,
+.formGroup textarea {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.formGroup input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.formGroup textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.helpText {
+  font-size: 12px;
+  color: #6c757d;
+  margin-top: 5px;
+}
+
+.patientSearch {
+  margin-top: 20px;
+}
+
+.searchBox {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.searchBox input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.searchBox button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.searchResults {
+  margin-top: 15px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.patientCard {
+  padding: 15px;
+  border-bottom: 1px solid #e9ecef;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.patientCard:hover {
+  background-color: #f8f9fa;
+}
+
+.patientCard:last-child {
+  border-bottom: none;
+}
+
+.patientCard strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #2c3e50;
+}
+
+.patientCard p {
+  margin: 0;
+  font-size: 13px;
+  color: #6c757d;
+}
+
+.selectedPatient {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background-color: #e7f3ff;
+  border: 2px solid #007bff;
+  border-radius: 5px;
+  margin-top: 15px;
+}
+
+.patientInfo strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #2c3e50;
+}
+
+.patientInfo p {
+  margin: 0;
+  font-size: 13px;
+  color: #6c757d;
+}
+
+.changeButton {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.statCard {
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.statValue {
+  font-size: 36px;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.statLabel {
+  font-size: 14px;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.editSection {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.detailsSection {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.detailsSection h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #2c3e50;
+}
+
+.detailsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.detailItem label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+.detailItem span {
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.detailSection {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e9ecef;
+}
+
+.detailSection h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #495057;
+  font-size: 16px;
+}
+
+.detailSection p {
+  margin: 0;
+  color: #6c757d;
+  line-height: 1.6;
+}
+
+.outcomeBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.riskBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background-color: #ffc107;
+  color: #856404;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.visitsSection {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.visitsSection h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #2c3e50;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
+}
+
+.visitsList {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.visitCard {
+  border: 1px solid #e9ecef;
+  border-radius: 5px;
+  padding: 15px;
+  background-color: #f8f9fa;
+}
+
+.visitHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.visitHeader h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 16px;
+}
+
+.visitType {
+  background-color: #007bff;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.visitDetails p {
+  margin: 5px 0;
+  font-size: 14px;
+  color: #495057;
+}

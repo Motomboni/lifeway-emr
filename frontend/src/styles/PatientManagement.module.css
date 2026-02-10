@@ -1,0 +1,387 @@
+.patientManagementPage {
+  padding: 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+}
+
+.header p {
+  color: #7f8c8d;
+  margin: 0;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+  height: calc(100vh - 200px);
+}
+
+.searchPanel,
+.detailsPanel {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.searchBox {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.searchBox input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.searchBox input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.searchButton {
+  padding: 0.75rem 1.5rem;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.searchButton:hover:not(:disabled) {
+  background-color: #2980b9;
+}
+
+.searchButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.patientsList {
+  margin-top: 1rem;
+}
+
+.patientsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.patientCard {
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.patientCard:hover {
+  background-color: #f8f9fa;
+  border-color: #3498db;
+}
+
+.patientCard.selected {
+  background-color: #e3f2fd;
+  border-color: #2196f3;
+}
+
+.patientCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.patientCardHeader h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.patientId {
+  font-size: 0.75rem;
+  color: #7f8c8d;
+  font-weight: 500;
+}
+
+.patientCardDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.patientCardDetails p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #555;
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.panelHeader h2 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.panelActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.editButton,
+.createVisitButton {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.editButton {
+  background-color: #95a5a6;
+  color: white;
+}
+
+.editButton:hover:not(:disabled) {
+  background-color: #7f8c8d;
+}
+
+.createVisitButton {
+  background-color: #27ae60;
+  color: white;
+}
+
+.createVisitButton:hover {
+  background-color: #229954;
+}
+
+.editForm {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.editForm h3 {
+  margin: 0 0 1rem 0;
+  color: #2c3e50;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formGroupFull {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formGroup label {
+  font-weight: 500;
+  color: #2c3e50;
+  font-size: 0.875rem;
+}
+
+.formGroup input,
+.formGroup select,
+.formGroup textarea {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.formGroup input:focus,
+.formGroup select:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.cancelButton,
+.saveButton {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancelButton {
+  background-color: #95a5a6;
+  color: white;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background-color: #7f8c8d;
+}
+
+.saveButton {
+  background-color: #3498db;
+  color: white;
+}
+
+.saveButton:hover:not(:disabled) {
+  background-color: #2980b9;
+}
+
+.saveButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.patientDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.detailSection {
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 1.5rem;
+}
+
+.detailSection:last-child {
+  border-bottom: none;
+}
+
+.detailSection h3 {
+  margin: 0 0 1rem 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detailItemFull {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detailItem label,
+.detailItemFull label {
+  font-weight: 500;
+  color: #7f8c8d;
+  font-size: 0.875rem;
+}
+
+.detailItem span,
+.detailItemFull span {
+  color: #2c3e50;
+  font-size: 0.9rem;
+}
+
+.statusActive {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.statusInactive {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.historyButton {
+  padding: 0.75rem 1.5rem;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.historyButton:hover {
+  background-color: #2980b9;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #7f8c8d;
+}
+
+.emptyStateHint {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #95a5a6;
+}
+
+@media (max-width: 1024px) {
+  .content {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .searchPanel,
+  .detailsPanel {
+    max-height: 50vh;
+  }
+}

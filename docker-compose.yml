@@ -1,0 +1,63 @@
+# Development / local Docker Compose
+# Backend and frontend use same Dockerfiles as prod; backend runs runserver with mounted code.
+# Usage: docker compose up -d   (set SECRET_KEY and DB_PASSWORD in .env)
+
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-emr_db}
+      POSTGRES_USER: ${DB_USER:-emr_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-emr_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-emr_user} -d ${DB_NAME:-emr_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: emr-backend:latest
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      DEBUG: "true"
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: ${DB_NAME:-emr_db}
+      DB_USER: ${DB_USER:-emr_user}
+      DB_PASSWORD: ${DB_PASSWORD:-emr_password}
+      DB_HOST: db
+      DB_PORT: "5432"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: emr-frontend:latest
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

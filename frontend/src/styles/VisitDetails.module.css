@@ -1,0 +1,628 @@
+.visitDetailsPage {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.paymentWarning {
+  background: #fff3cd;
+  border: 2px solid #ffc107;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.warningContent {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.warningIcon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.warningContent h3 {
+  margin: 0 0 0.5rem 0;
+  color: #856404;
+  font-size: 1.1rem;
+}
+
+.warningContent p {
+  margin: 0.5rem 0;
+  color: #856404;
+  line-height: 1.5;
+}
+
+.paymentLink {
+  color: #0066cc;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.paymentLink:hover {
+  color: #0052a3;
+}
+
+.header {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.headerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h1 {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+}
+
+.visitMeta {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.exportActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.statusBadge,
+.paymentBadge {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.statusOpen {
+  background-color: #4caf50;
+  color: white;
+}
+
+.statusClosed {
+  background-color: #f44336;
+  color: white;
+}
+
+.paymentCleared {
+  background-color: #2196f3;
+  color: white;
+}
+
+.paymentPending {
+  background-color: #ff9800;
+  color: white;
+}
+
+.exportButton {
+  padding: 0.5rem 1rem;
+  background-color: #95a5a6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.exportButton:hover {
+  background-color: #7f8c8d;
+}
+
+.consultationButton {
+  padding: 0.75rem 1.5rem;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.consultationButton:hover:not(:disabled) {
+  background-color: #1976d2;
+}
+
+.consultationButton:disabled {
+  background-color: #9e9e9e;
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+.telemedicineButton {
+  padding: 0.75rem 1.5rem;
+  background-color: #9b59b6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.telemedicineButton:hover {
+  background-color: #8e44ad;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.section {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.paymentActions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.section h2 {
+  margin: 0 0 1.5rem 0;
+  color: #2c3e50;
+  font-size: 1.25rem;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 0.75rem;
+}
+
+.consultationCard {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 1.5rem;
+}
+
+.consultationDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detailItem label {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.9rem;
+}
+
+.detailItem p {
+  margin: 0;
+  color: #555;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.consultationMeta {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+  font-size: 0.875rem;
+  color: #7f8c8d;
+}
+
+.ordersList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.orderCard {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 1.5rem;
+}
+
+.orderHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.orderHeader h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.orderStatus {
+  background-color: #95a5a6;
+  color: white;
+}
+
+.statusDispensed {
+  background-color: #4caf50;
+  color: white;
+}
+
+.statusPending {
+  background-color: #ff9800;
+  color: white;
+}
+
+.orderDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.orderDetails p {
+  margin: 0;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.orderDetails strong {
+  color: #2c3e50;
+}
+
+.resultCard {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: white;
+  border-left: 4px solid #2196f3;
+  border-radius: 4px;
+}
+
+.resultCard h4 {
+  margin: 0 0 0.75rem 0;
+  color: #2c3e50;
+  font-size: 0.95rem;
+}
+
+.resultDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.resultDetails p {
+  margin: 0;
+  color: #555;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+}
+
+.flagBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  width: fit-content;
+}
+
+.flagNORMAL {
+  background-color: #4caf50;
+  color: white;
+}
+
+.flagABNORMAL {
+  background-color: #ff9800;
+  color: white;
+}
+
+.flagCRITICAL {
+  background-color: #f44336;
+  color: white;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #7f8c8d;
+  font-style: italic;
+}
+
+.errorContainer {
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.errorHint {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin: 1rem 0;
+}
+
+.errorActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.backButton {
+  padding: 0.75rem 1.5rem;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.backButton:hover {
+  background-color: #1976d2;
+}
+
+.errorContainer {
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.errorContainer h2 {
+  color: #e74c3c;
+  margin-bottom: 1rem;
+}
+
+.errorHint {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin: 1rem 0;
+}
+
+.errorActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.backButton {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.backButton:hover {
+  background-color: #2980b9;
+}
+
+/* Payment Actions */
+.paymentActions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Discharge Summary Styles */
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+}
+
+.addButton {
+  padding: 0.5rem 1rem;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.addButton:hover {
+  background-color: #45a049;
+}
+
+.exportButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.dischargeForm {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+}
+
+.formRow {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.formRow:last-of-type {
+  margin-bottom: 0;
+}
+
+.formRow label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.formRow input,
+.formRow textarea,
+.formRow select {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.formRow textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.formRow input:focus,
+.formRow textarea:focus,
+.formRow select:focus {
+  outline: none;
+  border-color: #2196f3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.required {
+  color: #e74c3c;
+}
+
+.formActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.primaryButton {
+  padding: 0.75rem 1.5rem;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background-color: #1976d2;
+}
+
+.primaryButton:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+
+.secondaryButton {
+  padding: 0.75rem 1.5rem;
+  background-color: #95a5a6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.secondaryButton:hover {
+  background-color: #7f8c8d;
+}
+
+.dischargeCard {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 1.5rem;
+}
+
+.dischargeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.dischargeHeader > div {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dischargeHeader strong {
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.dischargeHeader .badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: #2196f3;
+  color: white;
+}
+
+.dischargeHeader .meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: #7f8c8d;
+  text-align: right;
+}
+
+.dischargeDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.emptyText {
+  text-align: center;
+  padding: 2rem;
+  color: #7f8c8d;
+  font-style: italic;
+}

@@ -1,0 +1,7 @@
+Department,Service Code,Service Name,Amount,Description,Category,Workflow Type,Requires Visit,Requires Consultation,Auto Bill,Bill Timing,Allowed Roles,Is Active
+CONSULTATION,GOPD-CONSULT,General Consultation,5000.00,Standard consultation with a general practitioner,CONSULTATION,GOPD_CONSULT,TRUE,FALSE,TRUE,BEFORE,DOCTOR,TRUE
+LAB,LAB-CBC,Complete Blood Count,2500.00,Full blood count including WBC RBC Platelets,LAB,LAB_ORDER,TRUE,TRUE,TRUE,BEFORE,DOCTOR,TRUE
+RADIOLOGY,RAD-XRAY-CHEST,X-Ray Chest PA,7500.00,X-ray imaging of the chest in posteroanterior view,RADIOLOGY,RADIOLOGY_STUDY,TRUE,TRUE,TRUE,BEFORE,DOCTOR,TRUE
+PHARMACY,PHARM-PARA,Paracetamol 500mg,500.00,Oral analgesic for pain and fever,DRUG,DRUG_DISPENSE,TRUE,TRUE,TRUE,AFTER,DOCTOR PHARMACIST,TRUE
+PROCEDURE,PROC-SUTURE,Suture Removal,3000.00,Removal of sutures after wound healing,PROCEDURE,PROCEDURE,TRUE,TRUE,TRUE,AFTER,DOCTOR NURSE,TRUE
+

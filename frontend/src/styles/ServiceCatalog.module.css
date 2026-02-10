@@ -1,0 +1,278 @@
+.page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.createButton {
+  padding: 0.75rem 1.5rem;
+  background: var(--primary, #3498db);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.createButton:hover {
+  background: var(--primary-hover, #2980b9);
+}
+
+.formContainer {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.formContainer h2 {
+  margin: 0 0 1.5rem 0;
+  color: var(--text-primary);
+}
+
+.formGroup {
+  margin-bottom: 1.25rem;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.formGroup input,
+.formGroup select {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 1rem;
+  background: var(--input-bg);
+  color: var(--text-primary);
+}
+
+.formGroup input:focus,
+.formGroup select:focus {
+  outline: none;
+  border-color: var(--primary, #3498db);
+}
+
+.formRow {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.formRow .formGroup {
+  flex: 1;
+  min-width: 180px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: normal;
+}
+
+.checkboxLabel input {
+  width: auto;
+  max-width: none;
+}
+
+.formActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.formActions button {
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  border: none;
+}
+
+.saveButton {
+  background: var(--primary, #3498db);
+  color: white;
+}
+
+.saveButton:hover {
+  background: var(--primary-hover, #2980b9);
+}
+
+.cancelButton {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.cancelButton:hover {
+  background: var(--bg-tertiary);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.table th {
+  background: var(--bg-tertiary);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.table tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+.badgeActive {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background: color-mix(in srgb, var(--success) 25%, var(--bg-primary));
+  color: var(--text-primary);
+}
+
+.badgeInactive {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background: color-mix(in srgb, var(--error) 20%, var(--bg-primary));
+  color: var(--text-primary);
+}
+
+.cellActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cellActions button {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.cellActions button:hover {
+  background: var(--border);
+}
+
+.cellActions .editBtn:hover {
+  background: #3498db;
+  color: white;
+}
+
+.cellActions .deleteBtn:hover {
+  background: #e74c3c;
+  color: white;
+}
+
+.emptyMessage {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.filterBar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.filterBar input,
+.filterBar select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  background: var(--input-bg);
+  color: var(--text-primary);
+}
+
+.filterBar select {
+  min-width: 160px;
+}
+
+.filterBar input {
+  min-width: 200px;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.pagination button {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+
+.pagination button:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  color: var(--text-primary);
+}
+
+.errorText {
+  color: var(--error);
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}

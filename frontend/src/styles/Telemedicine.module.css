@@ -1,0 +1,379 @@
+.telemedicinePage {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.createButton {
+  padding: 0.75rem 1.5rem;
+  background: var(--primary, #2196f3);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: block;
+  visibility: visible;
+  opacity: 1;
+  min-width: 150px;
+}
+
+.createButton:hover {
+  background: var(--primary-dark, #1976d2);
+  transform: translateY(-2px);
+}
+
+.createForm {
+  background: var(--bg-primary);
+  padding: 2rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border: 1px solid var(--border-color);
+}
+
+.createForm h2 {
+  margin-top: 0;
+  color: var(--text-primary);
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.formGroup input[type="datetime-local"],
+.formGroup textarea,
+.formGroup select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 1rem;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.selectInput {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 1rem;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.formGroup input[type="checkbox"] {
+  margin-right: 0.5rem;
+}
+
+.formActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.submitButton {
+  padding: 0.75rem 1.5rem;
+  background: var(--primary, #2196f3);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: var(--primary-dark, #1976d2);
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  padding: 0.75rem 1.5rem;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelButton:hover {
+  background: var(--bg-tertiary);
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
+}
+
+.sessionsList {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.sessionCard {
+  background: var(--bg-primary);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s;
+}
+
+.sessionCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.sessionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.sessionHeader h3 {
+  margin: 0;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.statusBadge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.statusScheduled {
+  background: #f39c12;
+  color: white;
+}
+
+.statusInProgress {
+  background: #27ae60;
+  color: white;
+}
+
+.statusCompleted {
+  background: #3498db;
+  color: white;
+}
+
+.statusCancelled {
+  background: #95a5a6;
+  color: white;
+}
+
+.statusFailed {
+  background: #e74c3c;
+  color: white;
+}
+
+.recordingBadge {
+  padding: 0.25rem 0.75rem;
+  background: #e74c3c;
+  color: white;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.sessionDetails {
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+}
+
+.sessionDetails p {
+  margin: 0.5rem 0;
+}
+
+.sessionDetails strong {
+  color: var(--text-primary);
+}
+
+.sessionActions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.actionButton,
+.joinButton,
+.endButton {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.actionButton {
+  background: var(--primary, #2196f3);
+  color: white;
+}
+
+.actionButton:hover {
+  background: var(--primary-dark, #1976d2);
+}
+
+.joinButton {
+  background: #27ae60;
+  color: white;
+}
+
+.joinButton:hover {
+  background: #229954;
+}
+
+.endButton {
+  background: var(--error-color);
+  color: white;
+}
+
+.endButton:hover {
+  background: #c0392b;
+}
+
+.recordingLink {
+  padding: 0.5rem 1rem;
+  background: var(--bg-secondary);
+  color: var(--primary, #2196f3);
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.recordingLink:hover {
+  background: var(--bg-tertiary);
+}
+
+.transcriptionStatus {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.transcriptionBlock {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  grid-column: 1 / -1;
+}
+
+.transcriptionBlock strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--text-primary);
+}
+
+.transcriptionText {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  max-height: 8rem;
+  overflow-y: auto;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--bg-primary);
+  padding: 1.5rem;
+  border-radius: 8px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.modal h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary);
+}
+
+.modal p {
+  margin: 0 0 1rem 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.modalActions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .telemedicinePage {
+    padding: 1rem;
+  }
+  
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .sessionActions {
+    flex-direction: column;
+  }
+  
+  .actionButton,
+  .joinButton,
+  .endButton {
+    width: 100%;
+  }
+}

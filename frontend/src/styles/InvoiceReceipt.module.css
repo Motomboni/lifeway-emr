@@ -1,0 +1,348 @@
+/* Invoice/Receipt Viewer Styles */
+
+.viewerContainer {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.actionBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.actionGroup {
+  display: flex;
+  gap: 12px;
+}
+
+.actionButton {
+  padding: 8px 16px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.actionButton:hover {
+  background: #1d4ed8;
+}
+
+.closeButton {
+  padding: 8px 16px;
+  background: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.closeButton:hover {
+  background: #4b5563;
+}
+
+.document {
+  padding: 40px;
+  background: white;
+  color: #1f2937;
+  font-family: 'Arial', sans-serif;
+}
+
+.header {
+  border-bottom: 3px solid #2563eb;
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+}
+
+.clinicInfo {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.logoWrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.clinicName {
+  font-size: 28px;
+  font-weight: bold;
+  color: #2563eb;
+  margin-bottom: 12px;
+}
+
+.clinicDetails {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.documentTitle {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  margin: 24px 0;
+  color: #1e40af;
+}
+
+.documentNumber {
+  text-align: right;
+  font-size: 16px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.infoSection {
+  margin-bottom: 32px;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.infoLabel {
+  font-weight: 600;
+  color: #374151;
+}
+
+.section {
+  margin-bottom: 32px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+.table thead {
+  background: #2563eb;
+  color: white;
+}
+
+.table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.table td {
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.textRight {
+  text-align: right;
+}
+
+.totalRow {
+  font-weight: 600;
+  background: #f3f4f6;
+}
+
+.totalRow td {
+  padding: 16px 12px;
+  border-top: 2px solid #2563eb;
+}
+
+.summary {
+  margin: 32px 0;
+  padding: 24px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 18px;
+}
+
+.summaryLabel {
+  font-weight: 600;
+  color: #374151;
+}
+
+.balancePositive {
+  color: #16a34a;
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.balanceNegative {
+  color: #dc2626;
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.highlight {
+  font-weight: 600;
+  color: #2563eb;
+  font-size: 16px;
+}
+
+.footer {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 2px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.footerNote {
+  font-size: 14px;
+  color: #2563eb;
+  font-style: italic;
+}
+
+.footerSignature {
+  text-align: right;
+}
+
+.signatureLine {
+  border-top: 1px solid #1f2937;
+  width: 200px;
+  padding-top: 8px;
+  margin-top: 60px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.modal h3 {
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  color: #1f2937;
+}
+
+.modalContent {
+  margin-bottom: 24px;
+}
+
+.modalContent label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.emailInput {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.emailInput:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.modalActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.modalButton {
+  padding: 10px 20px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.modalButton:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.modalButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modalButtonPrimary {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.modalButtonPrimary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+/* Print Styles */
+@media print {
+  .viewerContainer {
+    box-shadow: none;
+  }
+
+  .actionBar {
+    display: none;
+  }
+
+  .document {
+    padding: 20px;
+  }
+
+  .modalOverlay {
+    display: none;
+  }
+}
+

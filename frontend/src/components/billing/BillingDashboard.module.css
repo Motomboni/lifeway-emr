@@ -1,0 +1,100 @@
+/* Billing Dashboard Styles */
+.dashboard {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+.header {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1.5rem;
+}
+
+.headerContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.headerTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.headerSubtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.visitClosedBadge {
+  padding: 0.25rem 0.75rem;
+  background: #f3f4f6;
+  color: #374151;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.outstandingBalanceContainer {
+  padding: 1rem 1.5rem 0;
+}
+
+.tabsContainer {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0 1.5rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 2rem;
+}
+
+.tab {
+  padding: 1rem 0.25rem;
+  border-bottom: 2px solid transparent;
+  font-weight: 500;
+  font-size: 0.875rem;
+  background: none;
+  border: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: #374151;
+  border-bottom-color: #d1d5db;
+}
+
+.tabActive {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+.tabIcon {
+  margin-right: 0.5rem;
+}
+
+.tabContent {
+  padding: 1.5rem;
+}
+
+.permissionMessage {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.permissionText {
+  color: #6b7280;
+}
+
