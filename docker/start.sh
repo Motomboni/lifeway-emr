@@ -3,18 +3,27 @@ set -e
 
 # Wait for database (no netcat required)
 echo "Waiting for database..."
-until python -c "
-import os, socket, sys
-host = os.environ.get('DB_HOST', 'db')
-port = int(os.environ.get('DB_PORT', '5432'))
+host="${DB_HOST:-db}"
+port="${DB_PORT:-5432}"
+attempt=0
+max_attempts=60
+until python3 -c "
+import socket, sys
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
-    s.settimeout(2)
-    s.connect((host, port))
+    s.settimeout(3)
+    s.connect(('$host', int('$port')))
     s.close()
-except Exception:
+    sys.exit(0)
+except Exception as e:
     sys.exit(1)
-" 2>/dev/null; do
+"; do
+  attempt=$((attempt + 1))
+  echo "  Attempt $attempt/$max_attempts: $host:$port unreachable, retrying in 2s..."
+  if [ "$attempt" -ge "$max_attempts" ]; then
+    echo "ERROR: Database at $host:$port did not become ready in time."
+    exit 1
+  fi
   sleep 2
 done
 echo "Database is ready!"
@@ -27,7 +36,7 @@ python manage.py migrate --noinput
 python manage.py collectstatic --noinput
 
 # Start nginx in background
-nginx
+nginx -g "daemon off;" &  # run in shell background so gunicorn can start
 
 # Start Django with Gunicorn (production WSGI server)
 gunicorn core.wsgi:application \
