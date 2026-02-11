@@ -19,12 +19,12 @@ COPY backend/ .
 RUN python manage.py collectstatic --noinput || true
 
 # Stage 2: Frontend
-FROM node:18-alpine AS frontend
+FROM node:22-alpine AS frontend
 
 WORKDIR /app/frontend
 
 COPY frontend/package.json frontend/package-lock.json* ./
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 COPY frontend/ .
 ENV CI=true
