@@ -287,3 +287,89 @@ def register(request):
         user_serializer.data,
         status=status.HTTP_201_CREATED
     )
+
+
+def _is_admin_or_superuser(user):
+    """Check if user can approve staff (superuser or ADMIN role)."""
+    return user and user.is_authenticated and (
+        user.is_superuser or getattr(user, 'role', None) == 'ADMIN'
+    )
+
+
+@extend_schema(
+    tags=['Authentication'],
+    summary='List Pending Staff',
+    description='List staff accounts awaiting approval (Admin/Superuser only)',
+    responses={
+        200: UserSerializer(many=True),
+        401: {'description': 'Unauthorized'},
+        403: {'description': 'Admin or Superuser required'},
+    },
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_pending_staff(request):
+    """
+    List staff users with is_active=False (awaiting approval).
+    Only Admin or Superuser can access.
+    """
+    if not _is_admin_or_superuser(request.user):
+        return Response(
+            {'detail': 'Only administrators can view pending staff.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    staff_roles = [
+        'ADMIN', 'DOCTOR', 'NURSE', 'LAB_TECH', 'RADIOLOGY_TECH',
+        'PHARMACIST', 'RECEPTIONIST', 'IVF_SPECIALIST', 'EMBRYOLOGIST'
+    ]
+    pending = User.objects.filter(
+        is_active=False,
+        role__in=staff_roles
+    ).order_by('-date_joined')
+    serializer = UserSerializer(pending, many=True)
+    return Response(serializer.data)
+
+
+@extend_schema(
+    tags=['Authentication'],
+    summary='Approve Staff',
+    description='Approve a pending staff account (Admin/Superuser only)',
+    responses={
+        200: UserSerializer,
+        403: {'description': 'Admin or Superuser required'},
+        404: {'description': 'User not found'},
+    },
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def approve_staff(request, user_id):
+    """
+    Approve a pending staff user (set is_active=True).
+    Only Admin or Superuser can approve.
+    """
+    if not _is_admin_or_superuser(request.user):
+        return Response(
+            {'detail': 'Only administrators can approve staff.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    try:
+        user = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        return Response(
+            {'detail': 'User not found.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    if user.role == 'PATIENT':
+        return Response(
+            {'detail': 'Patient accounts do not require approval.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    if user.is_active:
+        return Response(
+            {'detail': 'User is already approved.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    user.is_active = True
+    user.save(update_fields=['is_active'])
+    serializer = UserSerializer(user)
+    return Response(serializer.data)

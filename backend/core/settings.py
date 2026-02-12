@@ -125,6 +125,11 @@ CSRF_COOKIE_SECURE = not DEBUG  # HTTPS only in production
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Lax'
 
+# SSL/HTTPS (when behind nginx reverse proxy)
+SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'false').lower() == 'true'
+if os.environ.get('SECURE_PROXY_SSL_HEADER') == 'X-Forwarded-Proto':
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # Cache Configuration
 CACHES = {
     'default': {

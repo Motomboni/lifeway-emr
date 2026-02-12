@@ -30,9 +30,9 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    """Serializer for login requests."""
+    """Serializer for login requests. Accepts username or email."""
     
-    username = serializers.CharField(required=True)
+    username = serializers.CharField(required=True, help_text="Username or email")
     password = serializers.CharField(
         required=True,
         write_only=True,
@@ -41,17 +41,22 @@ class LoginSerializer(serializers.Serializer):
     
     def validate(self, attrs):
         """Validate credentials and check account lockout."""
-        username = attrs.get('username')
+        username_or_email = attrs.get('username', '').strip()
         password = attrs.get('password')
         
-        if not username or not password:
+        if not username_or_email or not password:
             raise serializers.ValidationError(
                 "Username and password are required."
             )
         
-        # Get user (don't authenticate yet)
+        # Allow login with username or email
+        username = username_or_email
         try:
-            user = User.objects.get(username=username)
+            if '@' in username_or_email:
+                user = User.objects.get(email__iexact=username_or_email)
+                username = user.username
+            else:
+                user = User.objects.get(username=username_or_email)
         except User.DoesNotExist:
             raise serializers.ValidationError(
                 "Invalid username or password."
@@ -191,8 +196,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             patient.save()
         else:
             # For all non-PATIENT roles (staff accounts), require explicit admin approval
-            # before the account can be used. Admin enables the account via Django admin
-            # or a staff-management UI by setting is_active=True.
+            # before the account can be used. Admin approves via Dashboard or Django admin.
             if user.is_active:
                 user.is_active = False
                 user.save(update_fields=['is_active'])

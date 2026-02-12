@@ -375,6 +375,15 @@ export default function DashboardPage() {
                   <h3>New Visit</h3>
                   <p>Create a new patient visit</p>
                 </div>
+                {(user?.is_superuser || user?.role === 'ADMIN') && (
+                  <div 
+                    className={styles.actionCard}
+                    onClick={() => navigate('/staff-approval')}
+                  >
+                    <h3>Staff Approval</h3>
+                    <p>Approve registered staff before they can log in</p>
+                  </div>
+                )}
                 {user?.is_superuser && (
                   <>
                     <div 
@@ -929,6 +938,15 @@ export default function DashboardPage() {
                   <h3>Appointments</h3>
                   <p>Schedule and manage appointments</p>
                 </div>
+                {(user?.is_superuser || user?.role === 'ADMIN') && (
+                  <div 
+                    className={styles.actionCard}
+                    onClick={() => navigate('/staff-approval')}
+                  >
+                    <h3>Staff Approval</h3>
+                    <p>Approve registered staff before they can log in</p>
+                  </div>
+                )}
                 {user?.is_superuser && (
                   <>
                     <div 

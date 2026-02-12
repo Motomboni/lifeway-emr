@@ -45,6 +45,7 @@ import AuditLogPage from './pages/AuditLogPage';
 import HealthStatusPage from './pages/HealthStatusPage';
 import ReportsPage from './pages/ReportsPage';
 import BackupPage from './pages/BackupPage';
+import StaffApprovalPage from './pages/StaffApprovalPage';
 import ServiceCatalogPage from './pages/ServiceCatalogPage';
 import TelemedicinePage from './pages/TelemedicinePage';
 import EndOfDayReconciliationPage from './pages/EndOfDayReconciliationPage';
@@ -411,6 +412,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute requireAdmin>
             <HealthStatusPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Staff Approval - Admin only */}
+      <Route
+        path="/staff-approval"
+        element={
+          <ProtectedRoute requireAdmin>
+            <StaffApprovalPage />
           </ProtectedRoute>
         }
       />

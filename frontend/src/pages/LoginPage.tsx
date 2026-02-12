@@ -89,7 +89,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
 
         <form onSubmit={handleSubmit} className={styles.loginForm}>
           <div className={styles.formGroup}>
-            <label htmlFor="username">Username</label>
+            <label htmlFor="username">Username or email</label>
             <input
               id="username"
               type="text"

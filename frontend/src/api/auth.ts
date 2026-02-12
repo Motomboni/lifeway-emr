@@ -82,6 +82,22 @@ export async function getCurrentUser(): Promise<User> {
 }
 
 /**
+ * List pending staff (awaiting approval) - Admin/Superuser only
+ */
+export async function fetchPendingStaff(): Promise<User[]> {
+  return apiRequest<User[]>('/auth/pending-staff/');
+}
+
+/**
+ * Approve a pending staff user - Admin/Superuser only
+ */
+export async function approveStaffUser(userId: number): Promise<User> {
+  return apiRequest<User>(`/auth/pending-staff/${userId}/approve/`, {
+    method: 'POST',
+  });
+}
+
+/**
  * Logout user (blacklist refresh token)
  * Note: This requires authentication, but we handle failures gracefully
  */

@@ -34,7 +34,7 @@ services:
       DB_HOST: db
       DB_PORT: "5432"
     ports:
-      - "80:80"
+      - "8080:80"
     volumes:
       - media_data:/app/backend/media
     depends_on:
