@@ -28,7 +28,7 @@ from .serializers import (
     PatientSearchSerializer,
     PatientVerificationSerializer,
 )
-from .permissions import CanRegisterPatient, CanSearchPatient
+from .permissions import CanRegisterPatient, CanSearchPatient, CanDeletePatient
 from core.audit import AuditLog
 
 
@@ -71,12 +71,15 @@ class PatientViewSet(viewsets.ModelViewSet):
         
         - Create: Receptionist only
         - List/Search: Receptionist and clinical staff
+        - Destroy: Admin, Receptionist, or Superuser (archive/soft-delete)
         - Retrieve/Update: Authenticated users (read-only for non-receptionist)
         """
         if self.action == 'create':
             permission_classes = [CanRegisterPatient]
         elif self.action == 'list' or self.action == 'search':
             permission_classes = [CanSearchPatient]
+        elif self.action == 'destroy':
+            permission_classes = [CanDeletePatient]
         else:
             # Retrieve, update - authenticated users can view
             permission_classes = [permissions.IsAuthenticated]

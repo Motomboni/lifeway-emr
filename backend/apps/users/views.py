@@ -296,6 +296,11 @@ def _is_admin_or_superuser(user):
     )
 
 
+def _is_superuser(user):
+    """Check if user is superuser (for destructive/restricted actions)."""
+    return user and user.is_authenticated and user.is_superuser
+
+
 @extend_schema(
     tags=['Authentication'],
     summary='List Pending Staff',
@@ -370,6 +375,81 @@ def approve_staff(request, user_id):
             status=status.HTTP_400_BAD_REQUEST
         )
     user.is_active = True
+    user.save(update_fields=['is_active'])
+    serializer = UserSerializer(user)
+    return Response(serializer.data)
+
+
+@extend_schema(
+    tags=['Authentication'],
+    summary='List All Staff',
+    description='List all staff users (Superuser only)',
+    responses={
+        200: UserSerializer(many=True),
+        401: {'description': 'Unauthorized'},
+        403: {'description': 'Superuser required'},
+    },
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_all_staff(request):
+    """List all staff users. Superuser only."""
+    if not _is_superuser(request.user):
+        return Response(
+            {'detail': 'Only superusers can view all staff.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    staff_roles = [
+        'ADMIN', 'DOCTOR', 'NURSE', 'LAB_TECH', 'RADIOLOGY_TECH',
+        'PHARMACIST', 'RECEPTIONIST', 'IVF_SPECIALIST', 'EMBRYOLOGIST'
+    ]
+    staff = User.objects.filter(role__in=staff_roles).order_by('-date_joined')
+    serializer = UserSerializer(staff, many=True)
+    return Response(serializer.data)
+
+
+@extend_schema(
+    tags=['Authentication'],
+    summary='Deactivate Staff',
+    description='Deactivate a staff user (Superuser only). User cannot log in until reactivated.',
+    responses={
+        200: UserSerializer,
+        403: {'description': 'Superuser required'},
+        404: {'description': 'User not found'},
+    },
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def deactivate_staff(request, user_id):
+    """Deactivate a staff user. Superuser only. Cannot deactivate yourself."""
+    if not _is_superuser(request.user):
+        return Response(
+            {'detail': 'Only superusers can deactivate staff.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    if request.user.id == user_id:
+        return Response(
+            {'detail': 'You cannot deactivate your own account.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    try:
+        user = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        return Response(
+            {'detail': 'User not found.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    if user.role == 'PATIENT':
+        return Response(
+            {'detail': 'Use patient management to deactivate patient accounts.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    if not user.is_active:
+        return Response(
+            {'detail': 'User is already deactivated.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    user.is_active = False
     user.save(update_fields=['is_active'])
     serializer = UserSerializer(user)
     return Response(serializer.data)

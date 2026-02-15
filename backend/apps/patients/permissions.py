@@ -63,3 +63,19 @@ class CanManagePatients(permissions.BasePermission):
             user_role = getattr(request.user, 'get_role', lambda: None)()
         
         return user_role in ['RECEPTIONIST', 'ADMIN']
+
+
+class CanDeletePatient(permissions.BasePermission):
+    """
+    Permission: Admin, Receptionist, or Superuser can archive/delete patients.
+    Per EMR rules: soft-delete only (is_active=False).
+    """
+    
+    def has_permission(self, request, view):
+        """Check if user can delete (archive) patients."""
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if request.user.is_superuser:
+            return True
+        user_role = getattr(request.user, 'role', None)
+        return user_role in ['RECEPTIONIST', 'ADMIN']

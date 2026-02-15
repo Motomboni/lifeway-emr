@@ -130,6 +130,16 @@ export async function createPortalAccount(
 }
 
 /**
+ * Archive (soft-delete) patient. Admin, Receptionist, or Superuser only.
+ * Per EMR rules: soft-delete only (is_active=False).
+ */
+export async function archivePatient(patientId: number): Promise<{ detail: string }> {
+  return apiRequest<{ detail: string }>(`/patients/${patientId}/`, {
+    method: 'DELETE',
+  });
+}
+
+/**
  * Toggle patient portal access (Admin only)
  */
 export interface TogglePortalResponse {

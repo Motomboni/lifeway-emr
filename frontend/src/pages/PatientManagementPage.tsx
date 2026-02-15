@@ -7,7 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchPatients, searchPatients, getPatient, updatePatient } from '../api/patient';
+import { fetchPatients, searchPatients, getPatient, updatePatient, archivePatient } from '../api/patient';
 import { Patient, PatientCreateData } from '../types/patient';
 import { useToast } from '../hooks/useToast';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
@@ -28,6 +28,7 @@ export default function PatientManagementPage() {
   const [isSaving, setIsSaving] = useState(false);
   
   const [editForm, setEditForm] = useState<Partial<PatientCreateData>>({});
+  const [isArchiving, setIsArchiving] = useState(false);
 
   useEffect(() => {
     loadRecentPatients();
@@ -119,7 +120,28 @@ export default function PatientManagementPage() {
     }
   };
 
-  const canEdit = user?.role === 'RECEPTIONIST';
+  const handleArchivePatient = async () => {
+    if (!selectedPatient) return;
+    if (!window.confirm(`Archive patient ${selectedPatient.first_name} ${selectedPatient.last_name}? This will soft-delete the record (compliance: no hard delete).`)) {
+      return;
+    }
+    try {
+      setIsArchiving(true);
+      await archivePatient(selectedPatient.id);
+      showSuccess('Patient record archived successfully.');
+      setSelectedPatient(null);
+      loadRecentPatients();
+      handleSearch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to archive patient';
+      showError(msg);
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
+  const canEdit = user?.role === 'RECEPTIONIST' || user?.role === 'ADMIN';
+  const canArchive = user?.role === 'RECEPTIONIST' || user?.role === 'ADMIN' || user?.is_superuser;
 
   return (
     <div className={styles.patientManagementPage}>
@@ -209,6 +231,15 @@ export default function PatientManagementPage() {
                   >
                     Create Visit
                   </button>
+                  {canArchive && (
+                    <button
+                      className={styles.archiveButton}
+                      onClick={handleArchivePatient}
+                      disabled={isArchiving}
+                    >
+                      {isArchiving ? 'Archiving...' : 'Archive'}
+                    </button>
+                  )}
                 </div>
               </div>
 

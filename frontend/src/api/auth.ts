@@ -98,6 +98,22 @@ export async function approveStaffUser(userId: number): Promise<User> {
 }
 
 /**
+ * List all staff users - Superuser only
+ */
+export async function fetchAllStaff(): Promise<User[]> {
+  return apiRequest<User[]>('/auth/staff/');
+}
+
+/**
+ * Deactivate a staff user - Superuser only
+ */
+export async function deactivateStaffUser(userId: number): Promise<User> {
+  return apiRequest<User>(`/auth/staff/${userId}/deactivate/`, {
+    method: 'POST',
+  });
+}
+
+/**
  * Logout user (blacklist refresh token)
  * Note: This requires authentication, but we handle failures gracefully
  */
