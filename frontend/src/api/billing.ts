@@ -249,6 +249,16 @@ export interface Service {
   requires_visit?: boolean;
   requires_consultation?: boolean;
   allowed_roles?: string[];  // Roles that can order this service
+  /** Drug availability (PHARMACY/DRUG only): current stock quantity */
+  drug_availability?: number | null;
+  /** Drug expiry date ISO string (PHARMACY/DRUG only) */
+  drug_expiry_date?: string | null;
+  /** Drug unit e.g. tablets, units (PHARMACY/DRUG only) */
+  drug_unit?: string | null;
+  /** True if out of stock or expired (PHARMACY/DRUG only) */
+  is_out_of_stock?: boolean | null;
+  /** True if low stock (PHARMACY/DRUG only) */
+  is_low_stock?: boolean | null;
 }
 
 export interface ServiceCatalogResponse {

@@ -3,12 +3,16 @@ Service Catalog API for the unified service catalog system.
 
 Provides API endpoints for browsing, searching, and ordering services
 from the ServiceCatalog model. Create/update/delete restricted to admin (is_staff).
+
+For PHARMACY/DRUG services, includes drug availability and expiry date from DrugInventory
+to help doctors make prescribing decisions.
 """
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, BasePermission
 from django.db.models import Q
+from django.utils import timezone
 from apps.billing.service_catalog_models import ServiceCatalog
 
 
@@ -27,13 +31,58 @@ class IsStaffOrAdminReadOnly(BasePermission):
         return user_role == 'ADMIN'
 
 
+def _get_drug_inventory_info(service):
+    """
+    Get drug availability and expiry for PHARMACY/DRUG services.
+    Returns dict with drug_availability, drug_expiry_date, drug_unit, is_out_of_stock, is_low_stock.
+    Returns None for non-drug services.
+    """
+    if service.department != 'PHARMACY' or service.category != 'DRUG':
+        return None
+    try:
+        from apps.pharmacy.models import Drug, DrugInventory
+        # Resolve Drug from ServiceCatalog: match by name (service.name = drug.name from sync)
+        drug = Drug.objects.filter(name=service.name, is_active=True).first()
+        if not drug:
+            return {
+                'drug_availability': None,
+                'drug_expiry_date': None,
+                'drug_unit': None,
+                'is_out_of_stock': None,
+                'is_low_stock': None,
+            }
+        # DrugInventory is OneToOne with Drug
+        inv = getattr(drug, 'inventory', None)
+        if not inv:
+            return {
+                'drug_availability': 0,
+                'drug_expiry_date': None,
+                'drug_unit': 'units',
+                'is_out_of_stock': True,
+                'is_low_stock': True,
+            }
+        today = timezone.now().date()
+        expiry = inv.expiry_date
+        is_expired = expiry is not None and expiry < today
+        stock = float(inv.current_stock) if inv.current_stock is not None else 0
+        return {
+            'drug_availability': stock,
+            'drug_expiry_date': expiry.isoformat() if expiry else None,
+            'drug_unit': inv.unit or 'units',
+            'is_out_of_stock': stock <= 0 or is_expired,
+            'is_low_stock': stock <= float(inv.reorder_level or 0) and stock > 0,
+        }
+    except Exception:
+        return None
+
+
 class ServiceCatalogSerializer:
     """Simple serializer for ServiceCatalog (avoiding DRF ModelSerializer for simplicity)."""
-    
+
     @staticmethod
     def serialize(service):
         """Convert ServiceCatalog instance to dict."""
-        return {
+        result = {
             'id': service.id,
             'department': service.department,
             'service_code': service.service_code,
@@ -53,6 +102,11 @@ class ServiceCatalogSerializer:
             'updated_at': service.updated_at.isoformat() if service.updated_at else None,
             'display': f"{service.department} - {service.name} ({service.service_code}) - ₦{service.amount:,.2f}",
         }
+        # Add drug inventory info for PHARMACY/DRUG services
+        drug_info = _get_drug_inventory_info(service)
+        if drug_info:
+            result.update(drug_info)
+        return result
 
 
 class ServiceCatalogViewSet(viewsets.ModelViewSet):

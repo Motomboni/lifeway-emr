@@ -152,6 +152,39 @@
   margin-bottom: 0.25rem;
 }
 
+/* Drug availability and expiry (PHARMACY services only) */
+.drugStockInfo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.stockAvailable {
+  color: #16a34a;
+  font-weight: 500;
+}
+
+.stockOutOfStock {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.stockExpiry {
+  color: #6b7280;
+}
+
+.lowStockBadge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #d97706;
+  background: #fef3c7;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+}
+
 .suggestionDescription {
   font-size: 0.75rem;
   color: #6b7280;

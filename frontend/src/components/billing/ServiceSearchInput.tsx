@@ -10,6 +10,21 @@ import { formatCurrency } from '../../utils/currency';
 import { useAuth } from '../../contexts/AuthContext';
 import styles from './ServiceSearchInput.module.css';
 
+/** Format expiry date for display */
+function formatExpiryDate(isoDate: string | null | undefined): string {
+  if (!isoDate) return '—';
+  try {
+    const d = new Date(isoDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    d.setHours(0, 0, 0, 0);
+    if (d < today) return `Expired ${d.toLocaleDateString()}`;
+    return d.toLocaleDateString();
+  } catch {
+    return '—';
+  }
+}
+
 interface ServiceSearchInputProps {
   onServiceSelect: (service: Service) => void;
   department?: 'LAB' | 'PHARMACY' | 'RADIOLOGY' | 'PROCEDURE';
@@ -325,6 +340,21 @@ export default function ServiceSearchInput({
                     {service.service_code && (
                       <div className={styles.suggestionCode}>
                         Code: {service.service_code}
+                      </div>
+                    )}
+                    {service.department === 'PHARMACY' && (
+                      <div className={styles.drugStockInfo}>
+                        <span className={service.is_out_of_stock ? styles.stockOutOfStock : styles.stockAvailable}>
+                          Stock: {service.drug_availability != null
+                            ? (service.is_out_of_stock ? 'Out of stock' : `${service.drug_availability} ${service.drug_unit || 'units'}`)
+                            : 'No inventory'}
+                        </span>
+                        <span className={styles.stockExpiry}>
+                          Expiry: {formatExpiryDate(service.drug_expiry_date ?? undefined)}
+                        </span>
+                        {service.is_low_stock && !service.is_out_of_stock && (
+                          <span className={styles.lowStockBadge}>Low stock</span>
+                        )}
                       </div>
                     )}
                     {service.description && (
