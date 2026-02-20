@@ -18,6 +18,29 @@ from .billing_line_item_models import BillingLineItem
 from .service_catalog_models import ServiceCatalog
 
 
+def _registration_line_items(queryset):
+    """Filter queryset to Registration services only."""
+    return queryset.filter(
+        Q(service_catalog__service_code__istartswith='REG-') |
+        Q(source_service_name__icontains='REGISTRATION') |
+        Q(service_catalog__name__icontains='REGISTRATION')
+    )
+
+
+def _consultation_line_items(queryset):
+    """Filter queryset to Consultation services only (exclude Registration)."""
+    return queryset.filter(
+        Q(service_catalog__service_code__istartswith='CONS-') |
+        Q(service_catalog__department='CONSULTATION', service_catalog__workflow_type='GOPD_CONSULT') |
+        Q(source_service_name__icontains='CONSULTATION') |
+        Q(service_catalog__name__icontains='CONSULTATION')
+    ).exclude(
+        Q(service_catalog__service_code__istartswith='REG-') |
+        Q(source_service_name__icontains='REGISTRATION') |
+        Q(service_catalog__name__icontains='REGISTRATION')
+    )
+
+
 def _is_insurance_cleared(visit: Visit) -> bool:
     """
     Return True if visit has approved insurance and is settled/claimed.
@@ -41,54 +64,75 @@ def is_registration_paid(visit: Visit) -> bool:
     True if the visit has at least one PAID billing line item for a Registration service,
     OR if the visit is fully covered by approved insurance.
     Registration services: service_code REG-*, name/description contains REGISTRATION.
+    Also accepts amount_paid >= amount as paid (fallback when bill_status is inconsistent).
+    Fallback: when visit payment_status indicates payment received (PAID/PARTIALLY_PAID/SETTLED)
+    or when total paid >= charges, treat registration as satisfied.
     """
     # Insurance-covered visits satisfy registration gate
     if _is_insurance_cleared(visit):
         return True
 
-    paid_registration = BillingLineItem.objects.filter(
-        visit=visit,
-        bill_status='PAID',
-        service_catalog__restricted_service_flag=True,
-    ).filter(
-        Q(service_catalog__service_code__istartswith='REG-') |
-        Q(source_service_name__icontains='REGISTRATION') |
-        Q(service_catalog__name__icontains='REGISTRATION')
-    ).exists()
-    return paid_registration
+    # Fallback: visit already shows payment received - gates are satisfied
+    if visit.payment_status in ('PAID', 'SETTLED', 'PARTIALLY_PAID', 'INSURANCE_CLAIMED'):
+        return True
+
+    base = BillingLineItem.objects.filter(visit=visit).select_related('service_catalog')
+    reg_items = _registration_line_items(base)
+    # Check bill_status='PAID' first
+    if reg_items.filter(bill_status='PAID').exists():
+        return True
+    # Fallback: amount_paid >= amount indicates fully paid (handles allocation edge cases)
+    for item in reg_items:
+        if item.amount_paid is not None and item.amount is not None:
+            if item.amount_paid >= item.amount:
+                return True
+
+    # Fallback: outstanding_balance <= 0 (payment collected but allocation incomplete)
+    try:
+        from .billing_service import BillingService
+        summary = BillingService.compute_billing_summary(visit)
+        if summary.outstanding_balance <= 0:
+            return True
+    except Exception:
+        pass
+    return False
 
 
 def is_consultation_paid(visit: Visit) -> bool:
     """
     True if the visit has at least one PAID billing line item for a Consultation service,
     OR if the visit is fully covered by approved insurance.
-    
-    Matches consultation services by ANY of:
-    - service_code starts with 'CONS-'
-    - department='CONSULTATION' AND workflow_type='GOPD_CONSULT'
-    - source_service_name contains 'CONSULTATION' (but not 'REGISTRATION')
-    - service_catalog.name contains 'CONSULTATION' (but not 'REGISTRATION')
-    
-    Excludes registration services.
+    Also accepts amount_paid >= amount as paid (fallback when bill_status is inconsistent).
+    Fallback: when visit payment_status indicates payment received or outstanding_balance <= 0.
     """
     # Insurance-covered visits satisfy consultation gate
     if _is_insurance_cleared(visit):
         return True
 
-    paid_consultation = BillingLineItem.objects.filter(
-        visit=visit,
-        bill_status='PAID',
-    ).filter(
-        Q(service_catalog__service_code__istartswith='CONS-') |
-        Q(service_catalog__department='CONSULTATION', service_catalog__workflow_type='GOPD_CONSULT') |
-        Q(source_service_name__icontains='CONSULTATION') |
-        Q(service_catalog__name__icontains='CONSULTATION')
-    ).exclude(
-        Q(service_catalog__service_code__istartswith='REG-') |
-        Q(source_service_name__icontains='REGISTRATION') |
-        Q(service_catalog__name__icontains='REGISTRATION')
-    ).exists()
-    return paid_consultation
+    # Fallback: visit already shows payment received - gates are satisfied
+    if visit.payment_status in ('PAID', 'SETTLED', 'PARTIALLY_PAID', 'INSURANCE_CLAIMED'):
+        return True
+
+    base = BillingLineItem.objects.filter(visit=visit).select_related('service_catalog')
+    cons_items = _consultation_line_items(base)
+    # Check bill_status='PAID' first
+    if cons_items.filter(bill_status='PAID').exists():
+        return True
+    # Fallback: amount_paid >= amount indicates fully paid
+    for item in cons_items:
+        if item.amount_paid is not None and item.amount is not None:
+            if item.amount_paid >= item.amount:
+                return True
+
+    # Fallback: outstanding_balance <= 0 (payment collected but allocation incomplete)
+    try:
+        from .billing_service import BillingService
+        summary = BillingService.compute_billing_summary(visit)
+        if summary.outstanding_balance <= 0:
+            return True
+    except Exception:
+        pass
+    return False
 
 
 def get_payment_gates_status(visit: Visit) -> dict:

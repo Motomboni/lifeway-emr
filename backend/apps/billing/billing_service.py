@@ -214,6 +214,17 @@ class BillingService:
                 'can_access_consultation': True,
                 'can_doctor_start_encounter': True,
             }
+        # Fallback: when visit is fully paid (no outstanding balance), gates are satisfied
+        # Fixes false "Registration Payment Required" when payments were collected but
+        # BillingLineItem allocation or service_catalog flags are inconsistent
+        elif outstanding_balance <= 0 and payment_gates:
+            payment_gates = {
+                **payment_gates,
+                'registration_paid': True,
+                'consultation_paid': True,
+                'can_access_consultation': True,
+                'can_doctor_start_encounter': True,
+            }
         
         return BillingSummary(
             total_charges=total_charges,

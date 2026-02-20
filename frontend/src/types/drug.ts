@@ -20,6 +20,14 @@ export interface Drug {
   created_by_name?: string;
   created_at: string;
   updated_at: string;
+  /** Current stock (from inventory) - for doctors to make informed prescribing decisions */
+  current_stock?: number | null;
+  /** Unit e.g. tablets, units */
+  drug_unit?: string | null;
+  /** Expiry date ISO string */
+  drug_expiry_date?: string | null;
+  is_out_of_stock?: boolean | null;
+  is_low_stock?: boolean | null;
 }
 
 export interface DrugCreateData {

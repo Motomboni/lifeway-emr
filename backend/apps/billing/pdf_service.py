@@ -118,8 +118,8 @@ class PDFService:
         
         # Get clinic info from settings or use defaults
         clinic_name = getattr(settings, 'CLINIC_NAME', 'Lifeway Medical Centre Ltd')
-        clinic_address = getattr(settings, 'CLINIC_ADDRESS', 'Lagos, Nigeria')
-        clinic_phone = getattr(settings, 'CLINIC_PHONE', '+234-XXX-XXXX')
+        clinic_address = getattr(settings, 'CLINIC_ADDRESS', 'Plot 1593, ZONE E, APO RESETTLEMENT, ABUJA')
+        clinic_phone = getattr(settings, 'CLINIC_PHONE', '07058893439, 08033145080, 08033114417')
         clinic_email = getattr(settings, 'CLINIC_EMAIL', 'info@clinic.com')
         
         # Build HTML based on format
@@ -178,8 +178,8 @@ class PDFService:
         
         # Get clinic info
         clinic_name = getattr(settings, 'CLINIC_NAME', 'Lifeway Medical Centre Ltd')
-        clinic_address = getattr(settings, 'CLINIC_ADDRESS', 'Lagos, Nigeria')
-        clinic_phone = getattr(settings, 'CLINIC_PHONE', '+234-XXX-XXXX')
+        clinic_address = getattr(settings, 'CLINIC_ADDRESS', 'Plot 1593, ZONE E, APO RESETTLEMENT, ABUJA')
+        clinic_phone = getattr(settings, 'CLINIC_PHONE', '07058893439, 08033145080, 08033114417')
         clinic_email = getattr(settings, 'CLINIC_EMAIL', 'info@clinic.com')
         
         # Build HTML based on format

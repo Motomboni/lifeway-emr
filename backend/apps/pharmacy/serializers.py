@@ -109,12 +109,20 @@ class PrescriptionReadSerializer(PrescriptionSerializer):
 class DrugSerializer(serializers.ModelSerializer):
     """
     Base serializer for Drug.
+    Includes inventory info (stock, expiry) for doctors to make informed prescribing decisions.
     """
     created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True)
     
     profit = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     profit_margin = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
-    
+
+    # Inventory info for doctors (read-only, from DrugInventory)
+    current_stock = serializers.SerializerMethodField()
+    drug_unit = serializers.SerializerMethodField()
+    drug_expiry_date = serializers.SerializerMethodField()
+    is_out_of_stock = serializers.SerializerMethodField()
+    is_low_stock = serializers.SerializerMethodField()
+
     class Meta:
         model = Drug
         fields = [
@@ -135,6 +143,11 @@ class DrugSerializer(serializers.ModelSerializer):
             'created_by_name',
             'created_at',
             'updated_at',
+            'current_stock',
+            'drug_unit',
+            'drug_expiry_date',
+            'is_out_of_stock',
+            'is_low_stock',
         ]
         read_only_fields = [
             'id',
@@ -145,6 +158,47 @@ class DrugSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
+
+    def _get_inventory(self, obj):
+        """Get DrugInventory for this drug, or None if none exists."""
+        try:
+            return obj.inventory
+        except DrugInventory.DoesNotExist:
+            return None
+
+    def get_current_stock(self, obj):
+        inv = self._get_inventory(obj)
+        if inv and inv.current_stock is not None:
+            return float(inv.current_stock)
+        return None
+
+    def get_drug_unit(self, obj):
+        inv = self._get_inventory(obj)
+        if inv and inv.unit:
+            return inv.unit
+        return 'units'
+
+    def get_drug_expiry_date(self, obj):
+        inv = self._get_inventory(obj)
+        if inv and inv.expiry_date:
+            return inv.expiry_date.isoformat()
+        return None
+
+    def get_is_out_of_stock(self, obj):
+        inv = self._get_inventory(obj)
+        if not inv:
+            return True
+        if inv.is_out_of_stock:
+            return True
+        if inv.expiry_date:
+            from django.utils import timezone
+            if inv.expiry_date < timezone.now().date():
+                return True
+        return False
+
+    def get_is_low_stock(self, obj):
+        inv = self._get_inventory(obj)
+        return inv.is_low_stock if inv else False
 
 
 class DrugCreateSerializer(DrugSerializer):

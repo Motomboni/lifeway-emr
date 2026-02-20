@@ -1,5 +1,7 @@
 # Production Docker Setup (Django + React + Postgres)
 
+**Current version:** 1.1.0 (see `VERSION` file)
+
 This project includes a production-ready Docker setup with:
 
 - **PostgreSQL 15** – database
@@ -61,6 +63,12 @@ This project includes a production-ready Docker setup with:
 - **frontend** – React build served by nginx. Proxies `/api/`, `/static/`, `/media/` to `backend:8000`; everything else is the SPA.
 
 Build context for both images is the **repository root** so that `backend/Dockerfile` and `frontend/Dockerfile` can reference `backend/`, `frontend/`, and `docker/` correctly.
+
+## Versioning
+
+- `VERSION` – Project release version (e.g. 1.1.0)
+- Docker image: `emr-app:1.1.0` (or the current version in `VERSION`)
+- To build a specific version: `docker build -t emr-app:$(cat VERSION) .`
 
 ## Files
 

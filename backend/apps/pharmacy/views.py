@@ -376,7 +376,7 @@ class DrugViewSet(viewsets.ModelViewSet):
     - Audit logging required
     """
     
-    queryset = Drug.objects.all().select_related('created_by')
+    queryset = Drug.objects.all().select_related('created_by').prefetch_related('inventory')
     permission_classes = [CanManageDrugs]
     pagination_class = None  # Disable pagination for drug catalog (typically small dataset)
     

@@ -184,10 +184,14 @@ Use **Back to Dashboard** to return.
 
 1. Click **Prescriptions**. Select a visit (or prescription). View the prescription; check warnings and doctor’s override reason if any. Click **Dispense** (or **Mark as dispensed**). Confirm.
 
-## 6.3 Drug Catalog and Inventory
+## 6.3 Drug Catalog & Inventory
 
-1. **Drugs**: Add or edit drugs (name, code, dosage forms, prices). Save.  
-2. **Inventory**: View and update stock levels.
+Access **Drug Catalog & Inventory** from the dashboard. In one place you can:
+
+1. **Add/Edit Drugs**: Create or edit drugs (name, code, dosage forms, prices). Save.
+2. **View Stock**: See current stock, reorder level, and expiry for each drug.
+3. **Manage Inventory**: Add inventory records for new drugs, restock, adjust stock, view movements.
+4. **Filters**: Use All, Low Stock, or Out of Stock to quickly find items that need attention.
 
 ---
 

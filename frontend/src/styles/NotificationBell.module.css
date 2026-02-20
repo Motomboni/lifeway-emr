@@ -35,11 +35,14 @@
 }
 
 .dropdown {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  width: 350px;
-  max-height: 500px;
+  position: fixed;
+  /* Center horizontally on screen - works on mobile and desktop */
+  left: 50%;
+  transform: translateX(-50%);
+  top: 64px; /* Below typical header */
+  width: min(350px, calc(100vw - 2rem));
+  max-width: 350px;
+  max-height: min(500px, calc(100vh - 5rem));
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 8px;

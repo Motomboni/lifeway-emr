@@ -23,7 +23,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: emr-app:latest
+    image: emr-app:1.1.0
     env_file: .env
     environment:
       DEBUG: "false"

@@ -85,6 +85,40 @@
   margin-top: 0.25rem;
 }
 
+.drugStockInfo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f0f0f0;
+  font-size: 0.85rem;
+}
+
+.stockAvailable {
+  color: #27ae60;
+  font-weight: 500;
+}
+
+.stockOutOfStock {
+  color: #e74c3c;
+  font-weight: 500;
+}
+
+.stockExpiry {
+  color: #7f8c8d;
+}
+
+.lowStockBadge {
+  background: #fff3cd;
+  color: #856404;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
 .noResults {
   position: absolute;
   top: 100%;

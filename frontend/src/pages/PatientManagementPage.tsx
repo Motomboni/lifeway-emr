@@ -4,7 +4,7 @@
  * For searching, viewing, and managing patient records.
  * Per EMR Rules: Receptionist can register/update, all roles can view.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchPatients, searchPatients, getPatient, updatePatient, archivePatient } from '../api/patient';
@@ -30,24 +30,23 @@ export default function PatientManagementPage() {
   const [editForm, setEditForm] = useState<Partial<PatientCreateData>>({});
   const [isArchiving, setIsArchiving] = useState(false);
 
-  useEffect(() => {
-    loadRecentPatients();
-  }, []);
-
-  const loadRecentPatients = async () => {
+  const loadRecentPatients = useCallback(async () => {
     try {
       setLoading(true);
       const allPatients = await fetchPatients();
-      // Patients are already limited to 20 by pagination, but we can slice if needed
       setPatients(allPatients);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load patients';
       showError(errorMessage);
-      setPatients([]); // Ensure patients array is empty on error
+      setPatients([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [showError]);
+
+  useEffect(() => {
+    loadRecentPatients();
+  }, [loadRecentPatients]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {

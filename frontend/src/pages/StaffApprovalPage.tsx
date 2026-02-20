@@ -5,7 +5,7 @@
  * - Approve staff registrations before they can log in
  * - Deactivate staff (Superuser only)
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchPendingStaff, approveStaffUser, fetchAllStaff, deactivateStaffUser } from '../api/auth';
@@ -42,19 +42,7 @@ export default function StaffApprovalPage() {
   const isAdmin = user?.is_superuser === true || user?.role === 'ADMIN';
   const isSuperuser = user?.is_superuser === true;
 
-  useEffect(() => {
-    if (!isAdmin) {
-      showError('Access denied. Only administrators can manage staff.');
-      navigate('/dashboard');
-      return;
-    }
-    loadPendingStaff();
-    if (isSuperuser) {
-      loadAllStaff();
-    }
-  }, [isAdmin, isSuperuser, navigate, showError]);
-
-  const loadPendingStaff = async () => {
+  const loadPendingStaff = useCallback(async () => {
     try {
       setLoading(true);
       const staff = await fetchPendingStaff();
@@ -65,9 +53,9 @@ export default function StaffApprovalPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showError]);
 
-  const loadAllStaff = async () => {
+  const loadAllStaff = useCallback(async () => {
     try {
       const staff = await fetchAllStaff();
       setAllStaff(staff);
@@ -75,7 +63,19 @@ export default function StaffApprovalPage() {
       const msg = err instanceof Error ? err.message : 'Failed to load staff';
       showError(msg);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!isAdmin) {
+      showError('Access denied. Only administrators can manage staff.');
+      navigate('/dashboard');
+      return;
+    }
+    loadPendingStaff();
+    if (isSuperuser) {
+      loadAllStaff();
+    }
+  }, [isAdmin, isSuperuser, navigate, showError, loadPendingStaff, loadAllStaff]);
 
   const handleApprove = async (staffUser: User) => {
     try {

@@ -1,12 +1,28 @@
 /**
  * DrugSearchInput Component
- * 
+ *
  * Autocomplete/search input for selecting drugs from the catalog.
  * Used in prescription creation to search and select drugs.
+ * Shows stock and expiry to help doctors make informed prescribing decisions.
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchDrugs, Drug } from '../../api/drug';
 import styles from '../../styles/DrugSearchInput.module.css';
+
+/** Format expiry date for display */
+function formatExpiryDate(isoDate: string | null | undefined): string {
+  if (!isoDate) return '—';
+  try {
+    const d = new Date(isoDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    d.setHours(0, 0, 0, 0);
+    if (d < today) return `Expired ${d.toLocaleDateString()}`;
+    return d.toLocaleDateString();
+  } catch {
+    return '—';
+  }
+}
 
 interface DrugSearchInputProps {
   value: string;
@@ -190,6 +206,19 @@ export default function DrugSearchInput({
                   Dosages: {drug.common_dosages}
                 </div>
               )}
+              <div className={styles.drugStockInfo}>
+                <span className={drug.is_out_of_stock ? styles.stockOutOfStock : styles.stockAvailable}>
+                  Stock: {drug.current_stock != null
+                    ? (drug.is_out_of_stock ? 'Out of stock' : `${drug.current_stock} ${drug.drug_unit || 'units'}`)
+                    : 'No inventory'}
+                </span>
+                <span className={styles.stockExpiry}>
+                  Expiry: {formatExpiryDate(drug.drug_expiry_date ?? undefined)}
+                </span>
+                {drug.is_low_stock && !drug.is_out_of_stock && (
+                  <span className={styles.lowStockBadge}>Low stock</span>
+                )}
+              </div>
             </div>
           ))}
         </div>

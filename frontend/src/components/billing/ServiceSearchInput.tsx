@@ -4,7 +4,7 @@
  * Autocomplete/search input for selecting services from the service catalog.
  * Used in billing to search and add services to bills.
  */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { searchServices, Service } from '../../api/billing';
 import { formatCurrency } from '../../utils/currency';
 import { useAuth } from '../../contexts/AuthContext';
@@ -88,7 +88,7 @@ export default function ServiceSearchInput({
   };
   
   // Check if user can order a service based on allowed_roles
-  const canOrderService = (service: Service): boolean => {
+  const canOrderService = useCallback((service: Service): boolean => {
     if (!service.allowed_roles || service.allowed_roles.length === 0) {
       // If no allowed_roles specified, allow all authenticated users
       return true;
@@ -113,7 +113,7 @@ export default function ServiceSearchInput({
     
     // For other roles, check if user's role is in the allowed_roles list
     return service.allowed_roles.includes(userRole);
-  };
+  }, [user?.role]);
   
   // Check if service is actually orderable by user (for visual indicators)
   const isServiceOrderable = (service: Service): boolean => {
@@ -182,7 +182,7 @@ export default function ServiceSearchInput({
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [searchQuery, department, user]);
+  }, [searchQuery, department, user, canOrderService]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -303,7 +303,6 @@ export default function ServiceSearchInput({
           className={styles.suggestionsList}
         >
           {suggestions.map((service, index) => {
-            const canOrder = canOrderService(service);
             const isOrderable = isServiceOrderable(service);
             return (
               <div

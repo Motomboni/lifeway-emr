@@ -30,8 +30,7 @@ import LabOrdersPage from './pages/LabOrdersPage';
 import RadiologyOrdersPage from './pages/RadiologyOrdersPage';
 import RadiologyUploadStatusPage from './pages/RadiologyUploadStatusPage';
 import PrescriptionsPage from './pages/PrescriptionsPage';
-import DrugsPage from './pages/DrugsPage';
-import InventoryPage from './pages/InventoryPage';
+import DrugCatalogInventoryPage from './pages/DrugCatalogInventoryPage';
 import LabTestCatalogPage from './pages/LabTestCatalogPage';
 import RadiologyStudyTypesPage from './pages/RadiologyStudyTypesPage';
 import PaymentProcessingPage from './pages/PaymentProcessingPage';
@@ -276,22 +275,22 @@ function AppRoutes() {
         }
       />
 
-      {/* Drugs Management - Pharmacist only */}
+      {/* Drug Catalog & Inventory - Pharmacist only (merged) */}
       <Route
         path="/drugs"
         element={
           <ProtectedRoute requiredRole="PHARMACIST">
-            <DrugsPage />
+            <DrugCatalogInventoryPage />
           </ProtectedRoute>
         }
       />
 
-      {/* Inventory Management - Pharmacist only */}
+      {/* Redirect /inventory to /drugs for backward compatibility */}
       <Route
         path="/inventory"
         element={
           <ProtectedRoute requiredRole="PHARMACIST">
-            <InventoryPage />
+            <DrugCatalogInventoryPage />
           </ProtectedRoute>
         }
       />

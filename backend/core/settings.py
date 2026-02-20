@@ -414,8 +414,8 @@ CORS_ALLOW_HEADERS = [
 
 # Clinic Information for Invoices and Receipts
 CLINIC_NAME = os.environ.get('CLINIC_NAME', 'Lifeway Medical Centre Ltd')
-CLINIC_ADDRESS = os.environ.get('CLINIC_ADDRESS', 'Apo Resettlement, Abuja')
-CLINIC_PHONE = os.environ.get('CLINIC_PHONE', '+234-XXX-XXXX')
+CLINIC_ADDRESS = os.environ.get('CLINIC_ADDRESS', 'Plot 1593, ZONE E, APO RESETTLEMENT, ABUJA')
+CLINIC_PHONE = os.environ.get('CLINIC_PHONE', '07058893439, 08033145080, 08033114417')
 CLINIC_EMAIL = os.environ.get('CLINIC_EMAIL', 'info@clinic.com')
 
 # Clinic Logo Path (absolute or relative to BASE_DIR)

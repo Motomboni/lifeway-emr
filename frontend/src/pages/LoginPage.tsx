@@ -16,7 +16,7 @@ interface LoginPageProps {
 }
 
 export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
-  const { login, user } = useAuth();
+  const { login } = useAuth();
   const { showError } = useToast();
   const navigate = useNavigate();
   

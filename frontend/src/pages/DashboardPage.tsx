@@ -375,7 +375,7 @@ export default function DashboardPage() {
                   <h3>New Visit</h3>
                   <p>Create a new patient visit</p>
                 </div>
-                {(user?.is_superuser || user?.role === 'ADMIN') && (
+                {user?.is_superuser && (
                   <div 
                     className={styles.actionCard}
                     onClick={() => navigate('/staff-approval')}
@@ -758,15 +758,8 @@ export default function DashboardPage() {
                   className={styles.actionCard}
                   onClick={() => navigate('/drugs')}
                 >
-                  <h3>Drug Catalog</h3>
-                  <p>Manage drugs and medications</p>
-                </div>
-                <div 
-                  className={styles.actionCard}
-                  onClick={() => navigate('/inventory')}
-                >
-                  <h3>Inventory Management</h3>
-                  <p>Track stock levels and manage inventory</p>
+                  <h3>Drug Catalog & Inventory</h3>
+                  <p>Manage drugs and stock levels in one place</p>
                 </div>
               </div>
             </div>
