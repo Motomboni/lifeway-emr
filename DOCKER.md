@@ -94,7 +94,21 @@ See `.env.prod.example`. Required for production:
 
 For HTTPS, run a reverse proxy (e.g. Traefik, Caddy, or nginx) on the host and proxy to `frontend:80`. Set `X-Forwarded-Proto` and `X-Forwarded-For` so Django and CORS behave correctly. Alternatively, add an nginx service in front that terminates TLS and proxies to the `frontend` service.
 
+## Preserving the database when deploying
+
+When you pull new code and redeploy, the database is **not overwritten** if you follow these rules:
+
+1. **Never use `docker compose down -v`** – The `-v` flag removes volumes, which deletes all PostgreSQL data. Use `docker compose down` (without `-v`) to stop containers while keeping the `postgres_data` volume.
+2. **`.env` is not in git** – Your production `.env` (with `DB_PASSWORD`, `DB_HOST`, etc.) stays on the server. Pulling code does not replace it.
+3. **Migrations add schema changes, they don't wipe data** – On startup, the app runs `migrate`, which adds new tables/columns; it does not truncate or overwrite existing data.
+4. **Recommended deploy sequence** (standalone stack):
+   ```bash
+   git pull
+   docker compose -f docker-compose.standalone.yml build --no-cache   # rebuild app image
+   docker compose -f docker-compose.standalone.yml up -d             # restart; volumes preserved
+   ```
+
 ## Development vs production
 
 - **Development**: use the existing `docker-compose.yml` (e.g. `runserver`, hot reload).  
-- **Production**: use `docker-compose.prod.yml` (Gunicorn, built React, no code mounts).
+- **Production**: use `docker-compose.prod.yml` or `docker-compose.standalone.yml` (Gunicorn, built React, no code mounts).

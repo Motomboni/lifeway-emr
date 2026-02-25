@@ -158,24 +158,19 @@ def notify_portal_account_created(
         result['notifications_sent'].append(email_data)
         result['email_prepared'] = True
     
-    # SMS notification (prepared but not sent)
+    # SMS notification
     if send_sms and phone_number:
+        sms_sent = _send_sms(phone_number, messages['sms_body'])
         sms_data = {
             'type': 'sms',
             'to': phone_number,
             'body': messages['sms_body'],
-            'status': 'prepared'
+            'status': 'sent' if sms_sent else 'failed'
         }
-        
-        # TODO: Integrate with real SMS service (Twilio, AWS SNS, etc.)
-        # Example: send_sms_via_service(sms_data)
-        
         logger.info(
-            f"Portal account SMS prepared for {patient.get_full_name()} "
+            f"Portal account SMS {'sent' if sms_sent else 'failed'} for {patient.get_full_name()} "
             f"(Patient ID: {patient.id}, Phone: {phone_number})"
         )
-        logger.debug(f"SMS body: {messages['sms_body']}")
-        
         result['notifications_sent'].append(sms_data)
         result['sms_prepared'] = True
     
@@ -402,43 +397,24 @@ def _send_email(to: str, subject: str, body: str) -> bool:
         return False
 
 
-# Helper function to integrate with SMS service (future)
+# Helper function to integrate with SMS service
 def _send_sms(to: str, body: str) -> bool:
     """
-    Send SMS using configured SMS service.
-    
-    This is a placeholder for real SMS integration.
-    
-    Integration options:
-    - Twilio: client.messages.create()
-    - AWS SNS: boto3.client('sns').publish()
-    - Africa's Talking: africastalking.SMS.send()
-    - Nexmo/Vonage: nexmo.Client().send_message()
-    
+    Send SMS using the configured SMS service (Termii, Twilio, or console).
+
     Returns:
         True if sent successfully, False otherwise
     """
     try:
-        # TODO: Replace with actual SMS service
-        # Example using Twilio:
-        """
-        from twilio.rest import Client
-        
-        client = Client(
-            settings.TWILIO_ACCOUNT_SID,
-            settings.TWILIO_AUTH_TOKEN
+        from apps.notifications.sms_utils import send_sms_notification
+
+        notification = send_sms_notification(
+            phone_number=to,
+            message=body,
+            notification_type='PORTAL_NOTIFICATION',
         )
-        
-        message = client.messages.create(
-            body=body,
-            from_=settings.TWILIO_PHONE_NUMBER,
-            to=to
-        )
-        """
-        
-        logger.info(f"[SMS PREPARED] To: {to}, Body length: {len(body)} chars")
-        return True
-        
+        return notification.status == 'SENT'
+
     except Exception as e:
         logger.error(f"Failed to send SMS to {to}: {str(e)}")
         return False

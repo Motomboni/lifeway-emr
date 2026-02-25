@@ -118,57 +118,44 @@ Best regards,
 
 def send_sms_otp(phone: str, otp_code: str) -> bool:
     """
-    Send OTP via SMS.
-    
-    This is a stub function. Integrate with real SMS service:
-    - Twilio
-    - Africa's Talking
-    - AWS SNS
-    - Vonage/Nexmo
-    
+    Send OTP via SMS using the configured SMS provider (Termii, Twilio, or console).
+
     Args:
-        phone: Recipient phone (+234 format)
+        phone: Recipient phone (+234 or local format)
         otp_code: 6-digit OTP
-    
+
     Returns:
         True if sent successfully, False otherwise
     """
     from django.conf import settings
-    
+
     clinic_name = getattr(settings, 'CLINIC_NAME', 'Our Clinic')
-    
+
     # Normalize phone
     normalized_phone = normalize_nigerian_phone(phone)
     if not normalized_phone:
         logger.error(f"Invalid phone number format: {phone}")
         return False
-    
+
     message = f"Your {clinic_name} login code is: {otp_code}\n\nValid for 5 minutes."
-    
+
     try:
-        # TODO: Integrate with real SMS service
-        """
-        from twilio.rest import Client
-        
-        client = Client(
-            settings.TWILIO_ACCOUNT_SID,
-            settings.TWILIO_AUTH_TOKEN
+        from apps.notifications.sms_utils import send_sms_notification
+
+        notification = send_sms_notification(
+            phone_number=normalized_phone,
+            message=message,
+            notification_type='OTP',
         )
-        
-        client.messages.create(
-            body=message,
-            from_=settings.TWILIO_PHONE_NUMBER,
-            to=normalized_phone
-        )
-        """
-        
-        logger.info(f"[SMS OTP] Sent to {normalized_phone}: {otp_code}")
-        
-        if settings.DEBUG:
+        ok = notification.status == 'SENT'
+
+        if settings.DEBUG and ok:
             logger.info(f"[DEV] SMS OTP for {normalized_phone}: {otp_code}")
-        
-        return True
-        
+        elif settings.DEBUG and not ok:
+            logger.info(f"[DEV] SMS disabled/cancelled, OTP for {normalized_phone}: {otp_code}")
+
+        return ok
+
     except Exception as e:
         logger.error(f"Failed to send SMS OTP to {normalized_phone}: {e}")
         return False

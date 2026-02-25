@@ -338,7 +338,11 @@ class StockMovementSerializer(serializers.ModelSerializer):
     """
     inventory_drug_name = serializers.CharField(source='inventory.drug.name', read_only=True)
     created_by_name = serializers.SerializerMethodField()
-    prescription_id = serializers.IntegerField(source='prescription.id', read_only=True)
+    prescription_id = serializers.SerializerMethodField()
+
+    def get_prescription_id(self, obj):
+        """Return prescription ID or None when prescription is null."""
+        return obj.prescription_id if obj.prescription_id else None
     
     class Meta:
         model = StockMovement

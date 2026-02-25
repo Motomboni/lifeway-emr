@@ -383,12 +383,18 @@ SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 # SMS Configuration
 SMS_ENABLED = os.environ.get('SMS_ENABLED', 'False') == 'True'
-SMS_PROVIDER = os.environ.get('SMS_PROVIDER', 'console')  # 'console' for development, 'twilio' for production
+SMS_PROVIDER = os.environ.get('SMS_PROVIDER', 'console')  # 'console' | 'twilio' | 'termii'
 
 # Twilio Configuration (if using Twilio)
 TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
 TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
 TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '')
+
+# Termii Configuration (if using Termii - Nigeria-focused SMS)
+# Base URL is per-account; find yours at https://accounts.termii.com
+TERMII_API_KEY = os.environ.get('TERMII_API_KEY', '')
+TERMII_SENDER_ID = os.environ.get('TERMII_SENDER_ID', '')  # Alphanumeric 3-11 chars (e.g. ClinicName)
+TERMII_BASE_URL = os.environ.get('TERMII_BASE_URL', 'https://api.termii.com')
 
 # Twilio Video Configuration (for Telemedicine)
 TWILIO_API_KEY = os.environ.get('TWILIO_API_KEY', '')

@@ -176,6 +176,7 @@ export default function DrugCatalogInventoryPage() {
     } catch (error) {
       console.error('Error loading movements:', error);
       showError('Failed to load stock movements');
+      setMovements([]);
     } finally {
       setLoadingMovements(false);
     }
@@ -240,13 +241,26 @@ export default function DrugCatalogInventoryPage() {
     }
     try {
       setIsSaving(true);
-      await createInventory(inventoryFormData);
+      const payload = { ...inventoryFormData };
+      if (payload.expiry_date === '' || payload.expiry_date == null) {
+        delete payload.expiry_date;
+      } else if (payload.expiry_date) {
+        payload.expiry_date = payload.expiry_date.split('T')[0];
+      }
+      await createInventory(payload);
       showSuccess('Inventory record created successfully');
       resetInventoryForm();
       setShowInventoryForm(false);
       await loadInventory();
-    } catch (error) {
-      showError(error instanceof Error ? error.message : 'Failed to create inventory');
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Failed to create inventory';
+      const data = (error as { responseData?: { drug?: string[] } })?.responseData;
+      if (data && Array.isArray(data.drug) && data.drug[0]?.includes('already exists')) {
+        showError('This drug already has an inventory record. Refresh the page or edit the existing record.');
+        await loadInventory();
+        return;
+      }
+      showError(msg);
     } finally {
       setIsSaving(false);
     }
@@ -256,7 +270,14 @@ export default function DrugCatalogInventoryPage() {
     if (!editingInventory) return;
     try {
       setIsSaving(true);
-      await updateInventory(editingInventory.id, inventoryFormData as DrugInventoryUpdateData);
+      const payload = { ...inventoryFormData } as DrugInventoryUpdateData;
+      delete (payload as Record<string, unknown>).drug;
+      if (payload.expiry_date === '' || payload.expiry_date == null) {
+        (payload as Record<string, unknown>).expiry_date = null;
+      } else if (payload.expiry_date) {
+        payload.expiry_date = payload.expiry_date.split('T')[0];
+      }
+      await updateInventory(editingInventory.id, payload);
       showSuccess('Inventory updated successfully');
       resetInventoryForm();
       setEditingInventory(null);
@@ -633,7 +654,9 @@ export default function DrugCatalogInventoryPage() {
                 disabled={!!editingInventory}
               >
                 <option value={0}>Select drug...</option>
-                {drugs.filter((d) => d.is_active).map((d) => (
+                {drugs
+                  .filter((d) => d.is_active && !inventoryByDrugId[d.id])
+                  .map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.name} {d.drug_code ? `(${d.drug_code})` : ''}
                   </option>
@@ -799,7 +822,16 @@ export default function DrugCatalogInventoryPage() {
                       )}
                       {inv ? (
                         <>
-                          <button className={styles.btnMovements} onClick={() => { setSelectedInventory(inv); setShowMovements(true); loadMovements(inv.id); }}>
+                          <button
+                            className={styles.btnMovements}
+                            onClick={() => {
+                              setSelectedInventory(inv);
+                              setShowMovements(true);
+                              setMovements([]);
+                              setLoadingMovements(true);
+                              loadMovements(inv.id);
+                            }}
+                          >
                             Movements
                           </button>
                           <button className={styles.btnRestock} onClick={() => { setSelectedInventory(inv); setShowRestockModal(true); setRestockData({ quantity: 0, reference_number: '', notes: '' }); }}>
@@ -839,14 +871,19 @@ export default function DrugCatalogInventoryPage() {
         >
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h2>Stock Movements – {selectedInventory.drug_name}</h2>
+              <h2>
+                Stock Movements – {selectedInventory.drug_name || drugs.find((d) => d.id === selectedInventory.drug)?.name || 'Unknown'}
+              </h2>
               <button className={styles.closeBtn} onClick={() => { setShowMovements(false); setSelectedInventory(null); setMovements([]); }}>×</button>
             </div>
-            <div className={styles.modalBody}>
+            <div className={styles.modalBody} style={{ minHeight: 120 }}>
               {loadingMovements ? (
                 <LoadingSkeleton count={3} />
               ) : movements.length === 0 ? (
-                <p>No movements</p>
+                <div className={styles.emptyState} style={{ padding: '2rem 0' }}>
+                  <p>No stock movements recorded yet.</p>
+                  <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>Restock or adjust stock to create movements.</p>
+                </div>
               ) : (
                 movements.map((m) => (
                   <div key={m.id} className={styles.movementCard}>

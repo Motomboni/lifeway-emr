@@ -64,6 +64,8 @@ def send_sms_notification(
         
         if sms_provider == 'twilio':
             _send_via_twilio(phone_number, message, notification)
+        elif sms_provider == 'termii':
+            _send_via_termii(phone_number, message, notification)
         elif sms_provider == 'console':
             # Console backend for development
             logger.info(f"[SMS] To: {phone_number}, Message: {message}")
@@ -125,6 +127,55 @@ def _send_via_twilio(phone_number, message, notification):
         raise ImportError("twilio package not installed. Install with: pip install twilio")
     except Exception as e:
         raise Exception(f"Twilio SMS error: {e}")
+
+
+def _send_via_termii(phone_number, message, notification):
+    """
+    Send SMS via Termii (Nigeria-focused provider).
+    Uses DND channel for transactional messages (OTPs, reminders, etc.).
+
+    Requires:
+    - TERMII_API_KEY in settings
+    - TERMII_SENDER_ID in settings (alphanumeric, 3-11 chars)
+    - TERMII_BASE_URL in settings (per-account, default api.termii.com)
+    """
+    import requests
+    from django.utils import timezone
+
+    api_key = getattr(settings, 'TERMII_API_KEY', None)
+    sender_id = getattr(settings, 'TERMII_SENDER_ID', None)
+    base_url = getattr(settings, 'TERMII_BASE_URL', 'https://api.termii.com').rstrip('/')
+
+    if not api_key or not sender_id:
+        raise ValueError("Termii credentials not configured (TERMII_API_KEY, TERMII_SENDER_ID)")
+
+    # Termii expects 2348012345678 format (no +)
+    to_number = phone_number.lstrip('+').replace(' ', '')
+
+    url = f"{base_url}/api/sms/send"
+    payload = {
+        'api_key': api_key,
+        'to': to_number,
+        'from': sender_id,
+        'sms': message,
+        'type': 'plain',
+        'channel': 'dnd',  # Transactional - bypasses DND, no time restrictions
+    }
+
+    response = requests.post(url, json=payload, timeout=30)
+    try:
+        data = response.json() if response.text else {}
+    except Exception:
+        data = {}
+
+    if response.ok and data.get('code') == 'ok':
+        notification.status = 'SENT'
+        notification.sent_at = timezone.now()
+        notification.save(update_fields=['status', 'sent_at'])
+        logger.info(f"SMS sent via Termii: {data.get('message_id', '')}")
+    else:
+        error_msg = data.get('message', data.get('error', response.text)) or str(response.status_code)
+        raise Exception(f"Termii SMS error: {error_msg}")
 
 
 def send_appointment_reminder_sms(appointment):
