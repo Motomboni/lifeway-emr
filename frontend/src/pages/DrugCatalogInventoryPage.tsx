@@ -53,9 +53,10 @@ export default function DrugCatalogInventoryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('all');
 
-  // Drug form
-  const [showDrugForm, setShowDrugForm] = useState(false);
+  // Unified Drug + Inventory form
+  const [showForm, setShowForm] = useState(false);
   const [editingDrug, setEditingDrug] = useState<Drug | null>(null);
+  const [editingInventory, setEditingInventory] = useState<DrugInventory | null>(null);
   const [drugFormData, setDrugFormData] = useState<DrugCreateData>({
     name: '',
     generic_name: '',
@@ -68,10 +69,6 @@ export default function DrugCatalogInventoryPage() {
     description: '',
     is_active: true,
   });
-
-  // Inventory form
-  const [showInventoryForm, setShowInventoryForm] = useState(false);
-  const [editingInventory, setEditingInventory] = useState<DrugInventory | null>(null);
   const [inventoryFormData, setInventoryFormData] = useState<DrugInventoryCreateData>({
     drug: 0,
     current_stock: 0,
@@ -182,41 +179,96 @@ export default function DrugCatalogInventoryPage() {
     }
   };
 
-  const handleCreateDrug = async () => {
+  const handleSubmitForm = async () => {
     if (!drugFormData.name.trim()) {
       showError('Drug name is required');
       return;
     }
-    try {
-      setIsSaving(true);
-      await createDrug(drugFormData);
-      showSuccess('Drug created successfully');
-      resetDrugForm();
-      setShowDrugForm(false);
-      await loadDrugs();
-    } catch (error) {
-      showError(error instanceof Error ? error.message : 'Failed to create drug');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleUpdateDrug = async () => {
-    if (!editingDrug) return;
-    if (!drugFormData.name.trim()) {
-      showError('Drug name is required');
+    if (inventoryFormData.current_stock < 0 || inventoryFormData.reorder_level < 0) {
+      showError('Stock and reorder level must be 0 or greater');
       return;
     }
     try {
       setIsSaving(true);
-      await updateDrug(editingDrug.id, drugFormData as DrugUpdateData);
-      showSuccess('Drug updated successfully');
-      resetDrugForm();
-      setEditingDrug(null);
-      setShowDrugForm(false);
+      if (!editingDrug) {
+        // Create: drug + inventory in one step
+        const newDrug = await createDrug(drugFormData);
+        const payload: DrugInventoryCreateData = {
+          drug: newDrug.id,
+          current_stock: inventoryFormData.current_stock,
+          unit: inventoryFormData.unit,
+          reorder_level: inventoryFormData.reorder_level,
+          batch_number: inventoryFormData.batch_number || '',
+          location: inventoryFormData.location || '',
+          ...(inventoryFormData.expiry_date && {
+            expiry_date: inventoryFormData.expiry_date.split('T')[0],
+          }),
+        };
+        await createInventory(payload);
+        showSuccess('Drug and inventory created successfully');
+      } else if (editingInventory) {
+        // Edit: update drug + update inventory
+        await updateDrug(editingDrug.id, drugFormData as DrugUpdateData);
+        const payload = { ...inventoryFormData } as DrugInventoryUpdateData;
+        delete (payload as Record<string, unknown>).drug;
+        if (payload.expiry_date === '' || payload.expiry_date == null) {
+          (payload as Record<string, unknown>).expiry_date = null;
+        } else if (payload.expiry_date) {
+          payload.expiry_date = payload.expiry_date.split('T')[0];
+        }
+        await updateInventory(editingInventory.id, payload);
+        showSuccess('Drug and inventory updated successfully');
+      } else {
+        // Add inventory to existing drug
+        const payload = {
+          drug: editingDrug.id,
+          current_stock: inventoryFormData.current_stock,
+          unit: inventoryFormData.unit,
+          reorder_level: inventoryFormData.reorder_level,
+          batch_number: inventoryFormData.batch_number || '',
+          location: inventoryFormData.location || '',
+        };
+        if (inventoryFormData.expiry_date) {
+          (payload as Record<string, unknown>).expiry_date = inventoryFormData.expiry_date.split('T')[0];
+        }
+        await createInventory(payload);
+        showSuccess('Inventory added successfully');
+      }
+      resetForm();
+      setShowForm(false);
       await loadDrugs();
-    } catch (error) {
-      showError(error instanceof Error ? error.message : 'Failed to update drug');
+      await loadInventory();
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Failed to save';
+      const data = (error as { responseData?: { drug?: string[] } })?.responseData;
+      if (data && Array.isArray(data.drug) && data.drug[0]?.includes('already exists')) {
+        try {
+          const existingResp = await fetchInventory({ drug: editingDrug?.id ?? inventoryFormData.drug });
+          const existingList = Array.isArray(existingResp)
+            ? existingResp
+            : (existingResp as PaginatedInventoryResponse)?.results || [];
+          const existing = existingList[0];
+          if (existing && editingDrug) {
+            setEditingInventory(existing);
+            setInventoryFormData({
+              drug: existing.drug,
+              current_stock: existing.current_stock,
+              unit: existing.unit,
+              reorder_level: existing.reorder_level,
+              batch_number: existing.batch_number || '',
+              expiry_date: existing.expiry_date ? existing.expiry_date.split('T')[0] : '',
+              location: existing.location || '',
+            });
+            showSuccess('Editing existing inventory. Update below and save.');
+          } else {
+            showError(msg);
+          }
+        } catch {
+          showError(msg);
+        }
+      } else {
+        showError(msg);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -231,62 +283,6 @@ export default function DrugCatalogInventoryPage() {
       await loadInventory();
     } catch (error) {
       showError(error instanceof Error ? error.message : 'Failed to deactivate drug');
-    }
-  };
-
-  const handleCreateInventory = async () => {
-    if (!inventoryFormData.drug || inventoryFormData.current_stock < 0 || inventoryFormData.reorder_level < 0) {
-      showError('Please fill in all required fields with valid values');
-      return;
-    }
-    try {
-      setIsSaving(true);
-      const payload = { ...inventoryFormData };
-      if (payload.expiry_date === '' || payload.expiry_date == null) {
-        delete payload.expiry_date;
-      } else if (payload.expiry_date) {
-        payload.expiry_date = payload.expiry_date.split('T')[0];
-      }
-      await createInventory(payload);
-      showSuccess('Inventory record created successfully');
-      resetInventoryForm();
-      setShowInventoryForm(false);
-      await loadInventory();
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Failed to create inventory';
-      const data = (error as { responseData?: { drug?: string[] } })?.responseData;
-      if (data && Array.isArray(data.drug) && data.drug[0]?.includes('already exists')) {
-        showError('This drug already has an inventory record. Refresh the page or edit the existing record.');
-        await loadInventory();
-        return;
-      }
-      showError(msg);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleUpdateInventory = async () => {
-    if (!editingInventory) return;
-    try {
-      setIsSaving(true);
-      const payload = { ...inventoryFormData } as DrugInventoryUpdateData;
-      delete (payload as Record<string, unknown>).drug;
-      if (payload.expiry_date === '' || payload.expiry_date == null) {
-        (payload as Record<string, unknown>).expiry_date = null;
-      } else if (payload.expiry_date) {
-        payload.expiry_date = payload.expiry_date.split('T')[0];
-      }
-      await updateInventory(editingInventory.id, payload);
-      showSuccess('Inventory updated successfully');
-      resetInventoryForm();
-      setEditingInventory(null);
-      setShowInventoryForm(false);
-      await loadInventory();
-    } catch (error) {
-      showError(error instanceof Error ? error.message : 'Failed to update inventory');
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -341,52 +337,90 @@ export default function DrugCatalogInventoryPage() {
     }
   };
 
-  const handleEditDrug = (drug: Drug) => {
-    setEditingDrug(drug);
-    setDrugFormData({
-      name: drug.name,
-      generic_name: drug.generic_name || '',
-      drug_code: drug.drug_code || '',
-      drug_class: drug.drug_class || '',
-      dosage_forms: drug.dosage_forms || '',
-      common_dosages: drug.common_dosages || '',
-      cost_price: drug.cost_price,
-      sales_price: drug.sales_price,
-      description: drug.description || '',
-      is_active: drug.is_active,
-    });
-    setShowDrugForm(true);
+  const openForm = {
+    create: () => {
+      setEditingDrug(null);
+      setEditingInventory(null);
+      setDrugFormData({
+        name: '',
+        generic_name: '',
+        drug_code: '',
+        drug_class: '',
+        dosage_forms: '',
+        common_dosages: '',
+        cost_price: undefined,
+        sales_price: undefined,
+        description: '',
+        is_active: true,
+      });
+      setInventoryFormData({
+        drug: 0,
+        current_stock: 0,
+        unit: 'units',
+        reorder_level: 0,
+        batch_number: '',
+        expiry_date: '',
+        location: '',
+      });
+      setShowForm(true);
+    },
+    edit: (drug: Drug, inv: DrugInventory | null) => {
+      setEditingDrug(drug);
+      setEditingInventory(inv);
+      setDrugFormData({
+        name: drug.name,
+        generic_name: drug.generic_name || '',
+        drug_code: drug.drug_code || '',
+        drug_class: drug.drug_class || '',
+        dosage_forms: drug.dosage_forms || '',
+        common_dosages: drug.common_dosages || '',
+        cost_price: drug.cost_price,
+        sales_price: drug.sales_price,
+        description: drug.description || '',
+        is_active: drug.is_active,
+      });
+      setInventoryFormData({
+        drug: drug.id,
+        current_stock: inv?.current_stock ?? 0,
+        unit: inv?.unit ?? 'units',
+        reorder_level: inv?.reorder_level ?? 0,
+        batch_number: inv?.batch_number ?? '',
+        expiry_date: inv?.expiry_date ? inv.expiry_date.split('T')[0] : '',
+        location: inv?.location ?? '',
+      });
+      setShowForm(true);
+    },
+    addInventory: (drug: Drug) => {
+      setEditingDrug(drug);
+      setEditingInventory(null);
+      setDrugFormData({
+        name: drug.name,
+        generic_name: drug.generic_name || '',
+        drug_code: drug.drug_code || '',
+        drug_class: drug.drug_class || '',
+        dosage_forms: drug.dosage_forms || '',
+        common_dosages: drug.common_dosages || '',
+        cost_price: drug.cost_price,
+        sales_price: drug.sales_price,
+        description: drug.description || '',
+        is_active: drug.is_active,
+      });
+      setInventoryFormData({
+        drug: drug.id,
+        current_stock: 0,
+        unit: 'units',
+        reorder_level: 0,
+        batch_number: '',
+        expiry_date: '',
+        location: '',
+      });
+      setShowForm(true);
+    },
   };
 
-  const handleEditInventory = (inv: DrugInventory) => {
-    setEditingInventory(inv);
-    setInventoryFormData({
-      drug: inv.drug,
-      current_stock: inv.current_stock,
-      unit: inv.unit,
-      reorder_level: inv.reorder_level,
-      batch_number: inv.batch_number || '',
-      expiry_date: inv.expiry_date ? inv.expiry_date.split('T')[0] : '',
-      location: inv.location || '',
-    });
-    setShowInventoryForm(true);
-  };
-
-  const handleAddInventory = (drug: Drug) => {
+  const resetForm = () => {
+    setEditingDrug(null);
     setEditingInventory(null);
-    setInventoryFormData({
-      drug: drug.id,
-      current_stock: 0,
-      unit: 'units',
-      reorder_level: 0,
-      batch_number: '',
-      expiry_date: '',
-      location: '',
-    });
-    setShowInventoryForm(true);
-  };
-
-  const resetDrugForm = () => {
     setDrugFormData({
       name: '',
       generic_name: '',
@@ -399,10 +433,6 @@ export default function DrugCatalogInventoryPage() {
       description: '',
       is_active: true,
     });
-    setEditingDrug(null);
-  };
-
-  const resetInventoryForm = () => {
     setInventoryFormData({
       drug: 0,
       current_stock: 0,
@@ -412,7 +442,6 @@ export default function DrugCatalogInventoryPage() {
       expiry_date: '',
       location: '',
     });
-    setEditingInventory(null);
   };
 
   const formatDateTime = (s: string) =>
@@ -462,18 +491,16 @@ export default function DrugCatalogInventoryPage() {
         <h1>Drug Catalog & Inventory</h1>
         <p>Manage drugs and stock levels in one place</p>
         <div className={styles.headerActions}>
-          {!showDrugForm && !showInventoryForm && (
-            <>
-              <button className={styles.addDrugButton} onClick={() => { resetDrugForm(); setShowDrugForm(true); }}>
-                + Add Drug
-              </button>
-            </>
+          {!showForm && (
+            <button className={styles.addDrugButton} onClick={() => openForm.create()}>
+              + Add Drug
+            </button>
           )}
         </div>
       </header>
 
       {/* Filters */}
-      {!showDrugForm && !showInventoryForm && (
+      {!showForm && (
         <div className={styles.filters}>
           <div className={styles.viewModeButtons}>
             <button
@@ -508,11 +535,23 @@ export default function DrugCatalogInventoryPage() {
         </div>
       )}
 
-      {/* Drug form */}
-      {showDrugForm && (
+      {/* Unified Drug + Inventory form */}
+      {showForm && (
         <div className={styles.formCard}>
-          <h2>{editingDrug ? 'Edit Drug' : 'Create New Drug'}</h2>
+          <h2>
+            {!editingDrug ? 'Add Drug & Inventory' : editingInventory ? 'Edit Drug & Inventory' : 'Add Inventory to Drug'}
+          </h2>
           <div className={styles.form}>
+            {editingDrug && !editingInventory ? (
+              <div style={{ padding: '1rem', background: '#f8f9fa', borderRadius: 8, marginBottom: '1rem' }}>
+                <strong>Drug:</strong> {editingDrug.name}
+                {editingDrug.drug_code && ` (${editingDrug.drug_code})`}
+                <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: '#6c757d' }}>
+                  Enter stock details below.
+                </p>
+              </div>
+            ) : (
+            <>
             <div className={styles.formGroup}>
               <label>Drug Name *</label>
               <input
@@ -615,12 +654,81 @@ export default function DrugCatalogInventoryPage() {
                 rows={3}
               />
             </div>
+            </>
+            )}
+            <div style={{ marginTop: '1.5rem', padding: '1.25rem', background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: 8 }}>
+              <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: '#2c3e50' }}>Stock & Inventory</h3>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Current Stock *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={inventoryFormData.current_stock}
+                    onChange={(e) =>
+                      setInventoryFormData({ ...inventoryFormData, current_stock: parseFloat(e.target.value) || 0 })
+                    }
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Unit *</label>
+                  <input
+                    type="text"
+                    value={inventoryFormData.unit}
+                    onChange={(e) => setInventoryFormData({ ...inventoryFormData, unit: e.target.value })}
+                    placeholder="tablets, units..."
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Reorder Level *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={inventoryFormData.reorder_level}
+                    onChange={(e) =>
+                      setInventoryFormData({ ...inventoryFormData, reorder_level: parseFloat(e.target.value) || 0 })
+                    }
+                  />
+                  <small>Alert when stock falls below this</small>
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Batch Number</label>
+                  <input
+                    type="text"
+                    value={inventoryFormData.batch_number}
+                    onChange={(e) => setInventoryFormData({ ...inventoryFormData, batch_number: e.target.value })}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Expiry Date</label>
+                  <input
+                    type="date"
+                    value={inventoryFormData.expiry_date}
+                    onChange={(e) => setInventoryFormData({ ...inventoryFormData, expiry_date: e.target.value })}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Location</label>
+                  <input
+                    type="text"
+                    value={inventoryFormData.location}
+                    onChange={(e) => setInventoryFormData({ ...inventoryFormData, location: e.target.value })}
+                    placeholder="Shelf A1..."
+                  />
+                </div>
+              </div>
+            </div>
             <div className={styles.formGroup}>
               <label>
                 <input
                   type="checkbox"
                   checked={drugFormData.is_active}
                   onChange={(e) => setDrugFormData({ ...drugFormData, is_active: e.target.checked })}
+                  disabled={!!editingDrug && !editingInventory}
                 />
                 Active
               </label>
@@ -628,120 +736,13 @@ export default function DrugCatalogInventoryPage() {
             <div className={styles.formActions}>
               <button
                 className={styles.saveBtn}
-                onClick={editingDrug ? handleUpdateDrug : handleCreateDrug}
+                onClick={handleSubmitForm}
                 disabled={isSaving || !drugFormData.name.trim()}
               >
-                {isSaving ? 'Saving...' : editingDrug ? 'Update' : 'Create'}
+                {isSaving ? 'Saving...' : !editingDrug ? 'Create' : editingInventory ? 'Update' : 'Add Inventory'}
               </button>
-              <button className={styles.cancelBtn} onClick={() => { resetDrugForm(); setShowDrugForm(false); }} disabled={isSaving}>
+              <button className={styles.cancelBtn} onClick={() => { resetForm(); setShowForm(false); }} disabled={isSaving}>
                 Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Inventory form */}
-      {showInventoryForm && (
-        <div className={styles.formCard}>
-          <h2>{editingInventory ? 'Edit Inventory' : 'Add Inventory Record'}</h2>
-          <div className={styles.form}>
-            <div className={styles.formGroup}>
-              <label>Drug *</label>
-              <select
-                value={inventoryFormData.drug}
-                onChange={(e) => setInventoryFormData({ ...inventoryFormData, drug: parseInt(e.target.value) })}
-                disabled={!!editingInventory}
-              >
-                <option value={0}>Select drug...</option>
-                {drugs
-                  .filter((d) => d.is_active && !inventoryByDrugId[d.id])
-                  .map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name} {d.drug_code ? `(${d.drug_code})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label>Current Stock *</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={inventoryFormData.current_stock}
-                  onChange={(e) =>
-                    setInventoryFormData({
-                      ...inventoryFormData,
-                      current_stock: parseFloat(e.target.value) || 0,
-                    })
-                  }
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Unit *</label>
-                <input
-                  type="text"
-                  value={inventoryFormData.unit}
-                  onChange={(e) => setInventoryFormData({ ...inventoryFormData, unit: e.target.value })}
-                  placeholder="tablets, bottles..."
-                />
-              </div>
-            </div>
-            <div className={styles.formGroup}>
-              <label>Reorder Level *</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={inventoryFormData.reorder_level}
-                onChange={(e) =>
-                  setInventoryFormData({
-                    ...inventoryFormData,
-                    reorder_level: parseFloat(e.target.value) || 0,
-                  })
-                }
-              />
-              <small>Alert when stock falls below this</small>
-            </div>
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label>Batch Number</label>
-                <input
-                  type="text"
-                  value={inventoryFormData.batch_number}
-                  onChange={(e) => setInventoryFormData({ ...inventoryFormData, batch_number: e.target.value })}
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Expiry Date</label>
-                <input
-                  type="date"
-                  value={inventoryFormData.expiry_date}
-                  onChange={(e) => setInventoryFormData({ ...inventoryFormData, expiry_date: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className={styles.formGroup}>
-              <label>Location</label>
-              <input
-                type="text"
-                value={inventoryFormData.location}
-                onChange={(e) => setInventoryFormData({ ...inventoryFormData, location: e.target.value })}
-                placeholder="Shelf A1..."
-              />
-            </div>
-            <div className={styles.formActions}>
-              <button className={styles.cancelBtn} onClick={() => { resetInventoryForm(); setShowInventoryForm(false); }} disabled={isSaving}>
-                Cancel
-              </button>
-              <button
-                className={styles.saveBtn}
-                onClick={editingInventory ? handleUpdateInventory : handleCreateInventory}
-                disabled={isSaving}
-              >
-                {isSaving ? 'Saving...' : editingInventory ? 'Update' : 'Create'}
               </button>
             </div>
           </div>
@@ -749,7 +750,7 @@ export default function DrugCatalogInventoryPage() {
       )}
 
       {/* Unified list */}
-      {!showDrugForm && !showInventoryForm && (
+      {!showForm && (
         <div className={styles.listSection}>
           <h2>Drugs ({displayedDrugs.length})</h2>
           {loading ? (
@@ -812,8 +813,8 @@ export default function DrugCatalogInventoryPage() {
                     </div>
 
                     <div className={styles.cardActions}>
-                      <button className={styles.btnEdit} onClick={() => handleEditDrug(drug)}>
-                        Edit Drug
+                      <button className={styles.btnEdit} onClick={() => openForm.edit(drug, inv)}>
+                        Edit
                       </button>
                       {drug.is_active && (
                         <button className={styles.btnDeactivate} onClick={() => handleDeleteDrug(drug.id)}>
@@ -840,16 +841,13 @@ export default function DrugCatalogInventoryPage() {
                           <button className={styles.btnAdjust} onClick={() => { setSelectedInventory(inv); setShowAdjustModal(true); setAdjustData({ quantity: 0, reason: '', notes: '' }); }}>
                             Adjust
                           </button>
-                          <button className={styles.btnEdit} onClick={() => handleEditInventory(inv)}>
-                            Edit Inventory
-                          </button>
                           <button className={styles.btnDelete} onClick={() => handleDeleteInventory(inv.id)}>
                             Delete Inv
                           </button>
                         </>
                       ) : (
                         drug.is_active && (
-                          <button className={styles.btnAddInv} onClick={() => handleAddInventory(drug)}>
+                          <button className={styles.btnAddInv} onClick={() => openForm.addInventory(drug)}>
                             + Add Inventory
                           </button>
                         )
