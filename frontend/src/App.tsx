@@ -285,15 +285,8 @@ function AppRoutes() {
         }
       />
 
-      {/* Redirect /inventory to /drugs for backward compatibility */}
-      <Route
-        path="/inventory"
-        element={
-          <ProtectedRoute requiredRole="PHARMACIST">
-            <DrugCatalogInventoryPage />
-          </ProtectedRoute>
-        }
-      />
+      {/* Redirect /inventory → /drugs (merged single page) */}
+      <Route path="/inventory" element={<Navigate to="/drugs" replace />} />
 
       {/* Lab Test Catalog - Doctor and Lab Tech */}
       <Route

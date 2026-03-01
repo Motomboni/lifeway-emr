@@ -535,12 +535,19 @@ export default function DrugCatalogInventoryPage() {
         </div>
       )}
 
-      {/* Unified Drug + Inventory form */}
+      {/* Unified Drug + Inventory form — one-step fill */}
       {showForm && (
         <div className={styles.formCard}>
           <h2>
             {!editingDrug ? 'Add Drug & Inventory' : editingInventory ? 'Edit Drug & Inventory' : 'Add Inventory to Drug'}
           </h2>
+          <p className={styles.formSubtitle}>
+            {!editingDrug
+              ? 'Fill in drug details and stock below — save once to add both.'
+              : editingInventory
+              ? 'Update any fields and save.'
+              : 'Fill in stock details and save.'}
+          </p>
           <div className={styles.form}>
             {editingDrug && !editingInventory ? (
               <div style={{ padding: '1rem', background: '#f8f9fa', borderRadius: 8, marginBottom: '1rem' }}>
@@ -656,8 +663,8 @@ export default function DrugCatalogInventoryPage() {
             </div>
             </>
             )}
-            <div style={{ marginTop: '1.5rem', padding: '1.25rem', background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: 8 }}>
-              <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: '#2c3e50' }}>Stock & Inventory</h3>
+            <div className={styles.inventorySection}>
+              <h3 className={styles.inventorySectionTitle}>Stock & Inventory</h3>
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label>Current Stock *</label>

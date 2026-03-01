@@ -120,6 +120,24 @@
   margin-bottom: 2rem;
 }
 
+.formSubtitle {
+  margin: -0.5rem 0 1.25rem 0;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.inventorySection {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.inventorySectionTitle {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: #2c3e50;
+}
+
 .formCard h2 {
   margin: 0 0 1.5rem 0;
   color: #2c3e50;
