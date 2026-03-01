@@ -1,0 +1,6 @@
+name,generic_name,drug_code,drug_class,dosage_forms,common_dosages,cost_price,sales_price,description,current_stock,unit,reorder_level
+Paracetamol,Acetaminophen,PARA-500,Analgesic,Tablet,500mg 1000mg,50.00,100.00,Pain and fever relief,500,tablets,50
+Amoxicillin,Amoxicillin,AMOX-250,Antibiotic,Capsule,250mg 500mg,80.00,150.00,Broad spectrum antibiotic,200,capsules,30
+Ibuprofen,Ibuprofen,IBU-400,NSAID,Tablet,400mg,60.00,120.00,Anti-inflammatory pain reliever,300,tablets,40
+Metformin,Metformin,MET-500,Antidiabetic,Tablet,500mg 850mg,30.00,80.00,Diabetes management,0,tablets,100
+Omeprazole,Omeprazole,OME-20,Antacid,Capsule,20mg,40.00,90.00,Acid reducer,150,capsules,25
