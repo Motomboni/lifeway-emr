@@ -10,6 +10,7 @@ import {
   updateServiceCatalog,
   deleteServiceCatalog,
   fetchServiceCatalogChoices,
+  importServiceCatalogFromExcel,
 } from '../api/serviceCatalog';
 import type {
   ServiceCatalogItem,
@@ -45,6 +46,11 @@ export default function ServiceCatalogPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [departmentFilter, setDepartmentFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importUpdate, setImportUpdate] = useState(true);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importResult, setImportResult] = useState<{ stats: { created: number; updated: number; skipped: number; errors: string[] } } | null>(null);
 
   const loadChoices = async () => {
     try {
@@ -147,6 +153,33 @@ export default function ServiceCatalogPage() {
     }
   };
 
+  const handleImport = async () => {
+    if (!importFile) {
+      showError('Please select an Excel file');
+      return;
+    }
+    try {
+      setImportLoading(true);
+      setImportResult(null);
+      const res = await importServiceCatalogFromExcel(importFile, { update: importUpdate });
+      setImportResult(res);
+      if (res.stats.errors.length === 0) {
+        showSuccess(res.message);
+        loadServices();
+      }
+    } catch (e) {
+      showError(e instanceof Error ? e.message : 'Import failed');
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const closeImportModal = () => {
+    setShowImportModal(false);
+    setImportFile(null);
+    setImportResult(null);
+  };
+
   const handleDelete = async (id: number, code: string) => {
     if (!window.confirm(`Delete service "${code}"? This cannot be undone.`)) return;
     try {
@@ -170,9 +203,14 @@ export default function ServiceCatalogPage() {
       <header className={styles.header}>
         <h1>Service Catalog</h1>
         {!showForm && (
-          <button type="button" className={styles.createButton} onClick={openAdd}>
-            + Add Service
-          </button>
+          <div className={styles.headerActions}>
+            <button type="button" className={styles.importButton} onClick={() => setShowImportModal(true)}>
+              Import from Excel/CSV
+            </button>
+            <button type="button" className={styles.createButton} onClick={openAdd}>
+              + Add Service
+            </button>
+          </div>
         )}
       </header>
 
@@ -391,6 +429,69 @@ export default function ServiceCatalogPage() {
           >
             Next
           </button>
+        </div>
+      )}
+
+      {showImportModal && (
+        <div className={styles.modalOverlay} onClick={closeImportModal}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h2>Import Service Catalog</h2>
+            <p className={styles.importHint}>
+              Upload an Excel (.xlsx, .xls) or CSV file to add or merge services. Required columns: Department, Service
+              Code, Service Name, Amount. Use &quot;Merge existing&quot; to update services that already exist.
+            </p>
+            <div className={styles.formGroup}>
+              <label>Excel or CSV file</label>
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+              />
+              {importFile && <span className={styles.fileName}>{importFile.name}</span>}
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  checked={importUpdate}
+                  onChange={(e) => setImportUpdate(e.target.checked)}
+                />
+                Merge existing — update services that already exist (by service code)
+              </label>
+            </div>
+            {importResult && (
+              <div className={styles.importResult}>
+                <strong>Result:</strong> Created {importResult.stats.created}, Updated {importResult.stats.updated},
+                Skipped {importResult.stats.skipped}
+                {importResult.stats.errors.length > 0 && (
+                  <details className={styles.importErrors}>
+                    <summary>Errors ({importResult.stats.errors.length})</summary>
+                    <ul>
+                      {importResult.stats.errors.slice(0, 10).map((err, i) => (
+                        <li key={i}>{err}</li>
+                      ))}
+                      {importResult.stats.errors.length > 10 && (
+                        <li>... and {importResult.stats.errors.length - 10} more</li>
+                      )}
+                    </ul>
+                  </details>
+                )}
+              </div>
+            )}
+            <div className={styles.formActions}>
+              <button
+                type="button"
+                className={styles.saveButton}
+                onClick={handleImport}
+                disabled={importLoading || !importFile}
+              >
+                {importLoading ? 'Importing...' : 'Import'}
+              </button>
+              <button type="button" className={styles.cancelButton} onClick={closeImportModal}>
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -34,6 +34,86 @@
   background: var(--primary-hover, #2980b9);
 }
 
+.headerActions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.importButton {
+  padding: 0.75rem 1.5rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.importButton:hover {
+  background: var(--bg-hover);
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalContent h2 {
+  margin: 0 0 1rem 0;
+  color: var(--text-primary);
+}
+
+.importHint {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 0 0 1.25rem 0;
+  line-height: 1.4;
+}
+
+.fileName {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 0.35rem;
+}
+
+.importResult {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.importErrors {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.importErrors ul {
+  margin: 0.35rem 0 0 1rem;
+  padding: 0;
+}
+
 .formContainer {
   background: var(--card-bg);
   border: 1px solid var(--border);

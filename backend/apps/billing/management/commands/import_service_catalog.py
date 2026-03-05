@@ -5,6 +5,7 @@ Usage:
     python manage.py import_service_catalog /path/to/services.csv
     python manage.py import_service_catalog /path/to/services.xlsx
     python manage.py import_service_catalog /path/to/services.json
+    python manage.py import_service_catalog services.xlsx --update   # Merge/update existing
 
 Supported Formats:
     - CSV: Comma-separated values
@@ -31,11 +32,9 @@ Optional Columns/Fields:
 import csv
 import json
 import os
-from decimal import Decimal, InvalidOperation
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
-from django.core.exceptions import ValidationError
-from apps.billing.service_catalog_models import ServiceCatalog
+
+from apps.billing.service_catalog_import import import_services
 
 try:
     import pandas as pd
@@ -46,24 +45,7 @@ except ImportError:
 
 class Command(BaseCommand):
     help = 'Import services into ServiceCatalog from CSV, Excel, or JSON file'
-    
-    # Field mappings (case-insensitive)
-    FIELD_MAPPINGS = {
-        'department': ['department', 'dept'],
-        'service_code': ['service code', 'service_code', 'code'],
-        'name': ['service name', 'name', 'service_name'],
-        'amount': ['amount', 'price', 'cost'],
-        'description': ['description', 'desc'],
-        'category': ['category', 'cat'],
-        'workflow_type': ['workflow type', 'workflow_type', 'workflow'],
-        'requires_visit': ['requires visit', 'requires_visit', 'needs visit'],
-        'requires_consultation': ['requires consultation', 'requires_consultation', 'needs consultation'],
-        'auto_bill': ['auto bill', 'auto_bill', 'auto bill'],
-        'bill_timing': ['bill timing', 'bill_timing', 'billing timing'],
-        'allowed_roles': ['allowed roles', 'allowed_roles', 'roles'],
-        'is_active': ['is active', 'is_active', 'active'],
-    }
-    
+
     def add_arguments(self, parser):
         parser.add_argument(
             'file_path',
@@ -113,8 +95,8 @@ class Command(BaseCommand):
         if dry_run:
             self.stdout.write(self.style.WARNING("DRY RUN MODE - No changes will be saved"))
         
-        # Process and import data
-        stats = self._import_services(data, dry_run, update_existing)
+        # Process and import data (shared logic with web API)
+        stats = import_services(data, update_existing=update_existing, dry_run=dry_run)
         
         # Print summary
         self._print_summary(stats, dry_run)
@@ -176,257 +158,7 @@ class Command(BaseCommand):
                 return list(reader)
         except Exception as e:
             raise CommandError(f"Error reading CSV file: {str(e)}")
-    
-    def _normalize_field_name(self, field_name):
-        """Normalize field name to match our mappings."""
-        if not field_name:
-            return None
-        field_name = str(field_name).strip().lower()
-        
-        # Check direct match first
-        if field_name in self.FIELD_MAPPINGS:
-            return field_name
-        
-        # Check if it matches any of the aliases
-        for key, aliases in self.FIELD_MAPPINGS.items():
-            if field_name in aliases:
-                return key
-        
-        return None
-    
-    def _parse_boolean(self, value, default=None):
-        """Parse boolean value from various formats."""
-        if value is None or value == '':
-            return default
-        
-        if isinstance(value, bool):
-            return value
-        
-        value_str = str(value).strip().lower()
-        if value_str in ['true', '1', 'yes', 'y', 't']:
-            return True
-        elif value_str in ['false', '0', 'no', 'n', 'f']:
-            return False
-        
-        return default
-    
-    def _parse_allowed_roles(self, value):
-        """Parse allowed roles from comma-separated string or list."""
-        if not value:
-            return []
-        
-        if isinstance(value, list):
-            return [str(r).strip().upper() for r in value]
-        
-        # Comma-separated string
-        roles = [r.strip().upper() for r in str(value).split(',')]
-        return [r for r in roles if r]
-    
-    def _import_services(self, data, dry_run, update_existing):
-        """Import services from data list."""
-        stats = {
-            'total': len(data),
-            'created': 0,
-            'updated': 0,
-            'skipped': 0,
-            'errors': []
-        }
-        
-        with transaction.atomic():
-            for index, row in enumerate(data, start=1):
-                try:
-                    # Normalize field names
-                    normalized_row = {}
-                    for key, value in row.items():
-                        normalized_key = self._normalize_field_name(key)
-                        if normalized_key:
-                            normalized_row[normalized_key] = value
-                    
-                    # Extract and validate required fields
-                    department = normalized_row.get('department', '').strip().upper()
-                    service_code = normalized_row.get('service_code', '').strip()
-                    name = normalized_row.get('name', '').strip()
-                    amount_str = normalized_row.get('amount', '0')
-                    category = normalized_row.get('category', '').strip().upper()
-                    workflow_type = normalized_row.get('workflow_type', '').strip().upper()
-                    allowed_roles_str = normalized_row.get('allowed_roles', '')
-                    
-                    # Validate required fields
-                    if not department:
-                        stats['errors'].append(f"Row {index}: Missing 'department'")
-                        stats['skipped'] += 1
-                        continue
-                    
-                    if not service_code:
-                        stats['errors'].append(f"Row {index}: Missing 'service_code'")
-                        stats['skipped'] += 1
-                        continue
-                    
-                    if not name:
-                        stats['errors'].append(f"Row {index}: Missing 'name'")
-                        stats['skipped'] += 1
-                        continue
-                    
-                    # Parse amount
-                    try:
-                        amount = Decimal(str(amount_str))
-                        if amount <= 0:
-                            stats['errors'].append(f"Row {index}: Amount must be greater than zero")
-                            stats['skipped'] += 1
-                            continue
-                    except (InvalidOperation, ValueError):
-                        stats['errors'].append(f"Row {index}: Invalid amount '{amount_str}'")
-                        stats['skipped'] += 1
-                        continue
-                    
-                    # Parse optional fields with defaults
-                    description = normalized_row.get('description', '').strip()
-                    requires_visit = self._parse_boolean(normalized_row.get('requires_visit'), default=True)
-                    requires_consultation = self._parse_boolean(normalized_row.get('requires_consultation'), default=False)
-                    auto_bill = self._parse_boolean(normalized_row.get('auto_bill'), default=True)
-                    bill_timing = normalized_row.get('bill_timing', 'AFTER').strip().upper()
-                    is_active = self._parse_boolean(normalized_row.get('is_active'), default=True)
-                    allowed_roles = self._parse_allowed_roles(allowed_roles_str)
-                    
-                    # Validate department
-                    valid_departments = [choice[0] for choice in ServiceCatalog.DEPARTMENT_CHOICES]
-                    if department not in valid_departments:
-                        stats['errors'].append(
-                            f"Row {index}: Invalid department '{department}'. "
-                            f"Must be one of: {', '.join(valid_departments)}"
-                        )
-                        stats['skipped'] += 1
-                        continue
-                    
-                    # Validate category
-                    if not category:
-                        # Try to infer from department
-                        category_map = {
-                            'CONSULTATION': 'CONSULTATION',
-                            'LAB': 'LAB',
-                            'PHARMACY': 'DRUG',
-                            'RADIOLOGY': 'RADIOLOGY',
-                            'PROCEDURE': 'PROCEDURE',
-                        }
-                        category = category_map.get(department, 'CONSULTATION')
-                    
-                    valid_categories = [choice[0] for choice in ServiceCatalog.CATEGORY_CHOICES]
-                    if category not in valid_categories:
-                        stats['errors'].append(
-                            f"Row {index}: Invalid category '{category}'. "
-                            f"Must be one of: {', '.join(valid_categories)}"
-                        )
-                        stats['skipped'] += 1
-                        continue
-                    
-                    # Validate workflow_type
-                    if not workflow_type:
-                        # Try to infer from department
-                        workflow_map = {
-                            'CONSULTATION': 'GOPD_CONSULT',
-                            'LAB': 'LAB_ORDER',
-                            'PHARMACY': 'DRUG_DISPENSE',
-                            'RADIOLOGY': 'RADIOLOGY_STUDY',
-                            'PROCEDURE': 'PROCEDURE',
-                        }
-                        workflow_type = workflow_map.get(department, 'OTHER')
-                    
-                    valid_workflows = [choice[0] for choice in ServiceCatalog.WORKFLOW_TYPE_CHOICES]
-                    if workflow_type not in valid_workflows:
-                        stats['errors'].append(
-                            f"Row {index}: Invalid workflow_type '{workflow_type}'. "
-                            f"Must be one of: {', '.join(valid_workflows)}"
-                        )
-                        stats['skipped'] += 1
-                        continue
-                    
-                    # Validate bill_timing
-                    if bill_timing not in ['BEFORE', 'AFTER']:
-                        bill_timing = 'AFTER'
-                    
-                    # Validate allowed_roles
-                    if not allowed_roles:
-                        # Default to DOCTOR if not specified
-                        allowed_roles = ['DOCTOR']
-                    
-                    valid_roles = ['ADMIN', 'DOCTOR', 'NURSE', 'LAB_TECH', 'RADIOLOGY_TECH', 
-                                  'PHARMACIST', 'RECEPTIONIST', 'PATIENT']
-                    invalid_roles = [r for r in allowed_roles if r not in valid_roles]
-                    if invalid_roles:
-                        stats['errors'].append(
-                            f"Row {index}: Invalid roles: {', '.join(invalid_roles)}. "
-                            f"Valid roles: {', '.join(valid_roles)}"
-                        )
-                        stats['skipped'] += 1
-                        continue
-                    
-                    # Check if service already exists
-                    existing = ServiceCatalog.objects.filter(service_code=service_code).first()
-                    
-                    service_data = {
-                        'department': department,
-                        'service_code': service_code,
-                        'name': name,
-                        'amount': amount,
-                        'description': description,
-                        'category': category,
-                        'workflow_type': workflow_type,
-                        'requires_visit': requires_visit,
-                        'requires_consultation': requires_consultation,
-                        'auto_bill': auto_bill,
-                        'bill_timing': bill_timing,
-                        'allowed_roles': allowed_roles,
-                        'is_active': is_active,
-                    }
-                    
-                    if existing:
-                        if update_existing:
-                            if not dry_run:
-                                for key, value in service_data.items():
-                                    setattr(existing, key, value)
-                                try:
-                                    existing.full_clean()
-                                    existing.save()
-                                except ValidationError as e:
-                                    stats['errors'].append(f"Row {index}: Validation error: {str(e)}")
-                                    stats['skipped'] += 1
-                                    continue
-                            stats['updated'] += 1
-                            self.stdout.write(
-                                f"  Updated: {service_code} - {name} ({department})"
-                            )
-                        else:
-                            stats['skipped'] += 1
-                            self.stdout.write(
-                                self.style.WARNING(
-                                    f"  Skipped (exists): {service_code} - {name}"
-                                )
-                            )
-                    else:
-                        if not dry_run:
-                            try:
-                                ServiceCatalog.objects.create(**service_data)
-                            except ValidationError as e:
-                                stats['errors'].append(f"Row {index}: Validation error: {str(e)}")
-                                stats['skipped'] += 1
-                                continue
-                        stats['created'] += 1
-                        self.stdout.write(
-                            f"  Created: {service_code} - {name} - N{amount:,.2f} ({department})"
-                        )
-                
-                except Exception as e:
-                    stats['errors'].append(f"Row {index}: {str(e)}")
-                    stats['skipped'] += 1
-                    self.stdout.write(
-                        self.style.ERROR(f"  Error on row {index}: {str(e)}")
-                    )
-            
-            if dry_run:
-                transaction.set_rollback(True)
-        
-        return stats
-    
+
     def _print_summary(self, stats, dry_run):
         """Print import summary."""
         self.stdout.write("\n" + "=" * 60)

@@ -6,6 +6,7 @@ Endpoint pattern: /api/v1/billing/service-catalog/
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .service_catalog_views import ServiceCatalogViewSet
+from .service_catalog_import_views import ServiceCatalogImportView
 
 # Create router for service catalog viewset
 router = DefaultRouter()
@@ -16,6 +17,7 @@ router.register(
 )
 
 urlpatterns = [
+    path('service-catalog/import/', ServiceCatalogImportView.as_view(), name='service-catalog-import'),
     path('service-catalog/', include(router.urls)),
 ]
 

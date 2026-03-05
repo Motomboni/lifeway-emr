@@ -1,6 +1,19 @@
 # Service Catalog Import Guide
 
-This guide explains how to import services into the ServiceCatalog using the `import_service_catalog` management command.
+This guide explains how to import services into the ServiceCatalog. You can use either **web upload** (in the app) or the **management command** (CLI).
+
+## Option 1: Web Upload (Recommended)
+
+1. Log in as **Admin**
+2. Go to **Service Catalog** (/service-catalog)
+3. Click **Import from Excel/CSV**
+4. Select your Excel (.xlsx, .xls) or CSV (.csv) file
+5. Check **Merge existing** to update services that already exist (by service code)
+6. Click **Import**
+
+The import merges with your existing catalog: new services are created, existing ones (same service_code) are updated when "Merge existing" is checked.
+
+## Option 2: Management Command
 
 ## Supported File Formats
 
