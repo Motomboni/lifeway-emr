@@ -1,0 +1,43 @@
+Department,Service Code,Service Name,Amount,Workflow Type
+PROCEDURE,Dent-0001,3D panoramic radiograph,18000.00,PROCEDURE
+PROCEDURE,Dent-0002,currettage,10000.00,PROCEDURE
+PROCEDURE,Dent-0003,fissure sealant per tooth,5000.00,PROCEDURE
+PROCEDURE,Dent-0004,fluoridation whole mouth,20000.00,PROCEDURE
+PROCEDURE,Dent-0005,fluoride varnish,10000.00,PROCEDURE
+PROCEDURE,Dent-0006,desensitization,5000.00,PROCEDURE
+PROCEDURE,Dent-0007,3D panoramic radiograph,18000.00,PROCEDURE
+PROCEDURE,Dent-0008,currettage,10000.00,PROCEDURE
+PROCEDURE,Dent-0009,fissure sealant (per tooth),5000.00,PROCEDURE
+PROCEDURE,Dent-0010,fluoridation (whole mouth),20000.00,PROCEDURE
+PROCEDURE,Dent-0011,fluoride varnish,10000.00,PROCEDURE
+PROCEDURE,Dent-0012,desensitization,5000.00,PROCEDURE
+PROCEDURE,Dent-0013,Dry socket treatment (external extraction),10000.00,PROCEDURE
+PROCEDURE,Dent-0014,incision and drainage,15000.00,PROCEDURE
+PROCEDURE,Dent-0015,apicectomy (excluding the RCT),40000.00,PROCEDURE
+PROCEDURE,Dent-0016,frenectomy by consultant surgeon,75000.00,PROCEDURE
+PROCEDURE,Dent-0017,biopsies by consultant,30000.00,PROCEDURE
+PROCEDURE,Dent-0018,Inter maxillary mandibular fixation (IMF),100000.00,PROCEDURE
+PROCEDURE,Dent-0019,anaesthetic fee,20000.00,PROCEDURE
+PROCEDURE,Dent-0020,intravenous sedation,30000.00,PROCEDURE
+PROCEDURE,Dent-0021,dycal lining,1000.00,PROCEDURE
+PROCEDURE,Dent-0022,composite filling,15000.00,PROCEDURE
+PROCEDURE,Dent-0023,composite build up,25000.00,PROCEDURE
+PROCEDURE,Dent-0024,composite splinting,15000.00,PROCEDURE
+PROCEDURE,Dent-0025,cervical composite restoration,20000.00,PROCEDURE
+PROCEDURE,Dent-0026,GIC RESTORATION,35000.00,PROCEDURE
+PROCEDURE,Dent-0027,cuspal grinding,5000.00,PROCEDURE
+PROCEDURE,Dent-0028,Fail RCT appointment,10000.00,PROCEDURE
+PROCEDURE,Dent-0029,Home bleaching with tray,50000.00,PROCEDURE
+PROCEDURE,Dent-0030,Bleachbright home bleach,30000.00,PROCEDURE
+PROCEDURE,Dent-0031,Acrylic denture (single tooth),15000.00,PROCEDURE
+PROCEDURE,Dent-0032,additional tooth,7500.00,PROCEDURE
+PROCEDURE,Dent-0033,flexible dentures,35000.00,PROCEDURE
+PROCEDURE,Dent-0034,additional tooth for flexible,15000.00,PROCEDURE
+PROCEDURE,Dent-0035,Lab relining denture,8000.00,PROCEDURE
+PROCEDURE,Dent-0036,chairside lining and repair,5000.00,PROCEDURE
+PROCEDURE,Dent-0037,full denture lining,25000.00,PROCEDURE
+PROCEDURE,Dent-0038,full lower/upper denture,100000.00,PROCEDURE
+PROCEDURE,Dent-0039,immediate denture (single tooth),20000.00,PROCEDURE
+PROCEDURE,Dent-0040,additional immediate denture,7500.00,PROCEDURE
+PROCEDURE,Dent-0041,lower biteguard,2500.00,PROCEDURE
+PROCEDURE,Dent-0042,SCALING/POLISHING,25000.00,PROCEDURE
