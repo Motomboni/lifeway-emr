@@ -55,9 +55,9 @@ class ServiceCatalogImportView(APIView):
             content = uploaded_file.read()
             if name.endswith('.csv'):
                 try:
-                    df = pd.read_csv(BytesIO(content), encoding='utf-8')
+                    df = pd.read_csv(BytesIO(content), encoding='utf-8', sep=None, engine='python')
                 except UnicodeDecodeError:
-                    df = pd.read_csv(BytesIO(content), encoding='latin-1')
+                    df = pd.read_csv(BytesIO(content), encoding='latin-1', sep=None, engine='python')
             else:
                 df = pd.read_excel(BytesIO(content), sheet_name=sheet)
         except Exception as e:

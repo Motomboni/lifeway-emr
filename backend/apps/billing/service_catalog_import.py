@@ -9,10 +9,10 @@ from django.core.exceptions import ValidationError
 from .service_catalog_models import ServiceCatalog
 
 FIELD_MAPPINGS = {
-    'department': ['department', 'dept'],
-    'service_code': ['service code', 'service_code', 'code'],
-    'name': ['service name', 'name', 'service_name'],
-    'amount': ['amount', 'price', 'cost'],
+    'department': ['department', 'dept', 'department_name'],
+    'service_code': ['service code', 'service_code', 'servicecode', 'code', 'sku', 'item_code'],
+    'name': ['service name', 'name', 'service_name', 'servicename', 'item_name', 'itemname', 'product'],
+    'amount': ['amount', 'price', 'cost', 'selling_price', 'selling price', 'unit_price', 'unit price', 'fee'],
     'description': ['description', 'desc'],
     'category': ['category', 'cat'],
     'workflow_type': ['workflow type', 'workflow_type', 'workflow'],
@@ -65,6 +65,27 @@ def import_services(data: list, update_existing: bool = False, dry_run: bool = F
     Returns stats: {total, created, updated, skipped, errors}.
     """
     stats = {'total': len(data), 'created': 0, 'updated': 0, 'skipped': 0, 'errors': []}
+
+    # Upfront check: if first row lacks required fields, likely column/delimiter mismatch
+    if data:
+        first = data[0]
+        normalized_first = {}
+        for key, value in first.items():
+            nk = _normalize_field_name(key)
+            if nk:
+                normalized_first[nk] = value
+        has_dept = str(normalized_first.get('department') or '').strip()
+        has_code = str(normalized_first.get('service_code') or '').strip()
+        has_name = str(normalized_first.get('name') or '').strip()
+        has_amt = str(normalized_first.get('amount') or '').strip()
+        if not has_dept or not has_code or not has_name or not has_amt:
+            raw_cols = list(first.keys())[:15]
+            stats['errors'].append(
+                f"Column headers may not match. Required: Department, Service Code, Service Name, Amount. "
+                f"Your columns: {raw_cols}"
+            )
+            stats['skipped'] = len(data)
+            return stats  # Skip processing to avoid hundreds of duplicate errors
 
     with transaction.atomic():
         for index, row in enumerate(data, start=1):
@@ -149,6 +170,15 @@ def import_services(data: list, update_existing: bool = False, dry_run: bool = F
                         'PROCEDURE': 'PROCEDURE',
                     }
                     workflow_type = workflow_map.get(department, 'OTHER')
+                # Normalize common workflow_type variations
+                workflow_aliases = {
+                    'PROCEDURE ORDER': 'PROCEDURE',
+                    'LAB ORDER': 'LAB_ORDER',
+                    'DRUG DISPENSE': 'DRUG_DISPENSE',
+                    'RADIOLOGY STUDY': 'RADIOLOGY_STUDY',
+                    'GOPD CONSULT': 'GOPD_CONSULT',
+                }
+                workflow_type = workflow_aliases.get(workflow_type, workflow_type)
                 valid_wf = [c[0] for c in ServiceCatalog.WORKFLOW_TYPE_CHOICES]
                 if workflow_type not in valid_wf:
                     stats['errors'].append(
