@@ -2,8 +2,6 @@
 # Backend and frontend use same Dockerfiles as prod; backend runs runserver with mounted code.
 # Usage: docker compose up -d   (set SECRET_KEY and DB_PASSWORD in .env)
 
-version: '3.8'
-
 services:
   db:
     image: postgres:15-alpine
@@ -55,7 +53,7 @@ services:
       dockerfile: frontend/Dockerfile
     image: emr-frontend:latest
     ports:
-      - "80:80"
+      - "8080:80"
     depends_on:
       - backend
 
