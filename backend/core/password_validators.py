@@ -1,7 +1,7 @@
 """
-Clinic-grade password validators for EMR (HIPAA-aligned).
+Password validators for EMR.
 
-- Minimum length 12
+- Minimum length 8
 - Complexity: upper, lower, digit, special character
 """
 import re
@@ -10,9 +10,9 @@ from django.utils.translation import gettext as _
 
 
 class MinimumLengthValidator:
-    """Require at least min_length characters (default 12 for clinic-grade)."""
+    """Require at least min_length characters (default 8)."""
 
-    def __init__(self, min_length=12, **kwargs):
+    def __init__(self, min_length=8, **kwargs):
         self.min_length = min_length
 
     def validate(self, password, user=None):

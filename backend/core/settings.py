@@ -194,10 +194,10 @@ DATABASES = {
     }
 }
 
-# Password validation (clinic-grade: length 12, complexity)
+# Password validation (min 8 characters, complexity)
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'core.password_validators.MinimumLengthValidator', 'OPTIONS': {'min_length': 12}},
+    {'NAME': 'core.password_validators.MinimumLengthValidator', 'OPTIONS': {'min_length': 8}},
     {'NAME': 'core.password_validators.ComplexityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},

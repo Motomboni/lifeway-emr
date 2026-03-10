@@ -173,6 +173,9 @@ def import_services(data: list, update_existing: bool = False, dry_run: bool = F
                 # Normalize common workflow_type variations
                 workflow_aliases = {
                     'PROCEDURE ORDER': 'PROCEDURE',
+                    'DENTAL': 'PROCEDURE',
+                    'IVF ORDER': 'DRUG_DISPENSE',
+                    'CONSUMABLE ORDER': 'DRUG_DISPENSE',
                     'LAB ORDER': 'LAB_ORDER',
                     'DRUG DISPENSE': 'DRUG_DISPENSE',
                     'RADIOLOGY STUDY': 'RADIOLOGY_STUDY',

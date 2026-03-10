@@ -51,7 +51,7 @@ const ROLE_OPTIONS: RoleOption[] = [
   },
   {
     value: 'LAB_TECH',
-    label: 'Lab Technician',
+    label: 'Lab Scientist',
     description: 'Process lab orders and enter results',
     icon: '🧪',
   },
@@ -144,7 +144,7 @@ export default function RegisterPage() {
       if (emailFormatError) newErrors.email = emailFormatError;
     }
 
-    // Password validation (must match backend: 12+ chars, upper, lower, digit, special)
+    // Password validation (must match backend: 8+ chars, upper, lower, digit, special)
     const passwordError = validatePassword(formData.password);
     if (passwordError) newErrors.password = passwordError;
 
@@ -333,7 +333,7 @@ export default function RegisterPage() {
               />
               {errors.password && <span className={styles.errorText}>{errors.password}</span>}
               <span className={styles.helpText}>
-                At least 12 characters, with uppercase, lowercase, a number, and a special character (!@#$%^&* etc.)
+                At least 8 characters, with uppercase, lowercase, a number, and a special character (!@#$%^&* etc.)
               </span>
             </div>
 
