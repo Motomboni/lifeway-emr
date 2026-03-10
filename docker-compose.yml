@@ -53,7 +53,7 @@ services:
       dockerfile: frontend/Dockerfile
     image: emr-frontend:latest
     ports:
-      - "8080:80"
+      - "3000:80"
     depends_on:
       - backend
 
