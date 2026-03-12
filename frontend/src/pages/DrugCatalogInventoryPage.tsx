@@ -21,6 +21,7 @@ import {
   fetchOutOfStockInventory,
   createInventory,
   updateInventory,
+  partialUpdateInventory,
   deleteInventory,
   restockInventory,
   adjustInventory,
@@ -136,7 +137,10 @@ export default function DrugCatalogInventoryPage() {
   const inventoryByDrugId = React.useMemo(() => {
     const map: Record<number, DrugInventory> = {};
     inventoryList.forEach((inv) => {
-      map[inv.drug] = inv;
+      const drugId = typeof inv.drug === 'object' && inv.drug !== null
+        ? (inv.drug as { id: number }).id
+        : Number(inv.drug);
+      if (!Number.isNaN(drugId)) map[drugId] = inv;
     });
     return map;
   }, [inventoryList]);
@@ -207,16 +211,17 @@ export default function DrugCatalogInventoryPage() {
         await createInventory(payload);
         showSuccess('Drug and inventory created successfully');
       } else if (editingInventory) {
-        // Edit: update drug + update inventory
+        // Edit: update drug + update inventory (PATCH to avoid full PUT validation)
         await updateDrug(editingDrug.id, drugFormData as DrugUpdateData);
-        const payload = { ...inventoryFormData } as DrugInventoryUpdateData;
-        delete (payload as Record<string, unknown>).drug;
-        if (payload.expiry_date === '' || payload.expiry_date == null) {
-          (payload as Record<string, unknown>).expiry_date = null;
-        } else if (payload.expiry_date) {
-          payload.expiry_date = payload.expiry_date.split('T')[0];
+        const rawPayload = { ...inventoryFormData } as Record<string, unknown>;
+        delete rawPayload.drug;
+        if (rawPayload.expiry_date === '' || rawPayload.expiry_date == null) {
+          rawPayload.expiry_date = null;
+        } else if (typeof rawPayload.expiry_date === 'string') {
+          rawPayload.expiry_date = rawPayload.expiry_date.split('T')[0];
         }
-        await updateInventory(editingInventory.id, payload);
+        const payload = rawPayload as DrugInventoryUpdateData;
+        await partialUpdateInventory(editingInventory.id, payload);
         showSuccess('Drug and inventory updated successfully');
       } else {
         // Add inventory to existing drug
@@ -250,13 +255,16 @@ export default function DrugCatalogInventoryPage() {
           const existing = existingList[0];
           if (existing && editingDrug) {
             setEditingInventory(existing);
+            const drugId = typeof existing.drug === 'object' && existing.drug !== null
+              ? (existing.drug as { id: number }).id
+              : Number(existing.drug);
             setInventoryFormData({
-              drug: existing.drug,
+              drug: drugId,
               current_stock: existing.current_stock,
               unit: existing.unit,
               reorder_level: existing.reorder_level,
               batch_number: existing.batch_number || '',
-              expiry_date: existing.expiry_date ? existing.expiry_date.split('T')[0] : '',
+              expiry_date: existing.expiry_date ? String(existing.expiry_date).split('T')[0] : '',
               location: existing.location || '',
             });
             showSuccess('Editing existing inventory. Update below and save.');
@@ -742,13 +750,14 @@ export default function DrugCatalogInventoryPage() {
             </div>
             <div className={styles.formActions}>
               <button
+                type="button"
                 className={styles.saveBtn}
-                onClick={handleSubmitForm}
+                onClick={(e) => { e.preventDefault(); handleSubmitForm(); }}
                 disabled={isSaving || !drugFormData.name.trim()}
               >
                 {isSaving ? 'Saving...' : !editingDrug ? 'Create' : editingInventory ? 'Update' : 'Add Inventory'}
               </button>
-              <button className={styles.cancelBtn} onClick={() => { resetForm(); setShowForm(false); }} disabled={isSaving}>
+              <button type="button" className={styles.cancelBtn} onClick={() => { resetForm(); setShowForm(false); }} disabled={isSaving}>
                 Cancel
               </button>
             </div>
