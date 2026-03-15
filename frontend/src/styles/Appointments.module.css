@@ -2,6 +2,9 @@
   padding: 2rem;
   max-width: 1400px;
   margin: 0 auto;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  min-height: 100%;
 }
 
 .header {
@@ -13,7 +16,7 @@
 
 .header h1 {
   margin: 0;
-  color: #2c3e50;
+  color: var(--text-primary);
 }
 
 .createButton {
@@ -35,15 +38,16 @@
 .accessDenied {
   text-align: center;
   padding: 3rem;
-  color: #e74c3c;
+  color: var(--error);
 }
 
 .filtersSection {
   margin-bottom: 2rem;
   padding: 1.5rem;
-  background: white;
-  border: 1px solid #e0e0e0;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
+  color: var(--text-primary);
 }
 
 .viewModeButtons,
@@ -57,9 +61,10 @@
 .activeButton,
 .inactiveButton {
   padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background: white;
+  background: var(--input-bg);
+  color: var(--text-primary);
   cursor: pointer;
   font-size: 0.9rem;
   transition: all 0.2s;
@@ -72,7 +77,7 @@
 }
 
 .inactiveButton:hover {
-  background: #f8f9fa;
+  background: var(--bg-hover);
 }
 
 .searchBox {
@@ -84,9 +89,11 @@
 .searchBox input {
   flex: 1;
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 1rem;
+  background: var(--input-bg);
+  color: var(--text-primary);
 }
 
 .searchBox button {
@@ -104,16 +111,17 @@
 }
 
 .formContainer {
-  background: white;
-  border: 1px solid #e0e0e0;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 2rem;
   margin-bottom: 2rem;
+  color: var(--text-primary);
 }
 
 .formContainer h2 {
   margin: 0 0 1.5rem 0;
-  color: #2c3e50;
+  color: var(--text-primary);
 }
 
 .formGroup {
@@ -123,7 +131,7 @@
 .formGroup label {
   display: block;
   font-weight: 500;
-  color: #2c3e50;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
 
@@ -132,10 +140,12 @@
 .formGroup textarea {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 1rem;
   font-family: inherit;
+  background: var(--input-bg);
+  color: var(--text-primary);
 }
 
 .formGroup input:focus,
@@ -159,36 +169,36 @@
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
-  border: 1px solid #ddd;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
   max-height: 200px;
   overflow-y: auto;
   z-index: 1000;
   margin-top: 0.25rem;
+  color: var(--text-primary);
 }
 
 .searchResultsHeader {
   padding: 0.75rem;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e0e0e0;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--text-primary);
   font-size: 0.9rem;
 }
 
 .searchResultItem {
   padding: 0.75rem;
   cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-color);
   transition: background 0.2s;
-  color: #2c3e50;
+  color: var(--text-primary);
 }
 
 .searchResultItem:hover {
-  background: #f0f7ff;
-  color: #1a252f;
+  background: var(--bg-hover);
 }
 
 .searchResultItem:last-child {
@@ -196,20 +206,20 @@
 }
 
 .searchResultItem strong {
-  color: #2c3e50;
+  color: var(--text-primary);
   font-weight: 600;
   display: block;
   margin-bottom: 0.25rem;
 }
 
 .patientId {
-  color: #555;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   margin-left: 0.5rem;
 }
 
 .patientMeta {
-  color: #555;
+  color: var(--text-secondary);
   font-size: 0.85rem;
   margin-top: 0.25rem;
 }
@@ -217,16 +227,17 @@
 .selectedPatient {
   margin-top: 0.5rem;
   padding: 0.75rem;
-  background: #e3f2fd;
+  background: var(--bg-tertiary);
   border-radius: 6px;
+  border: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: #0c5460;
+  color: var(--text-primary);
 }
 
 .selectedPatient strong {
-  color: #0c5460;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -293,11 +304,12 @@
 }
 
 .appointmentCard {
-  background: white;
-  border: 1px solid #e0e0e0;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 1.5rem;
   transition: box-shadow 0.2s;
+  color: var(--text-primary);
 }
 
 .appointmentCard:hover {
@@ -313,12 +325,12 @@
 
 .appointmentHeader h3 {
   margin: 0 0 0.5rem 0;
-  color: #2c3e50;
+  color: var(--text-primary);
 }
 
 .appointmentDate {
   margin: 0;
-  color: #7f8c8d;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
@@ -365,13 +377,13 @@
 
 .appointmentDetails p {
   margin: 0.5rem 0;
-  color: #555;
+  color: var(--text-secondary);
 }
 
 .linkButton {
   background: none;
   border: none;
-  color: #3498db;
+  color: var(--primary);
   cursor: pointer;
   text-decoration: underline;
   padding: 0;
@@ -379,7 +391,7 @@
 }
 
 .linkButton:hover {
-  color: #2980b9;
+  color: var(--primary-hover);
 }
 
 .appointmentActions {
@@ -387,7 +399,7 @@
   gap: 0.5rem;
   flex-wrap: wrap;
   padding-top: 1rem;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--border-color);
 }
 
 .confirmButton,
@@ -432,7 +444,7 @@
 .emptyState {
   text-align: center;
   padding: 3rem;
-  color: #7f8c8d;
+  color: var(--text-secondary);
 }
 
 @media (max-width: 768px) {

@@ -13,8 +13,13 @@ if (typeof navigator !== 'undefined' && navigator.mediaDevices && typeof navigat
   navigator.mediaDevices.enumerateDevices = navigator.mediaDevices.enumerateDevices.bind(navigator.mediaDevices);
 }
 
-// Register PWA service worker: caches app shell for offline, API stays network-only.
-if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+// Register PWA service worker only in production (caches app shell for offline; API stays network-only).
+// In development the dev server can fail to serve sw.js reliably, causing "Failed to update a ServiceWorker" errors.
+if (
+  process.env.NODE_ENV === 'production' &&
+  typeof window !== 'undefined' &&
+  'serviceWorker' in navigator
+) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register(`${process.env.PUBLIC_URL || ''}/sw.js`, { scope: '/' })
       .then((reg) => {
