@@ -87,14 +87,6 @@ def is_registration_paid(visit: Visit) -> bool:
             if item.amount_paid >= item.amount:
                 return True
 
-    # Fallback: outstanding_balance <= 0 (payment collected but allocation incomplete)
-    try:
-        from .billing_service import BillingService
-        summary = BillingService.compute_billing_summary(visit)
-        if summary.outstanding_balance <= 0:
-            return True
-    except Exception:
-        pass
     return False
 
 
@@ -124,14 +116,6 @@ def is_consultation_paid(visit: Visit) -> bool:
             if item.amount_paid >= item.amount:
                 return True
 
-    # Fallback: outstanding_balance <= 0 (payment collected but allocation incomplete)
-    try:
-        from .billing_service import BillingService
-        summary = BillingService.compute_billing_summary(visit)
-        if summary.outstanding_balance <= 0:
-            return True
-    except Exception:
-        pass
     return False
 
 

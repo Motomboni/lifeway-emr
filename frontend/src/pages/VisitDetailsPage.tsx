@@ -120,13 +120,18 @@ export default function VisitDetailsPage() {
           setPayments(paymentsData.value as Payment[]);
         }
 
-        // Only fetch consultation when registration payment gate is cleared (avoids 403 from backend)
+        // Only fetch consultation when payment gates allow it (avoids expected 403 from backend)
         // CLOSED visits: allow read-only consultation load if we have it
         const registrationPaid = billingSummaryValue?.payment_gates?.registration_paid === true;
-        const canLoadClinicalData =
-          visitValue.status === 'CLOSED' ? true : registrationPaid;
+        const consultationPaid = billingSummaryValue?.payment_gates?.consultation_paid === true;
+        const paymentClearedForConsultation = ['PAID', 'SETTLED', 'CLEARED', 'INSURANCE_CLAIMED']
+          .includes(String(visitValue.payment_status || '').toUpperCase());
+        const canLoadConsultation =
+          visitValue.status === 'CLOSED'
+            ? true
+            : (registrationPaid && consultationPaid && paymentClearedForConsultation);
 
-        if (canLoadClinicalData) {
+        if (canLoadConsultation) {
           try {
             const data = await fetchConsultation(visitId);
             if (Array.isArray(data)) {
@@ -136,7 +141,12 @@ export default function VisitDetailsPage() {
             }
           } catch (err) {
             // 404 = no consultation yet; 403 = payment required (handled by UI)
-            if (err instanceof Error && !err.message.includes('404') && !err.message.includes('403')) {
+            if (
+              err instanceof Error &&
+              !err.message.includes('404') &&
+              !err.message.includes('403') &&
+              (err as any).status !== 403
+            ) {
               console.warn('Failed to load consultation:', err);
             }
           }
