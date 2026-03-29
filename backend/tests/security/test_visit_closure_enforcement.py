@@ -158,7 +158,7 @@ class TestVisitClosureImmutability:
         url = f"/api/v1/visits/{closed_visit_with_payment.id}/"
         
         response = client.patch(url, {
-            'payment_status': 'PENDING'
+            'payment_status': 'UNPAID'
         })
         
         assert response.status_code in [status.HTTP_403_FORBIDDEN, status.HTTP_409_CONFLICT]
@@ -171,7 +171,7 @@ class TestVisitClosureImmutability:
         url = f"/api/v1/visits/{closed_visit_with_payment.id}/"
         
         response = client.patch(url, {
-            'payment_status': 'PENDING'
+            'payment_status': 'UNPAID'
         })
         
         assert response.status_code in [status.HTTP_403_FORBIDDEN, status.HTTP_409_CONFLICT]

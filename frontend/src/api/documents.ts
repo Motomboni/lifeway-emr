@@ -10,6 +10,9 @@
 import { apiRequest } from '../utils/apiClient';
 import { MedicalDocument, MedicalDocumentCreate } from '../types/documents';
 
+/** Same base as apiClient — includes /api/v1 (do not append /api/v1 again). */
+const API_BASE_URL = process.env.REACT_APP_API_URL || '/api/v1';
+
 /**
  * Fetch documents for a visit
  */
@@ -32,7 +35,7 @@ export async function uploadDocument(
   }
   formData.append('file', data.file);
 
-  const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/v1/visits/${visitId}/documents/`, {
+  const response = await fetch(`${API_BASE_URL}/visits/${visitId}/documents/`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${localStorage.getItem('auth_tokens') ? JSON.parse(localStorage.getItem('auth_tokens')!).access : ''}`,
@@ -69,7 +72,7 @@ export async function downloadDocument(
 ): Promise<Blob> {
   const token = localStorage.getItem('auth_tokens') ? JSON.parse(localStorage.getItem('auth_tokens')!).access : '';
   
-  const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/v1/visits/${visitId}/documents/${documentId}/download/`, {
+  const response = await fetch(`${API_BASE_URL}/visits/${visitId}/documents/${documentId}/download/`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,

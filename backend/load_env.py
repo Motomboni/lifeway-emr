@@ -56,6 +56,6 @@ def load_env_file(env_file='.env'):
                 elif value.startswith("'") and value.endswith("'"):
                     value = value[1:-1]
                 
-                # Set environment variable if not already set
-                if key and value and key not in os.environ:
+                # Apply .env so file edits take effect (stale shell DB_* no longer wins over backend/.env).
+                if key:
                     os.environ[key] = value

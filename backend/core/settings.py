@@ -406,6 +406,9 @@ PAYSTACK_SECRET_KEY = os.environ.get('PAYSTACK_SECRET_KEY', '')
 PAYSTACK_PUBLIC_KEY = os.environ.get('PAYSTACK_PUBLIC_KEY', '')
 PAYSTACK_CALLBACK_URL = os.environ.get('PAYSTACK_CALLBACK_URL', 'http://localhost:3001/wallet/callback')
 
+# Public SPA origin for email links, telemedicine redirects, patient portal URLs (no /api path)
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',

@@ -2,8 +2,8 @@
 Payment Gates Service - Enforces pre-service payment rules.
 
 Strict payment rules:
-1. Registration must be paid before access to consultation.
-2. Consultation must be paid before doctor can start encounter.
+1. Registration must be paid before access to consultation and before the doctor can start the encounter.
+2. Consultation service fee may be collected during or after the encounter; it does not block starting documentation.
 3. All other services (Lab, Pharmacy, Radiology, etc.) are post-consultation;
    payment is collected by Reception only; doctors/lab/pharmacy can add charges but not collect payment.
 
@@ -128,7 +128,7 @@ def get_payment_gates_status(visit: Visit) -> dict:
         - registration_paid: bool
         - consultation_paid: bool
         - can_access_consultation: bool (registration_paid)
-        - can_doctor_start_encounter: bool (consultation_paid)
+        - can_doctor_start_encounter: bool (registration_paid; same as access — consultation fee is not a gate)
     """
     reg_paid = is_registration_paid(visit)
     cons_paid = is_consultation_paid(visit)
@@ -136,7 +136,7 @@ def get_payment_gates_status(visit: Visit) -> dict:
         'registration_paid': reg_paid,
         'consultation_paid': cons_paid,
         'can_access_consultation': reg_paid,
-        'can_doctor_start_encounter': cons_paid,
+        'can_doctor_start_encounter': reg_paid,
     }
 
 

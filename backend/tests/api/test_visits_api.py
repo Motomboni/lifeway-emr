@@ -40,7 +40,7 @@ class TestVisitListAPI:
         client = APIClient()
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {receptionist_token}")
         
-        response = client.get('/api/v1/visits/?payment_status=CLEARED')
+        response = client.get('/api/v1/visits/?payment_status=PAID')
         
         assert response.status_code == status.HTTP_200_OK
     
@@ -58,7 +58,7 @@ class TestVisitListAPI:
         for i in range(25):
             Visit.objects.create(
                 patient=patient,
-                payment_status='CLEARED'
+                payment_status='PAID'
             )
         
         response = client.get('/api/v1/visits/?page=1&page_size=10')
@@ -87,7 +87,7 @@ class TestVisitCreateAPI:
         
         data = {
             'patient': patient.id,
-            'payment_status': 'PENDING'
+            'payment_status': 'UNPAID'
         }
         
         response = client.post('/api/v1/visits/', data)
@@ -102,7 +102,7 @@ class TestVisitCreateAPI:
         
         data = {
             'patient': 99999,
-            'payment_status': 'PENDING'
+            'payment_status': 'UNPAID'
         }
         
         response = client.post('/api/v1/visits/', data)

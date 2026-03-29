@@ -46,6 +46,7 @@ import ReportsPage from './pages/ReportsPage';
 import BackupPage from './pages/BackupPage';
 import StaffApprovalPage from './pages/StaffApprovalPage';
 import ServiceCatalogPage from './pages/ServiceCatalogPage';
+import WardsBedsPage from './pages/WardsBedsPage';
 import TelemedicinePage from './pages/TelemedicinePage';
 import EndOfDayReconciliationPage from './pages/EndOfDayReconciliationPage';
 import RevenueLeakDashboardPage from './pages/RevenueLeakDashboardPage';
@@ -434,6 +435,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute requireAdmin>
             <ServiceCatalogPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Wards & beds (admission dropdowns) - Admin only */}
+      <Route
+        path="/wards-beds"
+        element={
+          <ProtectedRoute requireAdmin>
+            <WardsBedsPage />
           </ProtectedRoute>
         }
       />

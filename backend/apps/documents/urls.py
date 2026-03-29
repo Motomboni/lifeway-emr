@@ -6,7 +6,8 @@ from rest_framework.routers import DefaultRouter
 from .views import MedicalDocumentViewSet
 
 router = DefaultRouter()
-router.register(r'documents', MedicalDocumentViewSet, basename='medical-documents')
+# Prefix must be '' — parent URL already ends with /documents/ (see apps.visits.urls).
+router.register(r'', MedicalDocumentViewSet, basename='medical-documents')
 
 urlpatterns = [
     path('', include(router.urls)),

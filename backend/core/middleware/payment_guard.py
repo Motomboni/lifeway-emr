@@ -144,9 +144,8 @@ class PaymentClearedGuard:
                     # The view-level permissions will still enforce role-based access
                     return self.get_response(request)
                 
-                # Allow GET for /consultation/ when registration is paid (doctor can view consultation)
-                # Full payment clearance still required for create/update - enforced by view permissions
-                if '/consultation/' in path and request.method == 'GET':
+                # Allow /consultation/ when registration is paid (read and write; view enforces registration gate)
+                if '/consultation/' in path:
                     try:
                         from apps.billing.payment_gates_service import is_registration_paid
                         if is_registration_paid(visit):

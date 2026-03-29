@@ -89,7 +89,7 @@ def open_visit(db, patient, receptionist_user):
     return Visit.objects.create(
         patient=patient,
         status='OPEN',
-        payment_status='PENDING'
+        payment_status='UNPAID'
     )
 
 
@@ -174,7 +174,7 @@ class TestChargeCreationEnforcement:
         visit = Visit.objects.create(
             patient=patient,
             status='OPEN',
-            payment_status='CLEARED'
+            payment_status='PAID'
         )
         
         # Create consultation to allow closure (must be created by doctor)
@@ -221,9 +221,9 @@ class TestInsuranceVisitScopeEnforcement:
         assert insurance.visit_id == open_visit.id
     
     def test_insurance_cannot_bypass_payment_enforcement(self, receptionist_user, open_visit, hmo_provider, doctor_user):
-        """Insurance does not bypass payment enforcement - clinical actions still require payment_status == CLEARED."""
-        # Ensure visit payment_status is PENDING
-        open_visit.payment_status = 'PENDING'
+        """Visit payment_status UNPAID with no registration line paid: consultation creation still blocked."""
+        # Ensure visit payment_status is UNPAID
+        open_visit.payment_status = 'UNPAID'
         open_visit.save()
         
         # Create insurance with full coverage
@@ -245,21 +245,21 @@ class TestInsuranceVisitScopeEnforcement:
             description='Test charge'
         )
         
-        # Verify visit payment_status is still PENDING (insurance doesn't auto-clear)
+        # Verify visit payment_status is still UNPAID (insurance doesn't auto-clear)
         open_visit.refresh_from_db()
-        assert open_visit.payment_status == 'PENDING', "Insurance should not automatically clear payment_status"
+        assert open_visit.payment_status == 'UNPAID', "Insurance should not automatically clear payment_status"
         
-        # Verify is_payment_cleared() returns False when payment_status is PENDING
+        # Verify is_payment_cleared() returns False when payment_status is UNPAID
         # (This was fixed to check payment_status field first)
         assert not open_visit.is_payment_cleared(), \
-            "is_payment_cleared() should return False when payment_status is PENDING"
+            "is_payment_cleared() should return False when payment_status is UNPAID"
         
         # Compute billing summary for verification
         summary = BillingService.compute_billing_summary(open_visit)
         # BillingService may compute payment_status='CLEARED' due to insurance,
-        # but visit.payment_status field is still PENDING and is authoritative
+        # but visit.payment_status field is still UNPAID and is authoritative
         
-        # Try to create consultation (should fail - payment_status field is PENDING)
+        # Try to create consultation (should fail — registration gate not satisfied)
         client = APIClient()
         client.force_authenticate(user=doctor_user)
         
@@ -271,17 +271,14 @@ class TestInsuranceVisitScopeEnforcement:
             'clinical_notes': 'Test'
         })
         
-        # Should fail because visit.payment_status is PENDING
-        # Even if BillingService computes payment_status='CLEARED' due to insurance,
-        # the visit's payment_status field must be explicitly set to 'CLEARED'
         assert response.status_code in [status.HTTP_403_FORBIDDEN, status.HTTP_400_BAD_REQUEST], \
             f"Expected 403 or 400, got {response.status_code}. " \
-            f"Consultation was created despite visit.payment_status='PENDING'. " \
-            f"This indicates payment enforcement is not working correctly. " \
+            f"Consultation was created without registration payment. " \
             f"Response: {get_response_data(response)}"
         
         response_data = get_response_data(response)
-        assert 'payment' in str(response_data).lower() or 'cleared' in str(response_data).lower()
+        err = str(response_data).lower()
+        assert 'payment' in err or 'cleared' in err or 'registration' in err
     
     def test_insurance_computation_is_visit_scoped(self, receptionist_user, open_visit, hmo_provider):
         """Insurance coverage computation uses visit-scoped charges only."""
@@ -573,7 +570,7 @@ class TestVisitClosureBalanceEnforcement:
         )
         
         # Update visit payment status
-        open_visit.payment_status = 'CLEARED'
+        open_visit.payment_status = 'PAID'
         open_visit.save()
         
         # Create consultation
@@ -633,7 +630,7 @@ class TestVisitClosureBalanceEnforcement:
         assert summary.is_fully_covered_by_insurance is True
         
         # Clear payment status (insurance covers all)
-        open_visit.payment_status = 'CLEARED'
+        open_visit.payment_status = 'PAID'
         open_visit.save()
         
         # Create consultation

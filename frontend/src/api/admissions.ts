@@ -119,6 +119,17 @@ export const updateWard = async (wardId: number, data: Partial<Ward>): Promise<W
   });
 };
 
+export const patchWard = async (wardId: number, data: Partial<Ward>): Promise<Ward> => {
+  return apiRequest<Ward>(`/admissions/wards/${wardId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+};
+
+export const deleteWard = async (wardId: number): Promise<void> => {
+  await apiRequest<void>(`/admissions/wards/${wardId}/`, { method: 'DELETE' });
+};
+
 export const fetchWardBeds = async (wardId: number): Promise<Bed[]> => {
   return apiRequest<Bed[]>(`/admissions/wards/${wardId}/beds/`);
 };
@@ -158,6 +169,17 @@ export const updateBed = async (bedId: number, data: Partial<Bed>): Promise<Bed>
     method: 'PUT',
     body: JSON.stringify(data),
   });
+};
+
+export const patchBed = async (bedId: number, data: Partial<Bed>): Promise<Bed> => {
+  return apiRequest<Bed>(`/admissions/beds/${bedId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+};
+
+export const deleteBed = async (bedId: number): Promise<void> => {
+  await apiRequest<void>(`/admissions/beds/${bedId}/`, { method: 'DELETE' });
 };
 
 // Admission endpoints (visit-scoped)

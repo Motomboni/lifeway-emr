@@ -123,7 +123,18 @@ def order_downstream_service(
     # ❌ GOVERNANCE RULE: Validate Visit → Consultation chain
     # Per EMR Context Document v2: "No Consultation → No Lab / Radiology / Drug / Procedure Orders"
     # Exception: Registration services don't require consultation (administrative/billing services)
-    if service.requires_consultation and not is_registration_service(service):
+    # Also enforce chain for known clinical workflows even if catalog.requires_consultation was imported false.
+    _requires_consultation_chain = (
+        not is_registration_service(service)
+        and (
+            service.requires_consultation
+            or service.workflow_type in (
+                'LAB_ORDER', 'DRUG_DISPENSE', 'PROCEDURE', 'RADIOLOGY_STUDY',
+            )
+            or service.department == 'RADIOLOGY'
+        )
+    )
+    if _requires_consultation_chain:
         validate_visit_consultation_chain(
             visit=visit,
             consultation=consultation,
@@ -206,9 +217,9 @@ def _order_lab_service(
             f"LAB service '{service.service_code}' must have requires_visit=true."
         )
     
-    if not service.requires_consultation:
+    if consultation is None:
         raise ValidationError(
-            f"LAB service '{service.service_code}' must have requires_consultation=true."
+            f"LAB service '{service.service_code}' requires a consultation for this visit."
         )
     
     # Validate user is doctor
@@ -281,10 +292,9 @@ def _order_pharmacy_service(
             f"Workflow type: {service.workflow_type}"
         )
     
-    # Validate service requirements
-    if not service.requires_consultation:
+    if consultation is None:
         raise ValidationError(
-            f"PHARMACY service '{service.service_code}' must have requires_consultation=true."
+            f"PHARMACY service '{service.service_code}' requires a consultation for this visit."
         )
     
     # Extract additional data - auto-populate from service catalog if not provided
@@ -365,14 +375,12 @@ def _order_procedure_service(
             f"Workflow type: {service.workflow_type}"
         )
     
-    # Validate service requirements
     # Registration services don't require consultation (administrative/billing services)
     is_registration = is_registration_service(service)
     
-    if not is_registration and not service.requires_consultation:
+    if not is_registration and consultation is None:
         raise ValidationError(
-            f"PROCEDURE service '{service.service_code}' must have requires_consultation=true "
-            f"(unless it's a registration service)."
+            f"PROCEDURE service '{service.service_code}' requires a consultation for this visit."
         )
     
     # Registration services don't require consultation - ensure None is passed
@@ -449,9 +457,9 @@ def _order_radiology_service(
             f"RADIOLOGY service '{service.service_code}' must have requires_visit=true."
         )
     
-    if not service.requires_consultation:
+    if consultation is None:
         raise ValidationError(
-            f"RADIOLOGY service '{service.service_code}' must have requires_consultation=true."
+            f"RADIOLOGY service '{service.service_code}' requires a consultation for this visit."
         )
     
     # Validate user is doctor

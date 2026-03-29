@@ -423,6 +423,13 @@ export default function DashboardPage() {
                     </div>
                     <div 
                       className={styles.actionCard}
+                      onClick={() => navigate('/wards-beds')}
+                    >
+                      <h3>Wards & beds</h3>
+                      <p>Manage wards and beds for admission (Admit Patient form)</p>
+                    </div>
+                    <div 
+                      className={styles.actionCard}
                       onClick={() => navigate('/reconciliation')}
                     >
                       <h3>End-of-Day Reconciliation</h3>
@@ -916,6 +923,13 @@ export default function DashboardPage() {
                 >
                   <h3>Service Catalog</h3>
                   <p>Add and manage billable services (e.g. Telemedicine)</p>
+                </div>
+                <div 
+                  className={styles.actionCard}
+                  onClick={() => navigate('/wards-beds')}
+                >
+                  <h3>Wards & beds</h3>
+                  <p>Manage wards and beds for admission (Admit Patient form)</p>
                 </div>
                 <div 
                   className={styles.actionCard}

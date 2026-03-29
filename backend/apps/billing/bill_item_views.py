@@ -25,11 +25,34 @@ from decimal import Decimal
 from apps.visits.models import Visit
 from apps.consultations.models import Consultation
 from apps.billing.service_catalog_models import ServiceCatalog
-from apps.visits.downstream_service_workflow import order_downstream_service
+from apps.visits.downstream_service_workflow import (
+    order_downstream_service,
+    is_registration_service,
+)
 from apps.billing.billing_line_item_service import create_billing_line_item_from_service
 from apps.consultations.gopd_workflow_service import initiate_gopd_consultation_workflow
 from .permissions import CanAddServicesFromCatalog
 from core.audit import AuditLog
+
+
+def _downstream_must_resolve_consultation(service: ServiceCatalog) -> bool:
+    """
+    True when add-item must load/create a Consultation before order_downstream_service.
+
+    Catalog imports sometimes set requires_consultation=False on LAB/PHARMACY/RADIOLOGY rows;
+    those workflows still need a consultation row in this EMR.
+    Registration catalog rows are excluded via is_registration_service.
+    """
+    if is_registration_service(service):
+        return False
+    if service.requires_consultation:
+        return True
+    wt = service.workflow_type
+    if wt in ('LAB_ORDER', 'DRUG_DISPENSE', 'PROCEDURE', 'RADIOLOGY_STUDY'):
+        return True
+    if service.department == 'RADIOLOGY':
+        return True
+    return False
 
 
 class AddBillItemView(APIView):
@@ -212,9 +235,9 @@ class AddBillItemView(APIView):
                     raise DRFValidationError(str(e))
             else:
                 # For downstream services (LAB, PHARMACY, PROCEDURE, RADIOLOGY), use downstream workflow
-                # Get consultation if service requires it
+                # Get consultation when the workflow needs it (catalog flag OR known clinical workflow)
                 consultation = None
-                if service.requires_consultation:
+                if _downstream_must_resolve_consultation(service):
                     # First check for any consultation on this visit (regardless of status)
                     consultation = Consultation.objects.filter(visit=visit).first()
                     

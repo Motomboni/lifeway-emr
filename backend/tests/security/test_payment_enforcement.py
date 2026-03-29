@@ -24,4 +24,4 @@ class TestPaymentEnforcement:
         # Check that payment-related error is present
         response_data = get_response_data(response)
         error_text = str(response_data).lower()
-        assert 'payment' in error_text or 'cleared' in error_text
+        assert 'payment' in error_text or 'cleared' in error_text or 'registration' in error_text

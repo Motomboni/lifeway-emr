@@ -13,6 +13,14 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
+/** DRF-style page or any object with a `results` array (some endpoints omit count/next/previous). */
+export type PaginatedLike<T> =
+  | T[]
+  | PaginatedResponse<T>
+  | { results: T[] }
+  | null
+  | undefined;
+
 /**
  * Extract results from a paginated API response.
  * Handles both paginated (PaginatedResponse) and array responses.
@@ -20,7 +28,7 @@ export interface PaginatedResponse<T> {
  * @param response - API response (can be array or PaginatedResponse)
  * @returns Array of results
  */
-export function extractPaginatedResults<T>(response: T[] | PaginatedResponse<T> | null | undefined): T[] {
+export function extractPaginatedResults<T>(response: PaginatedLike<T>): T[] {
   if (!response) {
     return [];
   }

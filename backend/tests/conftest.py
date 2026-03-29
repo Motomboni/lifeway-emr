@@ -116,29 +116,29 @@ def pharmacist_user():
 
 @pytest.fixture
 def open_visit_with_payment(patient):
-    """Create an OPEN visit with payment CLEARED."""
+    """Create an OPEN visit with payment satisfied (PAID)."""
     from apps.visits.models import Visit
     return Visit.objects.create(
         patient=patient,
         status='OPEN',
-        payment_status='CLEARED'
+        payment_status='PAID'
     )
 
 
 @pytest.fixture
 def open_visit_without_payment(patient):
-    """Create an OPEN visit with payment PENDING."""
+    """Create an OPEN visit with payment not yet received (UNPAID)."""
     from apps.visits.models import Visit
     return Visit.objects.create(
         patient=patient,
         status='OPEN',
-        payment_status='PENDING'
+        payment_status='UNPAID'
     )
 
 
 @pytest.fixture
 def closed_visit_with_payment(patient, doctor_user):
-    """Create a CLOSED visit with payment CLEARED and consultation."""
+    """Create a CLOSED visit with payment PAID and consultation."""
     from django.utils import timezone
     from apps.consultations.models import Consultation
     from apps.visits.models import Visit
@@ -147,7 +147,7 @@ def closed_visit_with_payment(patient, doctor_user):
     visit = Visit.objects.create(
         patient=patient,
         status='OPEN',
-        payment_status='CLEARED'
+        payment_status='PAID'
     )
     
     # Create consultation
@@ -171,13 +171,13 @@ def closed_visit_with_payment(patient, doctor_user):
 
 @pytest.fixture
 def visit(open_visit_with_payment):
-    """Default visit fixture - OPEN with payment CLEARED."""
+    """Default visit fixture - OPEN with payment PAID."""
     return open_visit_with_payment
 
 
 @pytest.fixture
 def unpaid_visit(open_visit_without_payment):
-    """Unpaid visit fixture - OPEN with payment PENDING."""
+    """Unpaid visit fixture - OPEN with payment UNPAID."""
     return open_visit_without_payment
 
 

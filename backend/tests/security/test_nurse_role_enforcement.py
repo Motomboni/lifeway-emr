@@ -6,6 +6,7 @@ Per EMR Rules:
 - Nurse CANNOT: Create Consultations, Prescriptions, Lab/Radiology Orders, 
                 Enter Results, Close Visits, Process Payments, Create Discharges/Referrals
 """
+import json
 import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
@@ -15,6 +16,33 @@ from apps.patients.models import Patient
 from apps.consultations.models import Consultation
 
 User = get_user_model()
+
+
+def _response_payload(response):
+    """DRF responses expose `.data`; payment middleware may return JsonResponse without it."""
+    data = getattr(response, "data", None)
+    if data is not None:
+        return data
+    if not getattr(response, "content", None):
+        return {}
+    try:
+        return json.loads(response.content.decode())
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return {}
+
+
+def _nurse_vitals_body():
+    """Matches VitalSignsCreateSerializer: pulse (not heart_rate), temperature in °C."""
+    return {
+        "systolic_bp": 120,
+        "diastolic_bp": 80,
+        "pulse": 72,
+        "temperature": "37.0",
+        "respiratory_rate": 16,
+        "oxygen_saturation": "98.0",
+        "height": "170.00",
+        "weight": "70.00",
+    }
 
 
 @pytest.fixture
@@ -64,19 +92,18 @@ def patient(db):
         first_name='Test',
         last_name='Patient',
         date_of_birth='1990-01-01',
-        gender='M',
-        phone_number='1234567890'
+        gender='MALE',
+        phone='1234567890'
     )
 
 
 @pytest.fixture
 def open_visit(db, patient, receptionist_user):
-    """Create an open visit with cleared payment."""
+    """Create an open visit with payment satisfied (PAID)."""
     visit = Visit.objects.create(
         patient=patient,
-        created_by=receptionist_user,
         status='OPEN',
-        payment_status='CLEARED'
+        payment_status='PAID'
     )
     return visit
 
@@ -226,26 +253,28 @@ class TestNurseProhibitedActions:
         lab_order = LabOrder.objects.create(
             visit=open_visit,
             consultation=consultation,
-            created_by=doctor_user,
+            ordered_by=doctor_user,
             tests_requested=['CBC', 'Blood Sugar'],
-            status='SAMPLE_COLLECTED'
+            status=LabOrder.Status.ORDERED,
         )
         
         client = APIClient()
         client.force_authenticate(user=nurse_user)
         
         url = f'/api/v1/visits/{open_visit.id}/laboratory/results/'
-        response = client.post(url, {
-            'lab_order': lab_order.id,
-            'results': {
-                'CBC': {'value': '5.0', 'unit': 'million/uL', 'normal_range': '4.5-5.5'},
-                'Blood Sugar': {'value': '90', 'unit': 'mg/dL', 'normal_range': '70-100'}
-            }
-        })
+        response = client.post(
+            url,
+            {
+                'lab_order': lab_order.id,
+                'result_data': 'CBC 5.0; Blood Sugar 90 mg/dL',
+            },
+            format='json',
+        )
         
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        # Lab results can only be entered by LAB_TECH
-        assert 'LAB_TECH' in str(response.data) or 'permission' in str(response.data).lower()
+        body = _response_payload(response)
+        body_s = str(body).lower()
+        assert 'lab tech' in body_s or 'technician' in body_s or 'permission' in body_s
     
     def test_nurse_cannot_discharge_patient(self, nurse_user, open_visit, doctor_user):
         """Nurse should be denied from creating discharge summaries."""
@@ -262,15 +291,12 @@ class TestNurseProhibitedActions:
         client = APIClient()
         client.force_authenticate(user=nurse_user)
         
-        url = f'/api/v1/visits/{open_visit.id}/discharge-summaries/'
-        response = client.post(url, {
-            'summary': 'Patient discharged in stable condition',
-            'discharge_instructions': 'Follow up in 2 weeks',
-            'discharge_date': '2025-12-30'
-        })
+        url = f'/api/v1/visits/{open_visit.id}/discharge-summaries/discharge-summaries/'
+        response = client.post(url, {}, format='json')
         
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert 'nurse_prohibited' in str(response.data) or 'Nurses are not permitted' in str(response.data)
+        body = _response_payload(response)
+        assert 'nurse_prohibited' in str(body) or 'Nurses are not permitted' in str(body)
 
 
 class TestNurseVisitStatusEnforcement:
@@ -278,12 +304,11 @@ class TestNurseVisitStatusEnforcement:
     
     @pytest.fixture
     def closed_visit(self, db, patient, receptionist_user, doctor_user):
-        """Create a closed visit with cleared payment."""
+        """Create a closed visit with payment PAID."""
         visit = Visit.objects.create(
             patient=patient,
-            created_by=receptionist_user,
             status='OPEN',
-            payment_status='CLEARED'
+            payment_status='PAID'
         )
         # Create consultation and close visit
         Consultation.objects.create(
@@ -303,9 +328,8 @@ class TestNurseVisitStatusEnforcement:
         """Create an open visit with unpaid status."""
         return Visit.objects.create(
             patient=patient,
-            created_by=receptionist_user,
             status='OPEN',
-            payment_status='PENDING'
+            payment_status='UNPAID'
         )
     
     def test_nurse_cannot_act_on_closed_visit(self, nurse_user, closed_visit):
@@ -315,19 +339,11 @@ class TestNurseVisitStatusEnforcement:
         
         # Try to record vital signs on closed visit
         url = f'/api/v1/visits/{closed_visit.id}/vitals/'
-        response = client.post(url, {
-            'systolic_bp': 120,
-            'diastolic_bp': 80,
-            'heart_rate': 72,
-            'temperature': 98.6,
-            'respiratory_rate': 16,
-            'oxygen_saturation': 98,
-            'height': 170,
-            'weight': 70
-        })
+        response = client.post(url, _nurse_vitals_body(), format='json')
         
         assert response.status_code == status.HTTP_409_CONFLICT
-        assert 'CLOSED' in str(response.data) or 'closed' in str(response.data).lower()
+        body = _response_payload(response)
+        assert 'CLOSED' in str(body) or 'closed' in str(body).lower()
     
     def test_nurse_cannot_act_on_unpaid_visit(self, nurse_user, unpaid_visit):
         """Nurse should be denied when trying to act on unpaid visit."""
@@ -336,19 +352,11 @@ class TestNurseVisitStatusEnforcement:
         
         # Try to record vital signs on unpaid visit
         url = f'/api/v1/visits/{unpaid_visit.id}/vitals/'
-        response = client.post(url, {
-            'systolic_bp': 120,
-            'diastolic_bp': 80,
-            'heart_rate': 72,
-            'temperature': 98.6,
-            'respiratory_rate': 16,
-            'oxygen_saturation': 98,
-            'height': 170,
-            'weight': 70
-        })
+        response = client.post(url, _nurse_vitals_body(), format='json')
         
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert 'payment' in str(response.data).lower() or 'cleared' in str(response.data).lower()
+        body_s = str(_response_payload(response)).lower()
+        assert 'payment' in body_s or 'cleared' in body_s or 'registration' in body_s
     
     def test_nurse_cannot_create_nursing_note_on_closed_visit(self, nurse_user, closed_visit):
         """Nurse should receive 409 Conflict when trying to create nursing note on CLOSED visit."""
@@ -365,7 +373,8 @@ class TestNurseVisitStatusEnforcement:
         })
         
         assert response.status_code == status.HTTP_409_CONFLICT
-        assert 'CLOSED' in str(response.data) or 'closed' in str(response.data).lower()
+        body = _response_payload(response)
+        assert 'CLOSED' in str(body) or 'closed' in str(body).lower()
     
     def test_nurse_cannot_create_nursing_note_on_unpaid_visit(self, nurse_user, unpaid_visit):
         """Nurse should be denied when trying to create nursing note on unpaid visit."""
@@ -382,7 +391,8 @@ class TestNurseVisitStatusEnforcement:
         })
         
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert 'payment' in str(response.data).lower() or 'cleared' in str(response.data).lower()
+        body_s = str(_response_payload(response)).lower()
+        assert 'payment' in body_s or 'cleared' in body_s or 'registration' in body_s
 
 
 class TestNurseVisitAccessControl:
@@ -396,8 +406,8 @@ class TestNurseVisitAccessControl:
             first_name='Other',
             last_name='Patient',
             date_of_birth='1985-05-15',
-            gender='F',
-            phone_number='0987654321'
+            gender='FEMALE',
+            phone='0987654321'
         )
     
     @pytest.fixture
@@ -405,9 +415,8 @@ class TestNurseVisitAccessControl:
         """Create another visit for access control testing."""
         return Visit.objects.create(
             patient=other_patient,
-            created_by=receptionist_user,
             status='OPEN',
-            payment_status='CLEARED'
+            payment_status='PAID'
         )
     
     def test_nurse_can_view_own_visit(self, nurse_user, open_visit):
@@ -437,16 +446,7 @@ class TestNurseVisitAccessControl:
         client.force_authenticate(user=nurse_user)
         
         url = f'/api/v1/visits/{open_visit.id}/vitals/'
-        response = client.post(url, {
-            'systolic_bp': 120,
-            'diastolic_bp': 80,
-            'heart_rate': 72,
-            'temperature': 98.6,
-            'respiratory_rate': 16,
-            'oxygen_saturation': 98,
-            'height': 170,
-            'weight': 70
-        })
+        response = client.post(url, _nurse_vitals_body(), format='json')
         
         assert response.status_code == status.HTTP_201_CREATED
 
@@ -470,16 +470,7 @@ class TestNurseAllowedActions:
         client.force_authenticate(user=nurse_user)
         
         url = f'/api/v1/visits/{open_visit.id}/clinical/vital-signs/'
-        response = client.post(url, {
-            'systolic_bp': 120,
-            'diastolic_bp': 80,
-            'heart_rate': 72,
-            'temperature': 98.6,
-            'respiratory_rate': 16,
-            'oxygen_saturation': 98,
-            'height': 170,
-            'weight': 70
-        })
+        response = client.post(url, _nurse_vitals_body(), format='json')
         
         assert response.status_code == status.HTTP_201_CREATED
     

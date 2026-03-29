@@ -8,6 +8,7 @@ from rest_framework.exceptions import NotFound, ValidationError as DRFValidation
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.db.models.deletion import ProtectedError
 
 from .admission_models import Ward, Bed, Admission
 from .admission_serializers import (
@@ -23,12 +24,28 @@ from apps.visits.models import Visit
 from core.audit import AuditLog
 
 
+def _user_can_manage_admissions(user) -> bool:
+    """Doctors, ADMIN role, and Django superusers can create/update admissions."""
+    if getattr(user, 'is_superuser', False):
+        return True
+    role = getattr(user, 'role', None) or getattr(user, 'get_role', lambda: None)()
+    return role in ('DOCTOR', 'ADMIN')
+
+
+def _user_can_manage_ward_bed_catalog(user) -> bool:
+    """Doctors, ADMIN, and superusers can create/update/delete wards and beds (inventory for admission UI)."""
+    if getattr(user, 'is_superuser', False):
+        return True
+    role = getattr(user, 'role', None) or getattr(user, 'get_role', lambda: None)()
+    return role in ('DOCTOR', 'ADMIN')
+
+
 class WardViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Ward management.
     
     All authenticated users can view wards.
-    Only doctors can create/update/delete wards.
+    Doctors and administrators can create/update/delete wards.
     """
     queryset = Ward.objects.all().order_by('name')
     serializer_class = WardSerializer
@@ -47,8 +64,8 @@ class WardViewSet(viewsets.ModelViewSet):
         user_role = getattr(self.request.user, 'role', None) or \
                    getattr(self.request.user, 'get_role', lambda: None)()
         
-        if user_role != 'DOCTOR':
-            raise PermissionDenied("Only doctors can create wards.")
+        if not _user_can_manage_ward_bed_catalog(self.request.user):
+            raise PermissionDenied("Only doctors or administrators can create wards.")
         
         ward = serializer.save()
         
@@ -67,8 +84,8 @@ class WardViewSet(viewsets.ModelViewSet):
         user_role = getattr(self.request.user, 'role', None) or \
                    getattr(self.request.user, 'get_role', lambda: None)()
         
-        if user_role != 'DOCTOR':
-            raise PermissionDenied("Only doctors can update wards.")
+        if not _user_can_manage_ward_bed_catalog(self.request.user):
+            raise PermissionDenied("Only doctors or administrators can update wards.")
         
         ward = serializer.save()
         
@@ -89,7 +106,18 @@ class WardViewSet(viewsets.ModelViewSet):
         beds = Bed.objects.filter(ward=ward, is_active=True).order_by('bed_number')
         serializer = BedListSerializer(beds, many=True)
         return Response(serializer.data)
-    
+
+    def perform_destroy(self, instance):
+        if not _user_can_manage_ward_bed_catalog(self.request.user):
+            raise PermissionDenied("Only doctors or administrators can delete wards.")
+        try:
+            instance.delete()
+        except ProtectedError:
+            raise DRFValidationError(
+                "Cannot delete this ward while beds or admissions reference it. "
+                "Set the ward to inactive instead."
+            )
+
     @action(detail=True, methods=['get'])
     def available_beds(self, request, pk=None):
         """Get available beds in this ward."""
@@ -104,7 +132,7 @@ class BedViewSet(viewsets.ModelViewSet):
     ViewSet for Bed management.
     
     All authenticated users can view beds.
-    Only doctors can create/update/delete beds.
+    Doctors and administrators can create/update/delete beds.
     """
     queryset = Bed.objects.all().select_related('ward').order_by('ward', 'bed_number')
     serializer_class = BedSerializer
@@ -133,8 +161,8 @@ class BedViewSet(viewsets.ModelViewSet):
         user_role = getattr(self.request.user, 'role', None) or \
                    getattr(self.request.user, 'get_role', lambda: None)()
         
-        if user_role != 'DOCTOR':
-            raise PermissionDenied("Only doctors can create beds.")
+        if not _user_can_manage_ward_bed_catalog(self.request.user):
+            raise PermissionDenied("Only doctors or administrators can create beds.")
         
         bed = serializer.save()
         
@@ -154,8 +182,8 @@ class BedViewSet(viewsets.ModelViewSet):
         user_role = getattr(self.request.user, 'role', None) or \
                    getattr(self.request.user, 'get_role', lambda: None)()
         
-        if user_role != 'DOCTOR':
-            raise PermissionDenied("Only doctors can update beds.")
+        if not _user_can_manage_ward_bed_catalog(self.request.user):
+            raise PermissionDenied("Only doctors or administrators can update beds.")
         
         bed = serializer.save()
         
@@ -169,6 +197,17 @@ class BedViewSet(viewsets.ModelViewSet):
             request=self.request
         )
 
+    def perform_destroy(self, instance):
+        if not _user_can_manage_ward_bed_catalog(self.request.user):
+            raise PermissionDenied("Only doctors or administrators can delete beds.")
+        try:
+            instance.delete()
+        except ProtectedError:
+            raise DRFValidationError(
+                "Cannot delete this bed while an admission references it. "
+                "Set the bed to inactive instead."
+            )
+
 
 class AdmissionViewSet(viewsets.ModelViewSet):
     """
@@ -176,7 +215,7 @@ class AdmissionViewSet(viewsets.ModelViewSet):
     
     Rules:
     - Visit-scoped: Admissions are tied to visits
-    - Doctor-only creation
+    - Creation/discharge/transfer: doctors, ADMIN, or superuser
     - Admission status separate from visit status
     """
     serializer_class = AdmissionSerializer
@@ -254,12 +293,11 @@ class AdmissionViewSet(viewsets.ModelViewSet):
         try:
             visit = self.get_visit()
             
-            # Ensure user is a doctor
             user_role = getattr(self.request.user, 'role', None) or \
                        getattr(self.request.user, 'get_role', lambda: None)()
             
-            if user_role != 'DOCTOR':
-                raise PermissionDenied("Only doctors can admit patients.")
+            if not _user_can_manage_admissions(self.request.user):
+                raise PermissionDenied("Only doctors or administrators can admit patients.")
             
             # Validate visit status
             if visit.status != 'OPEN':
@@ -365,12 +403,11 @@ class AdmissionViewSet(viewsets.ModelViewSet):
         """Transfer patient to different ward/bed."""
         admission = self.get_object()
         
-        # Ensure user is a doctor
         user_role = getattr(request.user, 'role', None) or \
                    getattr(request.user, 'get_role', lambda: None)()
         
-        if user_role != 'DOCTOR':
-            raise PermissionDenied("Only doctors can transfer patients.")
+        if not _user_can_manage_admissions(request.user):
+            raise PermissionDenied("Only doctors or administrators can transfer patients.")
         
         serializer = AdmissionTransferSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

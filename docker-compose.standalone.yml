@@ -1,6 +1,7 @@
 # Single-container (all-in-one) production deploy: one app image + Postgres.
 # Usage: docker compose -f docker-compose.standalone.yml up -d
 # Set DB_PASSWORD and SECRET_KEY in .env (see .env.prod.example).
+# Fresh database (drop volume, rebuild): scripts/reset-standalone-deployment.ps1 or .sh
 
 services:
   db:

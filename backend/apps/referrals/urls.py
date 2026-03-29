@@ -6,6 +6,7 @@ from rest_framework.routers import DefaultRouter
 from .views import ReferralViewSet
 
 router = DefaultRouter()
-router.register(r'referrals', ReferralViewSet, basename='referral')
+# Prefix must be '' — parent URL already ends with /referrals/ (see apps.visits.urls).
+router.register(r'', ReferralViewSet, basename='referral')
 
 urlpatterns = router.urls

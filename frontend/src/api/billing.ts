@@ -46,7 +46,8 @@ export interface BillingSummary {
 }
 
 export interface VisitCharge {
-  id: number;
+  /** Numeric VisitCharge id or string id for catalog line items, e.g. `billing_line_item_42` */
+  id: number | string;
   visit_id: number;
   category: 'CONSULTATION' | 'LAB' | 'RADIOLOGY' | 'DRUG' | 'PROCEDURE' | 'MISC';
   description: string;

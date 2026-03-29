@@ -6,7 +6,7 @@ Endpoint: /api/v1/visits/{visit_id}/consultation/
 Enforcement:
 1. Doctor-only access (IsDoctor permission)
 2. Visit must be OPEN (IsVisitOpen permission)
-3. Payment must be CLEARED (IsPaymentCleared permission)
+3. Registration must be paid before consultation read/write (IsRegistrationPaymentCleared)
 4. Visit ownership validation
 5. Audit logging for all actions
 6. CLOSED visit rejection
@@ -30,10 +30,7 @@ from apps.visits.models import Visit
 from core.permissions import (
     IsDoctor,
     IsVisitOpen,
-    IsPaymentCleared,
-    IsVisitAccessible,
     IsRegistrationPaymentCleared,
-    IsConsultationPaymentCleared,
 )
 from core.audit import log_consultation_action
 
@@ -45,7 +42,7 @@ class ConsultationViewSet(viewsets.ModelViewSet):
     Rules enforced:
     - Doctor-only access
     - Visit must be OPEN
-    - Payment must be CLEARED
+    - Registration payment required (not full visit settlement; consultation service fee is not a gate)
     - Visit ownership validation
     - Audit logging
     - CLOSED visit rejection
@@ -109,20 +106,6 @@ class ConsultationViewSet(viewsets.ModelViewSet):
                 code='visit_closed'
             )
     
-    def check_payment_status(self, visit):
-        """
-        Ensure payment is cleared before allowing consultation.
-        Payment checks MUST occur in backend (not frontend).
-        """
-        if not visit.is_payment_cleared():
-            raise PermissionDenied(
-                detail="Payment must be cleared before consultation. "
-                       "Current payment status: {status}".format(
-                           status=visit.payment_status
-                       ),
-                code='payment_not_cleared'
-            )
-    
     def merge_with_patient_history(self, consultation, visit):
         """
         Merge consultation data into patient's medical history.
@@ -180,7 +163,7 @@ class ConsultationViewSet(viewsets.ModelViewSet):
         
         Rules:
         1. Visit must exist and be OPEN
-        2. Payment must be CLEARED
+        2. Registration payment (see get_permissions / IsRegistrationPaymentCleared)
         3. created_by set to authenticated user (doctor)
         4. Visit set from URL parameter
         5. Audit log created
@@ -193,9 +176,6 @@ class ConsultationViewSet(viewsets.ModelViewSet):
             
             # Enforce visit status
             self.check_visit_status(visit)
-            
-            # Enforce payment status
-            self.check_payment_status(visit)
             
             # Check if consultation already exists (OneToOneField constraint)
             if Consultation.objects.filter(visit=visit).exists():
@@ -265,9 +245,6 @@ class ConsultationViewSet(viewsets.ModelViewSet):
             # Enforce visit status
             self.check_visit_status(visit)
             
-            # Enforce payment status
-            self.check_payment_status(visit)
-            
             # Partial update (PATCH) or full update (PUT)
             partial = kwargs.pop('partial', False)
             serializer = self.get_serializer(consultation, data=request.data, partial=partial)
@@ -334,7 +311,7 @@ class ConsultationViewSet(viewsets.ModelViewSet):
         
         Rules:
         1. Visit must be OPEN
-        2. Payment must be CLEARED
+        2. Registration payment (see get_permissions)
         3. Audit log created
         """
         consultation = self.get_object()
@@ -342,9 +319,6 @@ class ConsultationViewSet(viewsets.ModelViewSet):
         
         # Enforce visit status
         self.check_visit_status(visit)
-        
-        # Enforce payment status
-        self.check_payment_status(visit)
         
         # Extract merge flag before saving (it's write_only, won't be saved to model)
         merge_with_patient = serializer.validated_data.pop('merge_with_patient_record', False)
@@ -369,17 +343,14 @@ class ConsultationViewSet(viewsets.ModelViewSet):
     
     def get_permissions(self):
         """
-        Strict payment rules:
+        Payment rules:
         - Read (retrieve/list): Registration must be paid before access to consultation.
-        - Write (create/update/partial_update): Consultation must be paid before doctor starts encounter.
+        - Write (create/update/partial_update): Same — registration paid; consultation service fee is not a gate.
         """
         if self.action in ['retrieve', 'list']:
-            # Block access to consultation until registration is paid
             from rest_framework.permissions import IsAuthenticated
             return [IsAuthenticated(), IsRegistrationPaymentCleared()]
-        else:
-            # Block doctor from starting encounter until consultation is paid
-            return [IsDoctor(), IsVisitOpen(), IsConsultationPaymentCleared()]
+        return [IsDoctor(), IsVisitOpen(), IsRegistrationPaymentCleared()]
     
     def retrieve(self, request, *args, **kwargs):
         """

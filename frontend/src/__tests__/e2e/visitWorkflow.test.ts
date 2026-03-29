@@ -145,3 +145,6 @@ describe('Visit Workflow E2E', () => {
     expect(true).toBe(true);
   });
 });
+
+// Ensures this file is a module under --isolatedModules (production build typecheck).
+export {};

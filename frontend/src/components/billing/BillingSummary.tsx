@@ -48,13 +48,13 @@ export default function BillingSummary({ billingSummary, visit, patient }: Billi
 
   return (
     <div className={styles.container} data-testid="billing-summary">
-      {/* Payment gates (pre-service: Registration & Consultation must be paid before access) */}
+      {/* Payment gates: registration required before encounter; consultation fee tracked separately */}
       {gates && (
         <div className={styles.paymentGates} style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <span title="Registration must be paid before access to consultation" style={{ padding: '0.25rem 0.5rem', borderRadius: 6, fontSize: '0.875rem', background: gates.registration_paid ? '#dcfce7' : '#fef3c7', color: gates.registration_paid ? '#166534' : '#92400e' }}>
             {gates.registration_paid ? '✓ Registration paid' : '⚠ Registration unpaid'}
           </span>
-          <span title="Consultation must be paid before doctor can start encounter" style={{ padding: '0.25rem 0.5rem', borderRadius: 6, fontSize: '0.875rem', background: gates.consultation_paid ? '#dcfce7' : '#fef3c7', color: gates.consultation_paid ? '#166534' : '#92400e' }}>
+          <span title="Consultation service fee (may be collected during or after the visit)" style={{ padding: '0.25rem 0.5rem', borderRadius: 6, fontSize: '0.875rem', background: gates.consultation_paid ? '#dcfce7' : '#fef3c7', color: gates.consultation_paid ? '#166534' : '#92400e' }}>
             {gates.consultation_paid ? '✓ Consultation paid' : '⚠ Consultation unpaid'}
           </span>
         </div>

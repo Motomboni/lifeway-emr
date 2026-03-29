@@ -318,8 +318,8 @@ export default function ServiceCatalogInline({
           <div className={styles.formGroup}>
             <label>Search Service Catalog</label>
             <p className={styles.helpText}>
-              Search and order services from the catalog. Services will be automatically 
-              added to the patient's account and will reflect in the Receptionist dashboard.
+              Search and order services from the catalog. Charges appear on the patient account,
+              in Reception billing, and in <strong>Ordered services &amp; charges</strong> below for your reference.
             </p>
             <ServiceSearchInput
               onServiceSelect={handleServiceSelect}
@@ -377,9 +377,9 @@ export default function ServiceCatalogInline({
       {!showServiceSearch && !showPrescriptionForm && !showLabOrderForm && !showRadiologyOrderForm && (
         <div className={styles.infoText}>
           <p>
-            💡 <strong>Order Services:</strong> Search and order services from the catalog. 
-            Services will be automatically added to the patient's bill and will appear 
-            in the Receptionist dashboard for payment processing.
+            💡 <strong>Order Services:</strong> Search and order from the catalog; items bill to the
+            patient account and are listed under <strong>Ordered services &amp; charges</strong> on this page
+            (same as reception billing line items).
           </p>
           <p>
             <strong>Note:</strong> When lab or radiology orders are completed by technicians, 

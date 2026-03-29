@@ -103,6 +103,14 @@ class ReferralViewSet(viewsets.ModelViewSet):
         else:
             return ReferralSerializer
     
+    def get_serializer_context(self):
+        """Pass visit_id for ReferralCreateSerializer (URL-scoped create)."""
+        context = super().get_serializer_context()
+        vid = self.kwargs.get('visit_id')
+        if vid is not None:
+            context['visit_id'] = int(vid)
+        return context
+    
     def get_permissions(self):
         """
         Return appropriate permissions based on action.

@@ -68,12 +68,12 @@ export default function BillingDocumentsPanel({
       setLoading(true);
       
       // GET receipt endpoint - use fetch directly for blob response
-      const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+      const API_BASE_URL = process.env.REACT_APP_API_URL || '/api/v1';
       const token = localStorage.getItem('auth_token') || localStorage.getItem('auth_tokens');
       const authToken = token ? (token.startsWith('{') ? JSON.parse(token).access : token) : '';
       
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/visits/${visitId}/billing/receipt/?format=pdf`,
+        `${API_BASE_URL}/visits/${visitId}/billing/receipt/?format=pdf`,
         {
           method: 'GET',
           headers: {
@@ -138,12 +138,12 @@ export default function BillingDocumentsPanel({
       setLoading(true);
       
       // GET invoice endpoint - use fetch directly for blob response
-      const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+      const API_BASE_URL = process.env.REACT_APP_API_URL || '/api/v1';
       const token = localStorage.getItem('auth_token') || localStorage.getItem('auth_tokens');
       const authToken = token ? (token.startsWith('{') ? JSON.parse(token).access : token) : '';
       
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/visits/${visitId}/billing/invoice/?format=pdf`,
+        `${API_BASE_URL}/visits/${visitId}/billing/invoice/?format=pdf`,
         {
           method: 'GET',
           headers: {

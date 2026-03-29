@@ -34,6 +34,7 @@ import { getBillingSummary } from '../api/billing';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import ServiceCatalogInline from '../components/inline/ServiceCatalogInline';
+import VisitChargesReadOnly from '../components/billing/VisitChargesReadOnly';
 import VitalSignsInline from '../components/clinical/VitalSignsInline';
 import ClinicalAlertsInline from '../components/clinical/ClinicalAlertsInline';
 import DocumentsInline from '../components/documents/DocumentsInline';
@@ -71,6 +72,8 @@ export default function ConsultationPage({ visitId }: ConsultationPageProps) {
 
   const [visitStatus, setVisitStatus] = useState<'OPEN' | 'CLOSED'>('OPEN');
   const [isClosingVisit, setIsClosingVisit] = useState(false);
+  /** Bumps after catalog orders so doctor-facing charge list refetches */
+  const [orderedChargesRefresh, setOrderedChargesRefresh] = useState(0);
 
   // Load billing summary to check payment gate before calling consultation API (avoids 403)
   useEffect(() => {
@@ -392,7 +395,18 @@ export default function ConsultationPage({ visitId }: ConsultationPageProps) {
         
         {/* Service Catalog - available for doctors to order services */}
         {user?.role === 'DOCTOR' && (
-          <ServiceCatalogInline visitId={visitId} />
+          <>
+            <ServiceCatalogInline
+              visitId={visitId}
+              onServiceAdded={() => setOrderedChargesRefresh((n) => n + 1)}
+            />
+            <div className={styles.inlineComponent}>
+              <VisitChargesReadOnly
+                visitId={parseInt(visitId, 10)}
+                refreshTrigger={orderedChargesRefresh}
+              />
+            </div>
+          </>
         )}
         
         {/* Lab Orders & Results - show orders and their results */}

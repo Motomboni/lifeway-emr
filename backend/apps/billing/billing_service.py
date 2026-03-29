@@ -203,7 +203,7 @@ class BillingService:
             is_fully_covered
         )
         
-        # Payment gates (registration & consultation must be paid before access)
+        # Payment gates (registration before encounter; consultation fee tracked separately)
         from .payment_gates_service import get_payment_gates_status
         payment_gates = get_payment_gates_status(visit)
         # When insurance fully covers the visit and status is SETTLED/CLEARED, treat gates as satisfied
