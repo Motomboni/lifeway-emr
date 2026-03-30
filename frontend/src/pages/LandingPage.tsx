@@ -12,6 +12,35 @@ import styles from '../styles/Landing.module.css';
 export default function LandingPage() {
   const navigate = useNavigate();
 
+  const services = [
+    "SINGLE/FAMILY REGISTRATION",
+    "OUTPATIENT CONSULTATIONS (GENERAL & SPECIALIST)",
+    "INPATIENT CARE AND MANAGEMENT",
+    "ACCIDENT AND EMERGENCY",
+    "FULLY AUTOMATED LABORATORY",
+    "3D/4D ULTRASOUND SCANS",
+    "RADIOLOGICAL INVESTIGATIONS (XRAYS)",
+    "PHARMACY",
+    "DENTAL CLINIC",
+    "PAEDIATRIC CLINIC/IMMUNIZATIONS",
+    "ANTENATAL CARE & DELIVERIES",
+    "OBSTETRICS & GYNAECOLOGY",
+    "FAMILY PLANNING CLINICS",
+    "CERVICAL CANCER SCREENING, PAP SMEAR & HPV SCREENING",
+    "INFERTILITY TREATMENT",
+    "IUI, IVF, SURROGACY",
+    "CLINICAL HAEMATOLOGY & HAEMATO-ONCOLOGY",
+    "SICKLE CELL DISEASE & CANCER MANAGEMENT",
+    "ENT, UROLOGY, NEUROLOGY, ENDOCRINOLOGY",
+    "INTERNAL MEDICINE",
+    "ADOLESCENT HEALTH",
+    "COSMETIC SURGERY",
+    "MINIMAL ACCESS/GENERAL SURGERIES",
+    "FAMILY/INDIVIDUAL RETAINERSHIPS",
+    "COMPANY/CORPORATE RETAINERSHIPS",
+    "HEALTH INSURANCE",
+  ];
+
   return (
     <div className={styles.landing}>
       {/* Left Side - Content */}
@@ -51,6 +80,17 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+
+          <section className={styles.servicesSection}>
+            <h2 className={styles.servicesTitle}>OUR SERVICES</h2>
+            <ul className={styles.servicesGrid}>
+              {services.map((service) => (
+                <li key={service} className={styles.servicesItem}>
+                  {service}
+                </li>
+              ))}
+            </ul>
+          </section>
 
           <div className={styles.ctaButtons}>
             <button
