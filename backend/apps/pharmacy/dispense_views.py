@@ -144,6 +144,7 @@ class DispenseViewSet(viewsets.ViewSet):
         Request body:
         {
             "prescription_id": 1,
+            "dispensed_quantity": "24 tablets",
             "dispensing_notes": "Dispensed as prescribed. Patient counseled."
         }
         
@@ -215,6 +216,7 @@ class DispenseViewSet(viewsets.ViewSet):
         
         # Dispense the medication
         dispensing_notes = request.data.get('dispensing_notes', '')
+        dispensed_quantity = request.data.get('dispensed_quantity', '')
         
         prescription.dispensed = True
         prescription.dispensed_date = timezone.now()
@@ -222,6 +224,8 @@ class DispenseViewSet(viewsets.ViewSet):
         prescription.status = 'DISPENSED'
         if dispensing_notes:
             prescription.dispensing_notes = dispensing_notes
+        if dispensed_quantity:
+            prescription.dispensed_quantity = str(dispensed_quantity)
         prescription.save()
         
         # Audit log
@@ -234,6 +238,7 @@ class DispenseViewSet(viewsets.ViewSet):
             metadata={
                 'prescription_id': prescription.id,
                 'drug': prescription.drug,
+                'dispensed_quantity': prescription.dispensed_quantity,
                 'status': 'DISPENSED'
             }
         )

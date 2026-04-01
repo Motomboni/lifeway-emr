@@ -522,6 +522,12 @@ class Prescription(models.Model):
         blank=True,
         help_text="Notes from pharmacist during dispensing"
     )
+
+    dispensed_quantity = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Exact quantity dispensed by pharmacist (e.g., '24 tablets', '1 bottle')"
+    )
     
     # User tracking
     prescribed_by = models.ForeignKey(

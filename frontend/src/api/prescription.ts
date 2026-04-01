@@ -39,12 +39,14 @@ export async function createPrescription(
 export async function dispensePrescription(
   visitId: string,
   prescriptionId: number,
+  dispensedQuantity?: string,
   dispensingNotes?: string
 ): Promise<Prescription> {
   return apiRequest<Prescription>(`/visits/${visitId}/pharmacy/dispense/`, {
     method: 'POST',
     body: JSON.stringify({
       prescription_id: prescriptionId,
+      dispensed_quantity: dispensedQuantity || '',
       dispensing_notes: dispensingNotes || ''
     }),
   });

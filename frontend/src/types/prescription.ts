@@ -17,6 +17,7 @@ export interface Prescription {
   dispensed: boolean;
   dispensed_date?: string;
   dispensing_notes?: string;
+  dispensed_quantity?: string;
   prescribed_by: number;
   dispensed_by?: number;
   created_at: string;

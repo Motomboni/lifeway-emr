@@ -17,7 +17,7 @@ interface UsePrescriptionsReturn {
   error: string | null;
   isSaving: boolean;
   createPrescription: (visitId: string, consultationId: number, data: PrescriptionCreateData) => Promise<Prescription>;
-  dispensePrescription: (visitId: string, prescriptionId: number, dispensingNotes?: string) => Promise<Prescription>;
+  dispensePrescription: (visitId: string, prescriptionId: number, dispensedQuantity?: string, dispensingNotes?: string) => Promise<Prescription>;
   refresh: () => Promise<void>;
 }
 
@@ -70,13 +70,14 @@ export function usePrescriptions(visitId: string): UsePrescriptionsReturn {
   const dispensePrescription = useCallback(async (
     visitId: string,
     prescriptionId: number,
+    dispensedQuantity?: string,
     dispensingNotes?: string
   ) => {
     setIsSaving(true);
     setError(null);
     
     try {
-      const dispensed = await dispensePrescriptionAPI(visitId, prescriptionId, dispensingNotes);
+      const dispensed = await dispensePrescriptionAPI(visitId, prescriptionId, dispensedQuantity, dispensingNotes);
       setPrescriptions(prev => prev.map(p => p.id === prescriptionId ? dispensed : p));
       return dispensed;
     } catch (err) {

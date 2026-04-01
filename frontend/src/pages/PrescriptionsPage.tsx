@@ -80,6 +80,8 @@ export default function PrescriptionsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
   const [dispensing, setDispensing] = useState<number | null>(null);
+  const [dispensedQuantityById, setDispensedQuantityById] = useState<Record<number, string>>({});
+  const [dispensingNotesById, setDispensingNotesById] = useState<Record<number, string>>({});
 
   useEffect(() => {
     loadVisitsWithPendingPrescriptions();
@@ -140,11 +142,31 @@ export default function PrescriptionsPage() {
 
   const handleDispense = async (prescriptionId: number) => {
     if (!selectedVisit) return;
+    const dispensedQuantity = (dispensedQuantityById[prescriptionId] || '').trim();
+    if (!dispensedQuantity) {
+      showError('Please enter the exact quantity dispensed');
+      return;
+    }
 
     try {
       setDispensing(prescriptionId);
-      await dispensePrescription(selectedVisit.toString(), prescriptionId);
+      await dispensePrescription(
+        selectedVisit.toString(),
+        prescriptionId,
+        dispensedQuantity,
+        dispensingNotesById[prescriptionId] || ''
+      );
       showSuccess('Prescription dispensed successfully');
+      setDispensedQuantityById(prev => {
+        const next = { ...prev };
+        delete next[prescriptionId];
+        return next;
+      });
+      setDispensingNotesById(prev => {
+        const next = { ...prev };
+        delete next[prescriptionId];
+        return next;
+      });
       await loadPrescriptions(selectedVisit.toString());
     } catch (error: any) {
       // Parse error message from API response
@@ -258,16 +280,39 @@ export default function PrescriptionsPage() {
                             <p className={styles.notesText}>{prescription.dispensing_notes}</p>
                           </div>
                         )}
+                        {prescription.dispensed_quantity && (
+                          <p><strong>Dispensed Quantity:</strong> {prescription.dispensed_quantity}</p>
+                        )}
                       </div>
                       <div className={styles.prescriptionActions}>
                         {prescription.status === 'PENDING' && 
                          selectedVisitData?.status === 'OPEN' && (
-                          <DispenseButtonWithLock
-                            prescriptionId={prescription.id}
-                            visitId={selectedVisit}
-                            onDispense={handleDispense}
-                            isDispensing={dispensing === prescription.id}
-                          />
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
+                            <input
+                              type="text"
+                              placeholder="Exact dispensed quantity (e.g., 24 tablets)"
+                              value={dispensedQuantityById[prescription.id] || ''}
+                              onChange={(e) =>
+                                setDispensedQuantityById(prev => ({ ...prev, [prescription.id]: e.target.value }))
+                              }
+                              style={{ padding: '8px 10px', border: '1px solid #dcdcdc', borderRadius: 6 }}
+                            />
+                            <textarea
+                              placeholder="Optional dispensing notes"
+                              value={dispensingNotesById[prescription.id] || ''}
+                              onChange={(e) =>
+                                setDispensingNotesById(prev => ({ ...prev, [prescription.id]: e.target.value }))
+                              }
+                              rows={2}
+                              style={{ padding: '8px 10px', border: '1px solid #dcdcdc', borderRadius: 6, resize: 'vertical' }}
+                            />
+                            <DispenseButtonWithLock
+                              prescriptionId={prescription.id}
+                              visitId={selectedVisit}
+                              onDispense={handleDispense}
+                              isDispensing={dispensing === prescription.id}
+                            />
+                          </div>
                         )}
                         {prescription.status === 'PENDING' && 
                          selectedVisitData?.status === 'CLOSED' && (

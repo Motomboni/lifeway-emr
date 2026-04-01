@@ -46,6 +46,7 @@ class PrescriptionSerializer(serializers.ModelSerializer):
             'dispensed',
             'dispensed_date',
             'dispensing_notes',
+            'dispensed_quantity',
             'prescribed_by',
             'dispensed_by',
             'created_at',
@@ -60,6 +61,7 @@ class PrescriptionSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
             'dispensed_date',
+            'dispensed_quantity',
         ]
 
 
