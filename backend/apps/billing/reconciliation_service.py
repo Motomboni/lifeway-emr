@@ -11,7 +11,7 @@ This service orchestrates the end-of-day reconciliation process:
 import logging
 from decimal import Decimal
 from datetime import date, datetime
-from django.db import transaction, models
+from django.db import transaction, models, IntegrityError, OperationalError
 from django.db.models import Sum, Q, Count
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -49,31 +49,43 @@ class ReconciliationService:
         if reconciliation_date is None:
             reconciliation_date = timezone.now().date()
         
-        # Check if reconciliation already exists for this date
-        existing = EndOfDayReconciliation.objects.filter(
-            reconciliation_date=reconciliation_date
-        ).first()
-        
-        if existing and existing.status == 'FINALIZED':
+        try:
+            # Race-safe create/get for one-record-per-day constraint.
+            reconciliation, created = EndOfDayReconciliation.objects.get_or_create(
+                reconciliation_date=reconciliation_date,
+                defaults={
+                    'prepared_by_id': prepared_by_id,
+                    'status': 'DRAFT',
+                }
+            )
+        except IntegrityError:
+            # Another request created it concurrently; fetch existing row.
+            reconciliation = EndOfDayReconciliation.objects.get(
+                reconciliation_date=reconciliation_date
+            )
+            created = False
+        except OperationalError as exc:
+            # SQLite can throw lock errors on concurrent writes; try read path.
+            if 'database is locked' in str(exc).lower():
+                existing = EndOfDayReconciliation.objects.filter(
+                    reconciliation_date=reconciliation_date
+                ).first()
+                if existing:
+                    logger.warning(
+                        "Database lock while creating reconciliation for %s; using existing record %s",
+                        reconciliation_date,
+                        existing.id,
+                    )
+                    return existing
+            raise
+
+        if reconciliation.status == 'FINALIZED':
             raise ValidationError(
                 f"Reconciliation for {reconciliation_date} is already finalized."
             )
-        
-        if existing:
+
+        if not created:
             logger.info(f"Found existing reconciliation for {reconciliation_date}, refreshing calculations")
-            # Refresh the existing reconciliation to ensure it has the latest data
-            ReconciliationService._perform_reconciliation(
-                existing,
-                close_active_visits=close_active_visits
-            )
-            return existing
-        
-        # Create new reconciliation
-        reconciliation = EndOfDayReconciliation.objects.create(
-            reconciliation_date=reconciliation_date,
-            prepared_by_id=prepared_by_id,
-            status='DRAFT'
-        )
         
         # Perform reconciliation (within transaction)
         ReconciliationService._perform_reconciliation(
@@ -122,7 +134,8 @@ class ReconciliationService:
         reconciliation.total_visits = visits.count()
         
         # Close active visits if requested
-        active_visits = visits.filter(status='ACTIVE')
+        # Visit model uses OPEN/CLOSED statuses.
+        active_visits = visits.filter(status='OPEN')
         if close_active_visits:
             closed_count = active_visits.update(status='CLOSED')
             reconciliation.active_visits_closed = closed_count
@@ -332,7 +345,7 @@ class ReconciliationService:
                     'id': patient.id if patient else None,
                     'name': f"{patient.first_name} {patient.last_name}".strip() if patient else None,
                     'mrn': patient.patient_id if patient else None,
-                    'phone': patient.phone_number if patient else None,
+                    'phone': getattr(patient, 'phone', None) if patient else None,
                 } if patient else None,
                 'processed_by': {
                     'id': processed_by.id if processed_by else None,

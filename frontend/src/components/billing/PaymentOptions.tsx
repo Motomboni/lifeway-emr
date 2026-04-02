@@ -179,6 +179,14 @@ export default function PaymentOptions({
       showError('Please enter a valid amount');
       return;
     }
+    if (!paystackForm.customer_email.trim()) {
+      showError('Customer email is required for Paystack payments');
+      return;
+    }
+    if (!isPaystackEmailValid) {
+      showError('Please enter a valid customer email address');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -186,7 +194,7 @@ export default function PaymentOptions({
         visit_id: visitId,
         amount: paystackForm.amount,
         callback_url: `${window.location.origin}/visits/${visitId}`,
-        customer_email: paystackForm.customer_email || undefined,
+        customer_email: paystackForm.customer_email.trim(),
       });
 
       if (response.authorization_url) {
@@ -265,6 +273,9 @@ export default function PaymentOptions({
   const outstandingBalance = billingSummary
     ? parseFloat(billingSummary.outstanding_balance)
     : 0;
+  const paystackEmailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const paystackEmailTrimmed = paystackForm.customer_email.trim();
+  const isPaystackEmailValid = paystackEmailRegex.test(paystackEmailTrimmed);
 
   const isVisitClosed = visit.status === 'CLOSED';
   const isInsuranceVisit = visit.payment_type === 'INSURANCE';
@@ -521,7 +532,7 @@ export default function PaymentOptions({
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>
-                Customer Email (Optional)
+                Customer Email *
               </label>
               <input
                 type="email"
@@ -529,11 +540,22 @@ export default function PaymentOptions({
                 onChange={(e) => setPaystackForm({ ...paystackForm, customer_email: e.target.value })}
                 className={styles.formInput}
                 placeholder="customer@example.com"
+                required
               />
+              {paystackEmailTrimmed && !isPaystackEmailValid && (
+                <p className={styles.errorText}>
+                  Please enter a valid email address (e.g., customer@example.com).
+                </p>
+              )}
             </div>
             <button
               onClick={handlePaystackPayment}
-              disabled={loading || !isValidAmount(paystackForm.amount)}
+              disabled={
+                loading ||
+                !isValidAmount(paystackForm.amount) ||
+                !paystackEmailTrimmed ||
+                !isPaystackEmailValid
+              }
               className={`${styles.submitButton} ${styles.submitButtonPaystack}`}
             >
               {loading ? 'Initializing...' : 'Initialize Paystack Payment'}

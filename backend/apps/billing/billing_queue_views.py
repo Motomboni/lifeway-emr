@@ -50,7 +50,7 @@ class BillingPendingQueueView(APIView):
                     'billing_line_items',
                     queryset=BillingLineItem.objects.filter(
                         bill_status__in=['PENDING', 'PARTIALLY_PAID']
-                    ).select_related('service_catalog').order_by('department', 'created_at')
+                    ).select_related('service_catalog').order_by('service_catalog__department', 'created_at')
                 )
             )
             .order_by('-updated_at')

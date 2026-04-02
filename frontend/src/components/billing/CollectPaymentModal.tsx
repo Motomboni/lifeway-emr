@@ -99,10 +99,18 @@ export default function CollectPaymentModal({
   const isAmountExceedsBalance = amountNum > outstandingBalance;
   const isAmountExceedsWallet = paymentMethod === 'WALLET' && patientWallet && amountNum > parseFloat(patientWallet.balance);
   const canProceed = isAmountValid && !isAmountExceedsBalance && !isAmountExceedsWallet;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   // Check if transfer reference is required
   const requiresReference = paymentMethod === 'TRANSFER';
-  const canProceedToConfirmation = canProceed && (!requiresReference || transactionReference.trim() !== '');
+  const requiresCustomerEmail = paymentMethod === 'PAYSTACK';
+  const customerEmailTrimmed = customerEmail.trim();
+  const hasCustomerEmail = customerEmailTrimmed !== '';
+  const isCustomerEmailValid = !requiresCustomerEmail || emailRegex.test(customerEmailTrimmed);
+  const canProceedToConfirmation =
+    canProceed &&
+    (!requiresReference || transactionReference.trim() !== '') &&
+    (!requiresCustomerEmail || (hasCustomerEmail && isCustomerEmailValid));
 
   const handleProceedToConfirmation = () => {
     if (canProceedToConfirmation) {
@@ -146,11 +154,19 @@ export default function CollectPaymentModal({
         }
 
         case 'PAYSTACK': {
+          if (!hasCustomerEmail) {
+            showError('Customer email is required for Paystack payments');
+            return;
+          }
+          if (!isCustomerEmailValid) {
+            showError('Please enter a valid customer email address');
+            return;
+          }
           const response = await initializePaystackPayment(visitId, {
             visit_id: visitId,
             amount: amount,
             callback_url: `${window.location.origin}/visits/${visitId}`,
-            customer_email: customerEmail || undefined,
+            customer_email: customerEmailTrimmed,
           });
 
           if (response.authorization_url) {
@@ -454,16 +470,25 @@ export default function CollectPaymentModal({
                 {paymentMethod === 'PAYSTACK' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Customer Email (Optional)
+                      Customer Email *
                     </label>
                     <input
                       type="email"
                       value={customerEmail}
                       onChange={(e) => setCustomerEmail(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className={`
+                        w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                        ${hasCustomerEmail && !isCustomerEmailValid ? 'border-red-300 bg-red-50' : 'border-gray-300'}
+                      `}
                       placeholder="customer@example.com"
                       disabled={isVisitClosed}
+                      required
                     />
+                    {hasCustomerEmail && !isCustomerEmailValid && (
+                      <p className="mt-1 text-sm text-red-600">
+                        Please enter a valid email address (e.g., customer@example.com).
+                      </p>
+                    )}
                   </div>
                 )}
 

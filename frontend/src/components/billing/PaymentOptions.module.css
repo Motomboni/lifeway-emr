@@ -300,6 +300,12 @@
   margin-top: 0.5rem;
 }
 
+.errorText {
+  font-size: 0.75rem;
+  color: #dc2626;
+  margin-top: 0.25rem;
+}
+
 .permissionMessage {
   text-align: center;
   padding: 2rem;

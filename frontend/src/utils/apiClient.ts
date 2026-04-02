@@ -205,7 +205,8 @@ export async function apiRequest<T>(
     const isExpected404 = response.status === 404 && (
       endpoint.includes('/results/') || 
       endpoint.endsWith('/results') ||
-      endpoint.includes('/insurance/')  // Insurance endpoints may not exist for all visits
+      endpoint.includes('/insurance/') ||  // Insurance endpoints may not exist for all visits
+      endpoint.includes('/billing/reconciliation/today/') // "no reconciliation yet today" is expected
     );
     
     // Check if this is a 401 that will be handled by token refresh
