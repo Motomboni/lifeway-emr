@@ -78,7 +78,7 @@ Error: Show error, isSaving = false
    - **Response**: `Consultation` (created object)
    - **Error Handling**:
      - 400: Validation error → show field errors
-     - 403: Payment not cleared / Visit closed → show error
+    - 403: Visit closed / role not allowed → show error
      - 409: Consultation already exists → switch to update mode
 
 3. **PATCH `/api/v1/visits/{visitId}/consultation/`**
@@ -87,7 +87,7 @@ Error: Show error, isSaving = false
    - **Response**: `Consultation` (updated object)
    - **Error Handling**:
      - 400: Validation error → show field errors
-     - 403: Payment not cleared / Visit closed → show error
+    - 403: Visit closed / role not allowed → show error
      - 404: Consultation not found → switch to create mode
 
 ### Authentication
@@ -107,7 +107,6 @@ Error: Show error, isSaving = false
 2. **403 Forbidden**
    - Show error message from API
    - Common messages:
-     - "Payment must be cleared before consultation"
      - "Visit is closed and cannot be modified"
      - "Only doctors can create consultations"
    - Disable save button
@@ -183,7 +182,7 @@ When implemented, these will be added as inline sections:
 ✅ **No Sidebar Navigation**: Single screen design  
 ✅ **Context Preservation**: Visit header always visible  
 ✅ **Inline Components**: Structure ready for Lab/Radiology/Prescription  
-✅ **Payment Enforcement**: Handled by backend (403 if not cleared)  
+✅ **Consultation Before Payment**: Consultation access is not blocked by payment status  
 ✅ **Role Enforcement**: Handled by backend (403 if not doctor)  
 ✅ **CLOSED Visit Handling**: Read-only mode when visit is closed  
 

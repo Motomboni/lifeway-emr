@@ -214,7 +214,7 @@ Lock messages follow this format:
 ```
 
 **Examples:**
-- "Consultation locked: Payment not cleared. Current payment status: UNPAID. Please process payment before starting consultation."
+- "Consultation available: Payment status does not block consultation access."
 - "Radiology image upload is locked because visit payment is not cleared. Current payment status: UNPAID. Please process payment before uploading images."
 - "Drug dispense is locked because visit payment is not cleared. Current payment status: UNPAID. Please process payment before dispensing drugs. For emergency cases, set is_emergency=True with proper authorization."
 

@@ -202,3 +202,141 @@ class RegisterSerializer(serializers.ModelSerializer):
                 user.save(update_fields=['is_active'])
         
         return user
+
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    """Serializer for initiating password reset via email or username."""
+
+    identifier = serializers.CharField(
+        required=True,
+        help_text="Username or email for the account requesting a password reset"
+    )
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    """Serializer for completing password reset using uid/token."""
+
+    uid = serializers.CharField(required=True)
+    token = serializers.CharField(required=True)
+    new_password = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'},
+        validators=[validate_password],
+    )
+    new_password_confirm = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'},
+    )
+
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['new_password_confirm']:
+            raise serializers.ValidationError({
+                'new_password_confirm': "Password fields didn't match."
+            })
+        return attrs
+
+
+class AccountUpdateSerializer(serializers.Serializer):
+    """
+    Serializer for updating account credentials (authenticated user).
+
+    Supports changing password/email/username with current_password verification.
+    """
+
+    current_password = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'},
+        help_text="Current password required to change account details",
+    )
+    new_password = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=False,
+        style={'input_type': 'password'},
+        validators=[validate_password],
+    )
+    new_password_confirm = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=False,
+        style={'input_type': 'password'},
+    )
+    new_email = serializers.EmailField(required=False, allow_blank=False)
+    new_username = serializers.CharField(required=False, allow_blank=False)
+
+    def validate(self, attrs):
+        """
+        Ensure:
+        - At least one of new_password/new_email/new_username is provided
+        - Password confirmation matches when provided
+        """
+        has_password_change = bool(attrs.get('new_password') or attrs.get('new_password_confirm'))
+        has_email_change = 'new_email' in attrs
+        has_username_change = 'new_username' in attrs
+
+        if not (has_password_change or has_email_change or has_username_change):
+            raise serializers.ValidationError(
+                "No changes provided. Specify at least one of new_password, new_email, or new_username."
+            )
+
+        if attrs.get('new_password') or attrs.get('new_password_confirm'):
+            if not attrs.get('new_password') or not attrs.get('new_password_confirm'):
+                raise serializers.ValidationError(
+                    {"new_password_confirm": "Both new_password and new_password_confirm are required."}
+                )
+            if attrs['new_password'] != attrs['new_password_confirm']:
+                raise serializers.ValidationError(
+                    {"new_password_confirm": "Password fields didn't match."}
+                )
+
+        return attrs
+
+    def validate_new_email(self, value: str) -> str:
+        user = self.context['request'].user
+        if value and User.objects.filter(email__iexact=value).exclude(pk=user.pk).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
+
+    def validate_new_username(self, value: str) -> str:
+        user = self.context['request'].user
+        if value and User.objects.filter(username__iexact=value).exclude(pk=user.pk).exists():
+            raise serializers.ValidationError("A user with this username already exists.")
+        return value
+
+    def save(self, **kwargs):
+        """
+        Apply changes to the authenticated user instance.
+        """
+        user: User = self.context['request'].user
+        current_password = self.validated_data['current_password']
+
+        if not user.check_password(current_password):
+            raise serializers.ValidationError(
+                {"current_password": "Current password is incorrect."}
+            )
+
+        updated_fields = []
+
+        new_email = self.validated_data.get('new_email')
+        if new_email:
+            user.email = new_email
+            updated_fields.append('email')
+
+        new_username = self.validated_data.get('new_username')
+        if new_username:
+            user.username = new_username
+            updated_fields.append('username')
+
+        new_password = self.validated_data.get('new_password')
+        if new_password:
+            user.set_password(new_password)
+            # Password is saved via set_password; include it explicitly
+            updated_fields.append('password')
+
+        if updated_fields:
+            user.save(update_fields=updated_fields)
+
+        return user

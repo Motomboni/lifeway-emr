@@ -6,7 +6,7 @@ Endpoint: /api/v1/visits/{visit_id}/consultation/diagnosis-codes/
 Enforcement:
 1. Doctor-only access for write operations
 2. Visit must be OPEN for mutations
-3. Payment must be CLEARED for mutations
+3. Payment does not gate diagnosis code mutations
 4. One primary code per consultation
 """
 from rest_framework import viewsets, status
@@ -23,7 +23,7 @@ from .diagnosis_models import DiagnosisCode
 from .serializers import DiagnosisCodeSerializer
 from .models import Consultation
 from apps.visits.models import Visit
-from core.permissions import IsDoctor, IsVisitOpen, IsPaymentCleared, IsVisitAccessible
+from core.permissions import IsDoctor, IsVisitOpen, IsVisitAccessible
 from core.audit import log_consultation_action
 
 
@@ -40,7 +40,7 @@ class DiagnosisCodeViewSet(viewsets.ModelViewSet):
     """
     
     serializer_class = DiagnosisCodeSerializer
-    permission_classes = [IsDoctor, IsVisitOpen, IsPaymentCleared]
+    permission_classes = [IsDoctor, IsVisitOpen]
     
     def get_queryset(self):
         """Get diagnosis codes for the consultation."""
@@ -76,15 +76,6 @@ class DiagnosisCodeViewSet(viewsets.ModelViewSet):
                 code='visit_closed'
             )
     
-    def check_payment_status(self, visit):
-        """Ensure payment is cleared before allowing mutations."""
-        if not visit.is_payment_cleared():
-            raise PermissionDenied(
-                detail="Payment must be cleared before modifying diagnosis codes. "
-                       f"Current payment status: {visit.payment_status}",
-                code='payment_not_cleared'
-            )
-    
     def perform_create(self, serializer):
         """Create diagnosis code."""
         visit = self.get_visit()
@@ -92,9 +83,6 @@ class DiagnosisCodeViewSet(viewsets.ModelViewSet):
         
         # Enforce visit status
         self.check_visit_status(visit)
-        
-        # Enforce payment status
-        self.check_payment_status(visit)
         
         # If setting as primary, unset other primary codes
         if serializer.validated_data.get('is_primary'):
@@ -131,9 +119,6 @@ class DiagnosisCodeViewSet(viewsets.ModelViewSet):
         # Enforce visit status
         self.check_visit_status(visit)
         
-        # Enforce payment status
-        self.check_payment_status(visit)
-        
         # If setting as primary, unset other primary codes
         if serializer.validated_data.get('is_primary', False):
             DiagnosisCode.objects.filter(
@@ -165,9 +150,6 @@ class DiagnosisCodeViewSet(viewsets.ModelViewSet):
         # Enforce visit status
         self.check_visit_status(visit)
         
-        # Enforce payment status
-        self.check_payment_status(visit)
-        
         code = instance.code
         consultation_id = instance.consultation.id
         
@@ -192,7 +174,7 @@ class DiagnosisCodeViewSet(viewsets.ModelViewSet):
             from rest_framework.permissions import IsAuthenticated
             return [IsAuthenticated(), IsVisitAccessible()]
         else:
-            return [IsDoctor(), IsVisitOpen(), IsPaymentCleared()]
+            return [IsDoctor(), IsVisitOpen()]
     
     @action(detail=False, methods=['post'], url_path='from-ai-suggestion')
     def from_ai_suggestion(self, request, visit_id=None):
@@ -215,9 +197,6 @@ class DiagnosisCodeViewSet(viewsets.ModelViewSet):
         
         # Enforce visit status
         self.check_visit_status(visit)
-        
-        # Enforce payment status
-        self.check_payment_status(visit)
         
         icd11_codes = request.data.get('icd11_codes', [])
         set_primary = request.data.get('set_primary', False)

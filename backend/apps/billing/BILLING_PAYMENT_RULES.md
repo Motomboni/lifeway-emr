@@ -4,11 +4,10 @@
 
 Only these services **require payment before access**:
 - **Patient Registration**
-- **Doctor Consultation**
 
 ### System behavior
 - **Registration unpaid** → Block access to consultation (API 403, UI gate).
-- **Consultation unpaid** → Block doctor from starting encounter (API 403, UI gate).
+- **Consultation unpaid** → Consultation is still allowed; billing can be completed during/after care.
 - Payments can be collected by: **Receptionist**, or **Self-payment** (if enabled).
 - Once paid, the next stage is unlocked automatically (gates use `BillingLineItem.bill_status = PAID`).
 
@@ -42,9 +41,8 @@ All other services are **billed after consultation** and **must not require upfr
 
 ## 5. Enforcement
 
-- **Backend**: `IsRegistrationPaymentCleared` and `IsConsultationPaymentCleared` permission classes.
-- Consultation API: read (retrieve/list) requires registration paid; write (create/update) requires consultation paid.
-- **Frontend**: Payment gates in billing summary; consultation buttons and section gated by `payment_gates.registration_paid` and `payment_gates.consultation_paid`.
+- **Backend**: Consultation API is no longer payment-gated; payment checks still apply to other clinical actions where configured.
+- **Frontend**: Consultation buttons/section are not payment-gated; billing status remains visible for operational follow-up.
 
 ## 6. Audit & Traceability
 

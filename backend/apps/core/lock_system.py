@@ -101,7 +101,6 @@ class LockEvaluator:
         Evaluate if consultation is locked.
         
         Locks consultation if:
-        - Visit payment not cleared
         - Visit is closed
         - Visit not found
         """
@@ -125,27 +124,6 @@ class LockEvaluator:
                 human_readable_message="This visit is closed. Consultations cannot be started for closed visits.",
                 details={'visit_status': visit.status},
                 unlock_actions=["Create a new visit for this patient"]
-            )
-        
-        # Check payment status
-        if not visit.is_payment_cleared():
-            payment_status = visit.payment_status
-            return LockResult(
-                is_locked=True,
-                reason_code=LockReasonCode.PAYMENT_NOT_CLEARED,
-                human_readable_message=(
-                    f"Consultation is locked because payment is not cleared. "
-                    f"Current payment status: {payment_status}. "
-                    f"Please process payment before starting consultation."
-                ),
-                details={
-                    'payment_status': payment_status,
-                    'payment_type': getattr(visit, 'payment_type', None)
-                },
-                unlock_actions=[
-                    "Process payment for this visit",
-                    "Update payment status to PAID or SETTLED"
-                ]
             )
         
         # Consultation is not locked
@@ -334,17 +312,19 @@ class LockEvaluator:
             from apps.consultations.models import Consultation
             try:
                 consultation = Consultation.objects.get(pk=consultation_id)
-                if consultation.status != 'ACTIVE':
+                # Allow lab orders when consultation is ACTIVE or PENDING.
+                # Only lock when consultation is CLOSED or in an incompatible state.
+                if consultation.status == 'CLOSED':
                     return LockResult(
                         is_locked=True,
                         reason_code=LockReasonCode.CONSULTATION_NOT_ACTIVE,
                         human_readable_message=(
-                            f"Lab order is locked because the consultation is not active. "
+                            f"Lab order is locked because the consultation is closed. "
                             f"Current consultation status: {consultation.status}. "
-                            f"Only active consultations can have lab orders."
+                            f"Only open (active or pending) consultations can have new lab orders."
                         ),
                         details={'consultation_status': consultation.status},
-                        unlock_actions=["Activate the consultation"]
+                        unlock_actions=["Create a new consultation or reopen the workflow"]
                     )
             except Consultation.DoesNotExist:
                 return LockResult(

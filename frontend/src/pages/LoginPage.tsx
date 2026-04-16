@@ -121,6 +121,17 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
             {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
+
+        <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+          <button
+            type="button"
+            style={{ border: 'none', background: 'none', color: '#4f46e5', cursor: 'pointer' }}
+            onClick={() => navigate('/forgot-password')}
+            disabled={isLoading}
+          >
+            Forgot password?
+          </button>
+        </div>
       </div>
     </div>
   );

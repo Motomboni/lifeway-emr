@@ -130,7 +130,7 @@ class IsPaymentCleared(permissions.BasePermission):
         
         if not visit.is_payment_cleared():
             raise PermissionDenied(
-                detail="Payment must be cleared before consultation. "
+                detail="Payment must be cleared before this clinical action. "
                        f"Current payment status: {visit.payment_status}",
                 code='payment_not_cleared'
             )
@@ -140,71 +140,23 @@ class IsPaymentCleared(permissions.BasePermission):
 
 class IsRegistrationPaymentCleared(permissions.BasePermission):
     """
-    Strict payment rule: Registration must be paid before access to consultation.
-    Blocks access to consultation UI/API until registration payment is collected.
+    Kept for backwards compatibility with older URL/view wiring.
+
+    Consultation and related clinical flows are not gated on registration payment.
     """
-    
+
     def has_permission(self, request, view):
-        from rest_framework.exceptions import PermissionDenied
-        visit = getattr(request, 'visit', None)
-        if not visit:
-            visit_id = view.kwargs.get('visit_id')
-            if visit_id:
-                try:
-                    from apps.visits.models import Visit
-                    visit = Visit.objects.get(pk=visit_id)
-                    if hasattr(request, 'visit'):
-                        request.visit = visit
-                except Visit.DoesNotExist:
-                    return False
-        if not visit:
-            return False
-        try:
-            visit.refresh_from_db()
-        except Exception:
-            pass
-        from apps.billing.payment_gates_service import is_registration_paid
-        if not is_registration_paid(visit):
-            raise PermissionDenied(
-                detail="Registration payment is required before access to consultation. "
-                       "Please collect registration payment at reception.",
-                code='registration_payment_required'
-            )
         return True
 
 
 class IsConsultationPaymentCleared(permissions.BasePermission):
     """
-    Strict payment rule: Consultation must be paid before doctor can start encounter.
-    Doctors can see consultation exists but cannot start/edit until consultation is paid.
+    Kept for backwards compatibility with older URL/view wiring.
+
+    Consultation is not gated on consultation-line-item payment.
     """
-    
+
     def has_permission(self, request, view):
-        from rest_framework.exceptions import PermissionDenied
-        visit = getattr(request, 'visit', None)
-        if not visit:
-            visit_id = view.kwargs.get('visit_id')
-            if visit_id:
-                try:
-                    from apps.visits.models import Visit
-                    visit = Visit.objects.get(pk=visit_id)
-                    if hasattr(request, 'visit'):
-                        request.visit = visit
-                except Visit.DoesNotExist:
-                    return False
-        if not visit:
-            return False
-        try:
-            visit.refresh_from_db()
-        except Exception:
-            pass
-        from apps.billing.payment_gates_service import is_consultation_paid
-        if not is_consultation_paid(visit):
-            raise PermissionDenied(
-                detail="Consultation payment is required before starting the encounter. "
-                       "Please collect consultation payment at reception.",
-                code='consultation_payment_required'
-            )
         return True
 
 
@@ -328,9 +280,8 @@ class IsGOPDConsultationAccessible(permissions.BasePermission):
     Permission class for GOPD Consultation workflow driven by ServiceCatalog.
     
     Rules:
-    - If bill_timing = BEFORE: Payment must be cleared AND consultation must be ACTIVE
-    - If bill_timing = AFTER: Consultation can be accessed if ACTIVE (payment not required before)
-    - PENDING consultations: Only accessible if payment is cleared (for activation)
+    - Consultation access is not blocked by payment status
+    - Consultation status and doctor assignment are enforced
     - CLOSED consultations: Read-only access
     """
     
@@ -350,18 +301,8 @@ class IsGOPDConsultationAccessible(permissions.BasePermission):
         from apps.consultations.models import Consultation
         consultation = Consultation.objects.filter(visit=visit).first()
         
-        # If no consultation exists, check if we can create one
-        # This depends on payment status and service configuration
+        # If no consultation exists, allow creation path
         if not consultation:
-            # Check if payment is required before consultation
-            # This would be determined by the ServiceCatalog service
-            # For now, we'll allow creation if payment is cleared
-            if not visit.is_payment_cleared():
-                raise PermissionDenied(
-                    detail="Payment must be cleared before consultation can be created. "
-                           f"Current payment status: {visit.payment_status}",
-                    code='payment_not_cleared'
-                )
             return True
         
         # Consultation exists - check status and payment
@@ -370,14 +311,7 @@ class IsGOPDConsultationAccessible(permissions.BasePermission):
             return request.method in permissions.SAFE_METHODS
         
         if consultation.status == 'PENDING':
-            # PENDING consultations require payment to be cleared for activation
-            if not visit.is_payment_cleared():
-                raise PermissionDenied(
-                    detail="Payment must be cleared before consultation can be activated. "
-                           f"Current payment status: {visit.payment_status}",
-                    code='payment_not_cleared'
-                )
-            # Payment cleared - can activate or access
+            # PENDING consultations can be activated/accessed per workflow.
             return True
         
         if consultation.status == 'ACTIVE':
@@ -387,8 +321,6 @@ class IsGOPDConsultationAccessible(permissions.BasePermission):
                     detail="Only the assigned doctor can access this consultation.",
                     code='doctor_not_assigned'
                 )
-            # Payment should be cleared for ACTIVE consultations
-            # (This is enforced at creation time)
             return True
         
         return False

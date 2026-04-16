@@ -17,6 +17,7 @@ class VisitSerializer(serializers.ModelSerializer):
     
     patient_name = serializers.SerializerMethodField()
     patient_id = serializers.SerializerMethodField()
+    assigned_doctor_name = serializers.SerializerMethodField()
     
     class Meta:
         model = Visit
@@ -28,6 +29,8 @@ class VisitSerializer(serializers.ModelSerializer):
             'visit_type',
             'chief_complaint',
             'appointment',
+            'assigned_doctor',
+            'assigned_doctor_name',
             'status',
             'payment_type',
             'payment_status',
@@ -38,6 +41,7 @@ class VisitSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             'id',
+            'assigned_doctor_name',
             'closed_by',
             'closed_at',
             'created_at',
@@ -55,6 +59,14 @@ class VisitSerializer(serializers.ModelSerializer):
         if obj.patient:
             return obj.patient.patient_id
         return None
+
+    def get_assigned_doctor_name(self, obj):
+        """Display name for assigned doctor (if any)."""
+        user = getattr(obj, 'assigned_doctor', None)
+        if not user:
+            return None
+        name = (user.get_full_name() or '').strip()
+        return name or user.username
 
 
 class VisitCreateSerializer(VisitSerializer):
@@ -84,6 +96,7 @@ class VisitCreateSerializer(VisitSerializer):
         # Set queryset dynamically to avoid circular import
         from apps.patients.models import Patient
         from apps.appointments.models import Appointment
+        from apps.users.models import User
         
         self.fields['patient'] = serializers.PrimaryKeyRelatedField(
             queryset=Patient.objects.filter(is_active=True),
@@ -98,6 +111,13 @@ class VisitCreateSerializer(VisitSerializer):
             required=False,
             allow_null=True,
             help_text="Linked appointment (optional)"
+        )
+
+        self.fields['assigned_doctor'] = serializers.PrimaryKeyRelatedField(
+            queryset=User.objects.filter(role='DOCTOR', is_active=True).order_by('first_name', 'last_name'),
+            required=False,
+            allow_null=True,
+            help_text="Registered doctor this patient is seeing (optional)",
         )
     
     def validate_patient(self, value):
@@ -177,16 +197,6 @@ class VisitReadSerializer(VisitSerializer):
         """Get patient details for consultation header."""
         if not obj.patient:
             return None
-    
-    def get_patient_retainership(self, obj):
-        """Get patient retainership information."""
-        if not obj.patient:
-            return None
-        
-        from apps.patients.retainership_utils import get_retainership_info
-        
-        return get_retainership_info(obj.patient)
-        
         try:
             patient = obj.patient
             return {
@@ -196,5 +206,13 @@ class VisitReadSerializer(VisitSerializer):
                 'phone': patient.phone,
             }
         except Exception:
-            # If patient data access fails, return None
             return None
+    
+    def get_patient_retainership(self, obj):
+        """Get patient retainership information."""
+        if not obj.patient:
+            return None
+        
+        from apps.patients.retainership_utils import get_retainership_info
+        
+        return get_retainership_info(obj.patient)

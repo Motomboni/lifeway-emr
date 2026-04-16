@@ -257,6 +257,225 @@
   border-color: #bbb;
 }
 
+/* Patient portal promo (theme-aware; fixes contrast in dark mode) */
+.portalSection {
+  background: #eff6ff;
+  border: 2px solid #93c5fd;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: #111827;
+}
+
+.portalSectionRow {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.portalSectionRow:last-child {
+  margin-bottom: 0;
+}
+
+.portalCheckbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.125rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: #2563eb;
+}
+
+.portalSectionTextWrap {
+  margin-left: 0.75rem;
+  min-width: 0;
+}
+
+.portalSectionLabel {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  cursor: pointer;
+  user-select: none;
+}
+
+.portalSectionHint {
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin-top: 0.25rem;
+  line-height: 1.45;
+}
+
+.portalFields {
+  margin-top: 1.5rem;
+  padding-left: 2rem;
+  border-left: 4px solid #60a5fa;
+}
+
+.portalFieldGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .portalFieldGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.portalFieldLabel {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.375rem;
+}
+
+.portalRequired {
+  color: #dc2626;
+}
+
+.portalFieldInput {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  background: #ffffff;
+  color: #111827;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.portalFieldInput:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.portalFieldInputError {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.portalFieldHelper {
+  margin-top: 0.375rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.portalFieldError {
+  margin-top: 0.375rem;
+  font-size: 0.875rem;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+}
+
+.portalInfoBox {
+  background: #dbeafe;
+  border: 1px solid #60a5fa;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.portalInfoRow {
+  display: flex;
+  align-items: flex-start;
+}
+
+.portalInfoIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #2563eb;
+  margin-top: 0.125rem;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+}
+
+.portalInfoText {
+  font-size: 0.875rem;
+  color: #1e40af;
+  line-height: 1.5;
+}
+
+.portalInfoTitle {
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+}
+
+[data-theme='dark'] .portalSection {
+  background: #1e3a5f;
+  border-color: #3b82f6;
+  color: #f1f5f9;
+}
+
+[data-theme='dark'] .portalSectionLabel {
+  color: #f8fafc;
+}
+
+[data-theme='dark'] .portalSectionHint {
+  color: #cbd5e1;
+}
+
+[data-theme='dark'] .portalFields {
+  border-left-color: #60a5fa;
+}
+
+[data-theme='dark'] .portalFieldLabel {
+  color: #e2e8f0;
+}
+
+[data-theme='dark'] .portalRequired {
+  color: #fca5a5;
+}
+
+[data-theme='dark'] .portalFieldInput {
+  background: #0f172a;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+[data-theme='dark'] .portalFieldInput:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25);
+}
+
+[data-theme='dark'] .portalFieldInputError {
+  background: #450a0a;
+  border-color: #f87171;
+  color: #fecaca;
+}
+
+[data-theme='dark'] .portalFieldHelper {
+  color: #94a3b8;
+}
+
+[data-theme='dark'] .portalFieldError {
+  color: #fca5a5;
+}
+
+[data-theme='dark'] .portalInfoBox {
+  background: #172554;
+  border-color: #3b82f6;
+}
+
+[data-theme='dark'] .portalInfoIcon {
+  color: #93c5fd;
+}
+
+[data-theme='dark'] .portalInfoText {
+  color: #cbd5e1;
+}
+
+[data-theme='dark'] .portalInfoTitle {
+  color: #f8fafc;
+}
+
 @media (max-width: 768px) {
   .formRow {
     grid-template-columns: 1fr;

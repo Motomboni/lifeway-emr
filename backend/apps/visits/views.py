@@ -90,7 +90,7 @@ class VisitViewSet(viewsets.ModelViewSet):
     - Audit logging
     """
     
-    queryset = Visit.objects.all().select_related('patient', 'closed_by')
+    queryset = Visit.objects.all().select_related('patient', 'closed_by', 'assigned_doctor')
     
     def get_serializer_class(self):
         """

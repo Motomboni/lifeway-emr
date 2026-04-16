@@ -86,6 +86,19 @@ class PaymentClearedGuard:
             excluded_path in path for excluded_path in self.EXCLUDED_PATHS
         )
 
+    # Clinical subpaths allowed while visit payment is still pending (triage + consultation).
+    CLINICAL_ALLOWED_BEFORE_PAYMENT = (
+        '/consultation/',
+        '/vitals/',
+        '/nursing-notes/',
+        '/medication-administration/',
+        '/lab-samples/',
+        '/laboratory/',
+    )
+
+    def _clinical_allowed_before_payment(self, path):
+        return any(prefix in path for prefix in self.CLINICAL_ALLOWED_BEFORE_PAYMENT)
+
     def __call__(self, request):
         visit = getattr(request, 'visit', None)
         if visit:
@@ -144,20 +157,14 @@ class PaymentClearedGuard:
                     # The view-level permissions will still enforce role-based access
                     return self.get_response(request)
                 
-                # Allow /consultation/ when registration is paid (read and write; view enforces registration gate)
-                if '/consultation/' in path:
-                    try:
-                        from apps.billing.payment_gates_service import is_registration_paid
-                        if is_registration_paid(visit):
-                            return self.get_response(request)
-                    except Exception:
-                        pass
+                if self._clinical_allowed_before_payment(path):
+                    return self.get_response(request)
                 
                 # Check if this is an API request (DRF)
                 if hasattr(request, 'path') and '/api/' in request.path:
                     # Return proper JSON response for API requests
                     return JsonResponse(
-                        {'detail': 'Payment must be cleared before consultation. '
+                        {'detail': 'Payment must be cleared before this clinical action. '
                                   f'Current payment status: {visit.payment_status}'},
                         status=403
                     )

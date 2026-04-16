@@ -4,7 +4,7 @@ Pytest tests for Consultation API enforcement.
 Tests EMR rule compliance:
 - Unauthenticated access denied
 - Non-doctor role denied
-- Registration payment required (full visit settlement not required for consultation)
+- Consultation allowed regardless of payment status
 - Visit must be OPEN
 - Audit log created on success
 
@@ -146,11 +146,11 @@ class TestConsultationRoleEnforcement:
 
 
 @pytest.mark.django_db
-class TestConsultationPaymentEnforcement:
-    """Test D1: Consultation blocked until registration is paid (visit may still be UNPAID overall)."""
+class TestConsultationPaymentPolicy:
+    """Test D1: Consultation can proceed before payment is cleared."""
     
-    def test_consultation_blocked_if_payment_pending(self, doctor_token, unpaid_visit):
-        """D1: Doctor cannot create consultation when registration gate is not satisfied."""
+    def test_consultation_allowed_if_payment_pending(self, doctor_token, unpaid_visit):
+        """D1: Doctor can create consultation even when payment is pending."""
         client = APIClient()
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {doctor_token}")
         url = f"/api/v1/visits/{unpaid_visit.id}/consultation/"
@@ -162,16 +162,11 @@ class TestConsultationPaymentEnforcement:
             'clinical_notes': 'Test notes'
         })
         
-        assert response.status_code in [
-            status.HTTP_403_FORBIDDEN,
-            status.HTTP_402_PAYMENT_REQUIRED
-        ]
-        response_data = get_response_data(response)
-        error_text = str(response_data).lower()
-        assert 'payment' in error_text or 'cleared' in error_text or 'registration' in error_text
+        assert response.status_code == status.HTTP_201_CREATED
+        assert Consultation.objects.filter(visit=unpaid_visit).exists()
     
     def test_consultation_allowed_if_payment_cleared(self, doctor_token, visit):
-        """D1: Doctor can create consultation when registration gate is satisfied (fixture visit)."""
+        """D1: Doctor can create consultation when payment is cleared."""
         client = APIClient()
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {doctor_token}")
         url = f"/api/v1/visits/{visit.id}/consultation/"
@@ -186,9 +181,9 @@ class TestConsultationPaymentEnforcement:
         assert response.status_code == status.HTTP_201_CREATED
         assert Consultation.objects.filter(visit=visit).exists()
     
-    def test_consultation_update_blocked_if_payment_pending(self, doctor_token, unpaid_visit, doctor_user):
-        """D1: Doctor cannot update consultation when registration gate is not satisfied."""
-        # Consultation row exists in DB; API should still reject PATCH until registration is paid
+    def test_consultation_update_allowed_if_payment_pending(self, doctor_token, unpaid_visit, doctor_user):
+        """D1: Doctor can update consultation when payment is pending."""
+        # Consultation row exists in DB; API should allow PATCH regardless of payment status
         consultation = Consultation.objects.create(
             visit=unpaid_visit,
             created_by=doctor_user,
@@ -203,11 +198,7 @@ class TestConsultationPaymentEnforcement:
             'history': 'Updated history'
         })
         
-        # Should be blocked due to payment status
-        assert response.status_code in [
-            status.HTTP_403_FORBIDDEN,
-            status.HTTP_402_PAYMENT_REQUIRED
-        ]
+        assert response.status_code == status.HTTP_200_OK
 
 
 @pytest.mark.django_db

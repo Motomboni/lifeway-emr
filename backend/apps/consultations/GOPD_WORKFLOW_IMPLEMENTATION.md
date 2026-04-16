@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the implementation of the GOPD Consultation workflow that is driven entirely by ServiceCatalog. The workflow ensures proper payment enforcement, doctor assignment, and consultation lifecycle management.
+This document describes the implementation of the GOPD Consultation workflow that is driven entirely by ServiceCatalog. The workflow ensures proper doctor assignment and consultation lifecycle management, while allowing consultation before payment clearance.
 
 ## Architecture
 
@@ -11,7 +11,7 @@ This document describes the implementation of the GOPD Consultation workflow tha
 The workflow is orchestrated by the `gopd_workflow_service.py` module, which:
 - Creates/gets Visit when a GOPD_CONSULT service is selected
 - Creates Consultation based on payment timing configuration
-- Enforces payment guards before doctor access
+- Supports consultation access before payment clearance
 - Supports auto-assignment of doctors from ServiceCatalog
 
 ### Key Components
@@ -82,20 +82,18 @@ PENDING → ACTIVE → CLOSED
   - Read-only access
   - Cannot be modified
 
-### Payment Guards
+### Payment Handling
 
-1. **Before Consultation Creation** (if `bill_timing = 'BEFORE'`)
-   - Payment must be cleared before consultation is created
-   - Doctor access is locked until payment is confirmed
+1. **Before Consultation Creation**
+   - Consultation may be created before payment is cleared.
+   - Billing remains visit-scoped and can be completed during or after consultation.
 
-2. **Before Consultation Activation** (if status is PENDING)
-   - Payment must be cleared before PENDING consultation can be activated
-   - `activate_consultation()` enforces this check
+2. **Consultation Activation**
+   - `activate_consultation()` governs status transitions and visit state.
 
 3. **Permission Enforcement**
-   - `IsGOPDConsultationAccessible` checks payment status
-   - `IsPaymentCleared` is used in consultation views
-   - Both work together to enforce payment guards
+   - `IsGOPDConsultationAccessible` and visit/role checks enforce access control.
+   - Payment status does not block consultation access.
 
 ## Usage Examples
 
@@ -192,7 +190,7 @@ When payment is processed:
 Unit tests should cover:
 - Visit creation for GOPD_CONSULT service
 - Consultation creation with different bill_timing values
-- Payment guard enforcement
+- Consultation access with unpaid and paid visits
 - Doctor assignment (auto and manual)
 - Status transitions (PENDING → ACTIVE → CLOSED)
 - Access control checks

@@ -75,6 +75,13 @@ export async function refreshAccessToken(refreshToken: string): Promise<{ access
 }
 
 /**
+ * List active registered doctors (same source as appointments / visit assignment).
+ */
+export async function fetchRegisteredDoctors(): Promise<User[]> {
+  return apiRequest<User[]>('/auth/doctors/');
+}
+
+/**
  * Get current user
  */
 export async function getCurrentUser(): Promise<User> {
@@ -128,4 +135,44 @@ export async function logoutUser(refreshToken: string): Promise<void> {
     // So we don't throw - the caller will clear state anyway
     return;
   }
+}
+
+export interface ForgotPasswordRequest {
+  identifier: string;
+}
+
+export async function forgotPassword(data: ForgotPasswordRequest): Promise<void> {
+  await unauthenticatedRequest('/auth/forgot-password/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export interface ResetPasswordRequest {
+  uid: string;
+  token: string;
+  new_password: string;
+  new_password_confirm: string;
+}
+
+export async function resetPassword(data: ResetPasswordRequest): Promise<void> {
+  await unauthenticatedRequest('/auth/reset-password/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export interface AccountUpdateRequest {
+  current_password: string;
+  new_password?: string;
+  new_password_confirm?: string;
+  new_email?: string;
+  new_username?: string;
+}
+
+export async function updateAccount(data: AccountUpdateRequest): Promise<User> {
+  return apiRequest<User>('/auth/account/', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
 }

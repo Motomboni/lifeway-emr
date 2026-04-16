@@ -123,6 +123,68 @@
   color: #1976d2;
 }
 
+.assignedDoctorBanner {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #1b5e20;
+  line-height: 1.4;
+}
+
+.assignedDoctorBanner strong {
+  font-weight: 600;
+}
+
+.assignedDoctorSub {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #2e7d32;
+  opacity: 0.95;
+}
+
+.doctorReference {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: #374151;
+}
+
+.doctorReference summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #1f2937;
+  list-style: none;
+}
+
+.doctorReference summary::-webkit-details-marker {
+  display: none;
+}
+
+.doctorList {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  max-height: 11rem;
+  overflow-y: auto;
+}
+
+.doctorList li {
+  margin-bottom: 0.2rem;
+}
+
+.helpTextMuted {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
 /* Status warning banner */
 .statusWarning {
   background-color: #fff3cd;

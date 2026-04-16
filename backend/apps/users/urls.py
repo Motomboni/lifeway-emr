@@ -3,8 +3,19 @@ URL configuration for authentication endpoints.
 """
 from django.urls import path, include
 from .views import (
-    login, refresh_token, logout, me, register, list_doctors,
-    list_pending_staff, approve_staff, list_all_staff, deactivate_staff,
+    login,
+    refresh_token,
+    logout,
+    me,
+    register,
+    list_doctors,
+    list_pending_staff,
+    approve_staff,
+    list_all_staff,
+    deactivate_staff,
+    forgot_password,
+    reset_password,
+    update_account,
 )
 
 urlpatterns = [
@@ -12,6 +23,9 @@ urlpatterns = [
     path('register/', register, name='auth-register'),
     path('refresh/', refresh_token, name='auth-refresh'),
     path('logout/', logout, name='auth-logout'),
+    path('forgot-password/', forgot_password, name='auth-forgot-password'),
+    path('reset-password/', reset_password, name='auth-reset-password'),
+    path('account/', update_account, name='auth-account'),
     path('me/', me, name='auth-me'),
     path('doctors/', list_doctors, name='auth-doctors'),
     path('pending-staff/', list_pending_staff, name='auth-pending-staff'),

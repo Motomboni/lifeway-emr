@@ -21,20 +21,20 @@ class TestSecurity:
         # Unauthenticated requests should return 401, not 403
         assert response.status_code == 401
 
-    def test_payment_required_for_consultation(self, doctor_token, unpaid_visit):
-        """Test that payment is required before creating consultation."""
+    def test_consultation_allowed_before_payment(self, doctor_token, unpaid_visit):
+        """Consultation can be created while visit payment is still pending."""
         from rest_framework import status
-        import json
-        
+
         client = APIClient()
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {doctor_token}")
         url = f"/api/v1/visits/{unpaid_visit.id}/consultation/"
-        response = client.post(url, {})
-        # PermissionDenied raises 403, but 402 is also acceptable
-        assert response.status_code in [status.HTTP_402_PAYMENT_REQUIRED, status.HTTP_403_FORBIDDEN]
-        # Check that payment-related error is present
-        if hasattr(response, 'data'):
-            error_text = str(response.data).lower()
-        else:
-            error_text = json.loads(response.content.decode()).get('detail', '').lower()
-        assert 'payment' in error_text or 'cleared' in error_text
+        response = client.post(
+            url,
+            {
+                "history": "Test history",
+                "examination": "Test examination",
+                "diagnosis": "Test diagnosis",
+                "clinical_notes": "Test notes",
+            },
+        )
+        assert response.status_code == status.HTTP_201_CREATED

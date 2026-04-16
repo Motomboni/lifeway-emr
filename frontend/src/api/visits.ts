@@ -18,6 +18,8 @@ export interface VisitDetails {
   patient: number;
   patient_name?: string;
   patient_id?: string;
+  assigned_doctor?: number | null;
+  assigned_doctor_name?: string | null;
   patient_details?: {
     name: string;
     age?: number;

@@ -61,6 +61,15 @@ class Visit(models.Model):
         related_name='visits',
         help_text="Linked appointment (optional)"
     )
+
+    assigned_doctor = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_visits',
+        help_text="Registered doctor the patient is scheduled to see (set by reception at visit creation).",
+    )
     
     status = models.CharField(
         max_length=20,

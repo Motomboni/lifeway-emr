@@ -61,26 +61,24 @@ describe('Visit Workflow E2E', () => {
   });
 
   /**
-   * Payment enforcement test
-   * 
+   * Consultation access without payment gate
+   *
    * Steps:
    * 1. Receptionist creates visit
-   * 2. Doctor tries to create consultation (should fail - payment not cleared)
-   * 3. Receptionist processes payment
-   * 4. Doctor creates consultation (should succeed)
+   * 2. Doctor opens consultation while payment is still pending (should succeed)
+   * 3. Doctor creates consultation (should succeed)
+   * 4. Receptionist can still process payment later
    */
-  it('should enforce payment before consultation', async () => {
+  it('should allow consultation before payment is cleared', async () => {
     // TODO: Implement with Cypress or Playwright
     // cy.login('receptionist@example.com', 'password');
     // const visitId = cy.createVisit(patientId);
     // cy.login('doctor@example.com', 'password');
     // cy.visit(`/visits/${visitId}/consultation`);
-    // cy.get('[data-testid="error-message"]').should('contain', 'Payment must be cleared');
-    // cy.login('receptionist@example.com', 'password');
-    // cy.processPayment(visitId);
-    // cy.login('doctor@example.com', 'password');
     // cy.createConsultation(visitId, { ... });
     // cy.get('[data-testid="consultation-form"]').should('be.visible');
+    // cy.login('receptionist@example.com', 'password');
+    // cy.processPayment(visitId);
     
     expect(true).toBe(true);
   });

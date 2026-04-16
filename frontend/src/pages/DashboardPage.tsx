@@ -1156,6 +1156,13 @@ export default function DashboardPage() {
             <ThemeToggle />
             <NotificationBell />
             <span>{user?.first_name} {user?.last_name} ({user?.role})</span>
+            <button
+              type="button"
+              className={styles.accountButton}
+              onClick={() => navigate('/account')}
+            >
+              Account Settings
+            </button>
             <button onClick={handleLogout} className={styles.logoutButton}>
               Logout
             </button>

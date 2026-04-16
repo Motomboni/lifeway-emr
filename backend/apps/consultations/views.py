@@ -6,8 +6,8 @@ Endpoint: /api/v1/visits/{visit_id}/consultation/
 Enforcement:
 1. Doctor-only access (IsDoctor permission)
 2. Visit must be OPEN (IsVisitOpen permission)
-3. Registration must be paid before consultation read/write (IsRegistrationPaymentCleared)
-4. Visit ownership validation
+3. Visit ownership validation
+4. Payment does not gate consultation access
 5. Audit logging for all actions
 6. CLOSED visit rejection
 7. No standalone endpoints (visit-scoped only)
@@ -30,7 +30,6 @@ from apps.visits.models import Visit
 from core.permissions import (
     IsDoctor,
     IsVisitOpen,
-    IsRegistrationPaymentCleared,
 )
 from core.audit import log_consultation_action
 
@@ -42,7 +41,7 @@ class ConsultationViewSet(viewsets.ModelViewSet):
     Rules enforced:
     - Doctor-only access
     - Visit must be OPEN
-    - Registration payment required (not full visit settlement; consultation service fee is not a gate)
+    - Consultation access does not require payment clearance
     - Visit ownership validation
     - Audit logging
     - CLOSED visit rejection
@@ -163,7 +162,7 @@ class ConsultationViewSet(viewsets.ModelViewSet):
         
         Rules:
         1. Visit must exist and be OPEN
-        2. Registration payment (see get_permissions / IsRegistrationPaymentCleared)
+        2. No payment gate for consultation access
         3. created_by set to authenticated user (doctor)
         4. Visit set from URL parameter
         5. Audit log created
@@ -311,7 +310,7 @@ class ConsultationViewSet(viewsets.ModelViewSet):
         
         Rules:
         1. Visit must be OPEN
-        2. Registration payment (see get_permissions)
+        2. No payment gate for consultation access
         3. Audit log created
         """
         consultation = self.get_object()
@@ -343,14 +342,14 @@ class ConsultationViewSet(viewsets.ModelViewSet):
     
     def get_permissions(self):
         """
-        Payment rules:
-        - Read (retrieve/list): Registration must be paid before access to consultation.
-        - Write (create/update/partial_update): Same — registration paid; consultation service fee is not a gate.
+        Consultation access rules:
+        - Read (retrieve/list): Authenticated doctor access, regardless of payment status.
+        - Write (create/update/partial_update): Doctor + OPEN visit; payment is not a gate.
         """
         if self.action in ['retrieve', 'list']:
             from rest_framework.permissions import IsAuthenticated
-            return [IsAuthenticated(), IsRegistrationPaymentCleared()]
-        return [IsDoctor(), IsVisitOpen(), IsRegistrationPaymentCleared()]
+            return [IsAuthenticated()]
+        return [IsDoctor(), IsVisitOpen()]
     
     def retrieve(self, request, *args, **kwargs):
         """

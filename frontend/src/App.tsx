@@ -18,6 +18,9 @@ import './styles/responsive.css';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import AccountSettingsPage from './pages/AccountSettingsPage';
 import BiometricLoginPage from './pages/BiometricLoginPage';
 import OTPLogin from './pages/OTPLogin';
 import DashboardPage from './pages/DashboardPage';
@@ -147,6 +150,32 @@ function AppRoutes() {
           )
         } 
       />
+      <Route
+        path="/forgot-password"
+        element={
+          isAuthenticated ? (
+            <Navigate
+              to={user?.role === 'PATIENT' ? '/patient-portal/dashboard' : '/dashboard'}
+              replace
+            />
+          ) : (
+            <ForgotPasswordPage />
+          )
+        }
+      />
+      <Route
+        path="/reset-password"
+        element={
+          isAuthenticated ? (
+            <Navigate
+              to={user?.role === 'PATIENT' ? '/patient-portal/dashboard' : '/dashboard'}
+              replace
+            />
+          ) : (
+            <ResetPasswordPage />
+          )
+        }
+      />
       <Route 
         path="/register" 
         element={
@@ -162,6 +191,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Account settings for any authenticated user */}
+      <Route
+        path="/account"
+        element={
+          <ProtectedRoute>
+            <AccountSettingsPage />
           </ProtectedRoute>
         }
       />

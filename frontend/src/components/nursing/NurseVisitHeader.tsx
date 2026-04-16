@@ -113,6 +113,18 @@ export default function NurseVisitHeader({ visitId, visit: visitProp }: NurseVis
             </>
           )}
         </div>
+
+        <div className={styles.assignedDoctorBanner} role="status">
+          <strong>Assigned physician (reception):</strong>{' '}
+          {(visit as VisitDetails).assigned_doctor_name ||
+            ((visit as VisitDetails).assigned_doctor != null && (visit as VisitDetails).assigned_doctor !== undefined
+              ? `Doctor user #${(visit as VisitDetails).assigned_doctor}`
+              : '— Not specified at registration')}
+          <span className={styles.assignedDoctorSub}>
+            Full registered-doctor list is available under Vital Signs (same list as reception).
+          </span>
+        </div>
+
         <div className={styles.contextNote}>
           <p>📋 Visit Context: All actions are scoped to this visit. Context is preserved throughout.</p>
         </div>

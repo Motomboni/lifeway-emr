@@ -83,7 +83,7 @@ Until you run the capture script, image links may appear broken in some viewers;
 2. Tabs: **Summary** (totals), **Charges** (add services/MISC), **Payments** (collect here).
 3. To add a charge: **Charges** tab → Add charge / Add MISC → Description and Amount → Save.
 4. To collect payment: **Payments** tab → choose **Cash**, **POS**, **Transfer**, **Paystack**, or **Wallet** → enter Amount (and reference for POS/Transfer) → confirm.
-5. Repeat until balance is zero. The doctor can only start consultation after required payments are recorded.
+5. Repeat until balance is zero. Consultation can start before payment is completed, and billing can continue during/after care.
 
 ## 1.6 Pending Queue
 
@@ -121,8 +121,8 @@ Until you run the capture script, image links may appear broken in some viewers;
 
 ## 2.3 Starting the Consultation
 
-1. On Visit Details, if you see “Registration payment required” or “Consultation payment required,” ask the patient to pay at reception. After payment is recorded, refresh the page.
-2. Click **Start Consultation** or **Open Consultation**. You will be on the Consultation screen for this visit.
+1. On Visit Details, click **Start Consultation** or **Open Consultation**. You will be on the Consultation screen for this visit.
+2. Payment can still be collected by reception while or after consultation is in progress.
 
 ## 2.4 Filling the Consultation Form
 
@@ -281,7 +281,7 @@ Use **Logout** when you finish, especially on a shared computer.
 ## Receptionist
 
 - **Forgot password:** Use “Forgot password” on the login page, or ask an Administrator to reset it.  
-- **“Start Consultation” greyed out:** Registration (and consultation) must be paid. In Visit Details → Billing & Payments → Payments tab, record the payment. Refresh the page.  
+- **“Start Consultation” greyed out:** This is no longer expected for payment reasons. Check role permissions, visit status (must be OPEN), and refresh the page.  
 - **Page not loading:** Refresh (F5). Check internet. Try another browser or clear cache.  
 - **“Please select a patient”:** Click a patient from the search results before clicking Create Visit.  
 - **Payment not reflecting:** Refresh Visit Details. For Paystack/Wallet, wait a few seconds and refresh again.  
@@ -290,8 +290,8 @@ Use **Logout** when you finish, especially on a shared computer.
 ## Doctor
 
 - **Forgot password:** Use “Forgot password” or ask an Administrator.  
-- **“Start Consultation” disabled:** Registration/consultation must be paid. Ask reception to record payment; refresh Visit Details.  
-- **Consultation form won’t save:** Check internet. If “Registration payment required,” reception must record payment first.  
+- **“Start Consultation” disabled:** This is no longer expected for payment reasons. Confirm the visit is OPEN and your role is Doctor.  
+- **Consultation form won’t save:** Check internet, required fields, and whether the visit is CLOSED.  
 - **AI Clinical Notes: “Enter transcript or bullet notes”:** Type something in the Transcript box before clicking Generate note.  
 - **E-Prescription: Cannot save with Severe interaction:** Change the prescription or enter an **Override reason**, then save.  
 - **Page not loading:** Refresh (F5). Re-open the visit from Visits → same visit → Open Consultation. Use in-app links, not the browser back button.
@@ -325,7 +325,7 @@ Use **Logout** when you finish, especially on a shared computer.
 ## Administrator
 
 - **Forgot password:** Use “Forgot password”; if not available, another Admin must reset it.  
-- **Staff report “button disabled”:** For consultation, ensure registration/consultation payment is recorded. For access, check user role and account. Use Audit logs if needed.  
+- **Staff report “button disabled”:** For consultation, check user role, account status, and whether the visit is OPEN. Use Audit logs if needed.  
 - **Page not loading:** Refresh. Clear cache or try another browser. Report persistent failures to IT.  
 - **Backup/restore fails:** Check permissions and server space. Follow on-screen message; contact IT with exact error.
 

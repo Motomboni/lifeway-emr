@@ -7,7 +7,7 @@ Enforcement:
 1. Visit-scoped: All operations require visit_id in URL
 2. Lab Tech: Can create results (immutable once created)
 3. Doctor: Can view results (read-only)
-4. Payment must be CLEARED
+4. Payment does not gate lab results
 5. Visit must be OPEN
 6. Audit logging required
 """
@@ -22,7 +22,7 @@ from django.shortcuts import get_object_or_404
 from .models import LabResult, LabOrder
 from .result_serializers import LabResultCreateSerializer, LabResultReadSerializer
 from apps.visits.models import Visit
-from core.permissions import IsVisitOpen, IsPaymentCleared, IsVisitAccessible
+from core.permissions import IsVisitOpen, IsVisitAccessible
 from .permissions import IsDoctorOrLabTech, CanUpdateLabResult
 from core.audit import AuditLog
 from apps.notifications.utils import send_lab_result_notification
@@ -36,7 +36,7 @@ class LabResultViewSet(viewsets.ModelViewSet):
     - Visit-scoped architecture
     - Lab Tech: Create results (immutable once created)
     - Doctor: View results (read-only)
-    - Payment must be CLEARED
+    - Payment does not gate lab results
     - Visit must be OPEN
     - Audit logging
     """
@@ -111,14 +111,13 @@ class LabResultViewSet(viewsets.ModelViewSet):
         """
         Return appropriate permissions based on action.
         
-        - Create: Lab Tech only + Payment + Visit Open
+        - Create: Lab Tech only + Visit Open
         - Read: Both roles (Doctor and Lab Tech) - no payment/status check for reads
         """
         if self.action == 'create':
             permission_classes = [
                 CanUpdateLabResult,  # Lab Tech only
                 IsVisitOpen,
-                IsPaymentCleared,
             ]
         else:
             # Read operations: Allow authenticated users (for billing/audit purposes)
@@ -151,17 +150,6 @@ class LabResultViewSet(viewsets.ModelViewSet):
                 detail="Cannot create lab results for a CLOSED visit. "
                        "Closed visits are immutable per EMR rules.",
                 code='visit_closed'
-            )
-    
-    def check_payment_status(self, visit):
-        """Ensure payment is cleared before allowing lab results."""
-        if not visit.is_payment_cleared():
-            raise PermissionDenied(
-                detail="Payment must be cleared before creating lab results. "
-                       "Current payment status: {status}".format(
-                           status=visit.payment_status
-                       ),
-                code='payment_not_cleared'
             )
     
     def check_user_role(self, request):
@@ -215,20 +203,16 @@ class LabResultViewSet(viewsets.ModelViewSet):
         Rules:
         1. Only Lab Tech can create (enforced by CanUpdateLabResult permission)
         2. Visit must be OPEN
-        3. Payment must be CLEARED
-        4. LabOrder must be ORDERED
-        5. LabOrder must belong to visit
-        6. Result must not already exist (immutability)
-        7. recorded_by set to authenticated user (Lab Tech)
-        8. Audit log created
+        3. LabOrder must be ORDERED
+        4. LabOrder must belong to visit
+        5. Result must not already exist (immutability)
+        6. recorded_by set to authenticated user (Lab Tech)
+        7. Audit log created
         """
         visit = self.get_visit()
         
         # Enforce visit status
         self.check_visit_status(visit)
-        
-        # Enforce payment status
-        self.check_payment_status(visit)
         
         # Enforce user role
         self.check_user_role(self.request)

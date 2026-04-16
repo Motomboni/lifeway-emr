@@ -19,6 +19,9 @@ export interface Visit {
   patient: number;
   patient_name?: string;
   patient_id?: string;
+  /** Reception-selected registered doctor (user id), if set at visit creation */
+  assigned_doctor?: number | null;
+  assigned_doctor_name?: string | null;
   visit_type?: 'CONSULTATION' | 'FOLLOW_UP' | 'EMERGENCY' | 'ROUTINE' | 'SPECIALIST';
   chief_complaint?: string;
   appointment?: number;
@@ -34,6 +37,8 @@ export interface Visit {
 
 export interface VisitCreateData {
   patient: number;
+  /** Optional: registered doctor the patient is here to see */
+  assigned_doctor?: number | null;
   visit_type?: 'CONSULTATION' | 'FOLLOW_UP' | 'EMERGENCY' | 'ROUTINE' | 'SPECIALIST';
   chief_complaint?: string;
   appointment?: number;

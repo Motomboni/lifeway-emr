@@ -14,11 +14,23 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.conf import settings
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 
 from core.rate_limiting import rate_limit
-from .serializers import LoginSerializer, UserSerializer, RefreshTokenSerializer, RegisterSerializer
+from .serializers import (
+    LoginSerializer,
+    UserSerializer,
+    RefreshTokenSerializer,
+    RegisterSerializer,
+    ForgotPasswordSerializer,
+    ResetPasswordSerializer,
+    AccountUpdateSerializer,
+)
 
 User = get_user_model()
 
@@ -26,6 +38,8 @@ User = get_user_model()
 AUTH_RATE_LIMIT_LOGIN = (5, 20)   # 5/min, 20/hour per IP
 AUTH_RATE_LIMIT_REFRESH = (30, 200)
 AUTH_RATE_LIMIT_REGISTER = (3, 10)  # 3/min, 10/hour
+AUTH_RATE_LIMIT_FORGOT_PASSWORD = (3, 10)
+AUTH_RATE_LIMIT_RESET_PASSWORD = (5, 20)
 
 
 @api_view(['POST'])
@@ -289,6 +303,161 @@ def register(request):
     )
 
 
+@extend_schema(
+    tags=['Authentication'],
+    summary='Forgot Password',
+    description='Initiate password reset for an account using username or email.',
+    request=ForgotPasswordSerializer,
+    responses={
+        200: {
+            'description': 'Reset instructions sent if account exists',
+            'content': {
+                'application/json': {
+                    'example': {'detail': 'If an account exists for this identifier, a reset link has been sent.'}
+                }
+            },
+        }
+    },
+)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@rate_limit(requests_per_minute=AUTH_RATE_LIMIT_FORGOT_PASSWORD[0], requests_per_hour=AUTH_RATE_LIMIT_FORGOT_PASSWORD[1])
+def forgot_password(request):
+    """
+    Forgot password endpoint.
+
+    POST /api/v1/auth/forgot-password/
+    {
+        "identifier": "user@example.com"  // username or email
+    }
+
+    Always returns 200 with a generic message to avoid user enumeration.
+    """
+    serializer = ForgotPasswordSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    identifier = serializer.validated_data['identifier'].strip()
+
+    user = None
+    if identifier:
+        try:
+            if '@' in identifier:
+                user = User.objects.filter(email__iexact=identifier).first()
+            else:
+                user = User.objects.filter(username__iexact=identifier).first()
+        except Exception:
+            user = None
+
+    if user and user.email:
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = PasswordResetTokenGenerator().make_token(user)
+
+        base_url = getattr(settings, 'BASE_URL', 'https://localhost')
+        reset_path = f"/reset-password?uid={uid}&token={token}"
+        reset_url = f"{base_url}{reset_path}"
+
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(
+            "Password reset requested for user %s (id=%s, email=%s). Reset URL: %s",
+            user.username,
+            user.id,
+            user.email,
+            reset_url,
+        )
+        # TODO: integrate with real email service
+
+    return Response(
+        {'detail': 'If an account exists for this identifier, a reset link has been sent.'},
+        status=status.HTTP_200_OK,
+    )
+
+
+@extend_schema(
+    tags=['Authentication'],
+    summary='Reset Password',
+    description='Complete password reset using uid and token from reset link.',
+    request=ResetPasswordSerializer,
+    responses={
+        200: {'description': 'Password reset successfully'},
+        400: {'description': 'Invalid or expired reset link'},
+    },
+)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@rate_limit(requests_per_minute=AUTH_RATE_LIMIT_RESET_PASSWORD[0], requests_per_hour=AUTH_RATE_LIMIT_RESET_PASSWORD[1])
+def reset_password(request):
+    """
+    Reset password endpoint - completes password reset using uid/token.
+
+    POST /api/v1/auth/reset-password/
+    {
+        "uid": "<base64_user_id>",
+        "token": "<token>",
+        "new_password": "...",
+        "new_password_confirm": "..."
+    }
+    """
+    serializer = ResetPasswordSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    uid = serializer.validated_data['uid']
+    token = serializer.validated_data['token']
+    new_password = serializer.validated_data['new_password']
+
+    try:
+        uid_int = force_str(urlsafe_base64_decode(uid))
+        user = User.objects.get(pk=uid_int)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        return Response(
+            {'detail': 'Invalid or expired reset link.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    token_generator = PasswordResetTokenGenerator()
+    if not token_generator.check_token(user, token):
+        return Response(
+            {'detail': 'Invalid or expired reset link.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    user.set_password(new_password)
+    user.save(update_fields=['password'])
+
+    return Response({'detail': 'Password has been reset successfully.'}, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    tags=['Authentication'],
+    summary='Update Account',
+    description='Update password, email, or username for the current user (requires current_password).',
+    request=AccountUpdateSerializer,
+    responses={
+        200: UserSerializer,
+        400: {'description': 'Validation error'},
+        401: {'description': 'Unauthorized'},
+    },
+)
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def update_account(request):
+    """
+    Update account credentials for the authenticated user.
+
+    PATCH /api/v1/auth/account/
+    {
+        "current_password": "...",
+        "new_password": "...",            // optional
+        "new_password_confirm": "...",    // optional
+        "new_email": "new@example.com",   // optional
+        "new_username": "newusername"     // optional
+    }
+    """
+    serializer = AccountUpdateSerializer(data=request.data, context={'request': request})
+    serializer.is_valid(raise_exception=True)
+    user = serializer.save()
+    return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+
+
 def _is_admin_or_superuser(user):
     """Check if user can approve staff (superuser or ADMIN role)."""
     return user and user.is_authenticated and (
@@ -421,7 +590,11 @@ def list_all_staff(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def deactivate_staff(request, user_id):
-    """Deactivate a staff user. Superuser only. Cannot deactivate yourself."""
+    """
+    Permanently delete a staff user account.
+
+    Superuser only. Cannot delete your own account.
+    """
     if not _is_superuser(request.user):
         return Response(
             {'detail': 'Only superusers can deactivate staff.'},
@@ -441,15 +614,13 @@ def deactivate_staff(request, user_id):
         )
     if user.role == 'PATIENT':
         return Response(
-            {'detail': 'Use patient management to deactivate patient accounts.'},
+            {'detail': 'Use patient management to manage patient accounts.'},
             status=status.HTTP_400_BAD_REQUEST
         )
-    if not user.is_active:
-        return Response(
-            {'detail': 'User is already deactivated.'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    user.is_active = False
-    user.save(update_fields=['is_active'])
-    serializer = UserSerializer(user)
-    return Response(serializer.data)
+
+    # Hard delete the staff user account.
+    user.delete()
+    return Response(
+        {'detail': 'Staff user account deleted successfully.'},
+        status=status.HTTP_200_OK
+    )

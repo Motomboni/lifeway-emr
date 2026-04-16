@@ -6,16 +6,18 @@
  * - Visit must be associated with a patient
  * - Visit starts with status=OPEN, payment_status=UNPAID (CASH) or INSURANCE_PENDING (INSURANCE)
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { searchPatients, getPatient } from '../api/patient';
 import { createVisit } from '../api/visits';
 import { fetchAppointments } from '../api/appointment';
+import { fetchRegisteredDoctors } from '../api/auth';
 import { Patient } from '../types/patient';
 import { Appointment } from '../types/appointment';
 import { VisitCreateData } from '../types/visit';
+import { User } from '../types/auth';
 import BackToDashboard from '../components/common/BackToDashboard';
 import { logger } from '../utils/logger';
 import styles from '../styles/CreateVisit.module.css';
@@ -39,55 +41,62 @@ export default function CreateVisitPage() {
   const [selectedAppointment, setSelectedAppointment] = useState<number | null>(null);
   const [availableAppointments, setAvailableAppointments] = useState<Appointment[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
+  const [doctors, setDoctors] = useState<User[]>([]);
+  const [loadingDoctors, setLoadingDoctors] = useState(false);
+  const [assignedDoctorId, setAssignedDoctorId] = useState<number | ''>('');
 
-  // Check if patient ID is in URL params
-  useEffect(() => {
-    const patientId = searchParams.get('patient');
-    if (patientId) {
-      loadPatient(parseInt(patientId));
-    }
-  }, [searchParams]);
-
-  const loadPatient = async (patientId: number) => {
-    try {
-      const patient = await getPatient(patientId);
-      setSelectedPatient(patient);
-      // Auto-set payment type to INSURANCE if patient has active insurance
-      // (Backend will also auto-detect, but this improves UX)
-      if (patient.has_active_insurance) {
-        setPaymentType('INSURANCE');
-      } else {
-        setPaymentType('CASH');
-      }
-      // Load available appointments for this patient
-      await loadPatientAppointments(patientId);
-    } catch (err) {
-      showError('Failed to load patient');
-    }
-  };
-  
-  const loadPatientAppointments = async (patientId: number) => {
+  const loadPatientAppointments = useCallback(async (patientId: number) => {
     try {
       setLoadingAppointments(true);
       // Fetch appointments - we'll filter for SCHEDULED and CONFIRMED on the frontend
-      const appointments = await fetchAppointments({ 
-        patient: patientId
+      const appointments = await fetchAppointments({
+        patient: patientId,
       });
-      const appointmentsArray = Array.isArray(appointments) 
-        ? appointments 
-        : (appointments as any).results || [];
+      const appointmentsArray = Array.isArray(appointments)
+        ? appointments
+        : (appointments as { results?: Appointment[] }).results || [];
       // Filter for scheduled or confirmed appointments only
-      const available = appointmentsArray.filter((apt: Appointment) => 
-        apt.status === 'SCHEDULED' || apt.status === 'CONFIRMED'
+      const available = appointmentsArray.filter(
+        (apt: Appointment) =>
+          apt.status === 'SCHEDULED' || apt.status === 'CONFIRMED',
       );
       setAvailableAppointments(available);
-    } catch (err) {
+    } catch {
       // Silently fail - appointments are optional
       setAvailableAppointments([]);
     } finally {
       setLoadingAppointments(false);
     }
-  };
+  }, []);
+
+  const loadPatient = useCallback(
+    async (patientId: number) => {
+      try {
+        const patient = await getPatient(patientId);
+        setSelectedPatient(patient);
+        // Auto-set payment type to INSURANCE if patient has active insurance
+        // (Backend will also auto-detect, but this improves UX)
+        if (patient.has_active_insurance) {
+          setPaymentType('INSURANCE');
+        } else {
+          setPaymentType('CASH');
+        }
+        await loadPatientAppointments(patientId);
+      } catch {
+        showError('Failed to load patient');
+      }
+    },
+    [loadPatientAppointments, showError],
+  );
+
+  // Check if patient ID is in URL params
+  useEffect(() => {
+    const patientIdParam = searchParams.get('patient');
+    if (!patientIdParam) return;
+    const patientId = parseInt(patientIdParam, 10);
+    if (Number.isNaN(patientId)) return;
+    void loadPatient(patientId);
+  }, [searchParams, loadPatient]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -108,6 +117,7 @@ export default function CreateVisitPage() {
 
   const handleSelectPatient = (patient: Patient) => {
     setSelectedPatient(patient);
+    setAssignedDoctorId('');
     setSearchResults([]);
     setSearchQuery('');
     // Auto-set payment type to INSURANCE if patient has active insurance
@@ -120,6 +130,34 @@ export default function CreateVisitPage() {
     // Load appointments for selected patient
     loadPatientAppointments(patient.id);
   };
+
+  useEffect(() => {
+    if (!selectedPatient) {
+      setDoctors([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoadingDoctors(true);
+        const list = await fetchRegisteredDoctors();
+        if (!cancelled) {
+          setDoctors(Array.isArray(list) ? list : []);
+        }
+      } catch {
+        if (!cancelled) {
+          setDoctors([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingDoctors(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPatient]);
 
   const handleCreateVisit = async () => {
     if (!selectedPatient) {
@@ -145,6 +183,9 @@ export default function CreateVisitPage() {
       if (selectedAppointment) {
         visitData.appointment = selectedAppointment;
       }
+      if (assignedDoctorId !== '') {
+        visitData.assigned_doctor = assignedDoctorId;
+      }
       
       const visit = await createVisit(visitData);
       logger.debug('Visit created:', visit);
@@ -168,12 +209,10 @@ export default function CreateVisitPage() {
       // Wait a bit longer to ensure database transaction is committed
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Redirect based on payment type and user role
-      // Per EMR Rules: Consultation requires payment to be PAID or SETTLED
+      // Redirect based on user role
       // Pass visit data in state to avoid immediate refetch
-      // Note: New visits start with UNPAID or INSURANCE_PENDING, so doctors won't be redirected to consultation immediately
-      if (user?.role === 'DOCTOR' && (visit.payment_status === 'PAID' || visit.payment_status === 'SETTLED')) {
-        // If payment is cleared and user is a doctor, go to consultation
+      if (user?.role === 'DOCTOR') {
+        // Doctors go directly to consultation regardless of payment status
         navigate(`/visits/${visit.id}/consultation`, { 
           replace: true,
           state: { visit } // Pass visit data to avoid refetch
@@ -297,6 +336,35 @@ export default function CreateVisitPage() {
               </div>
 
               <div className={styles.formGroup}>
+                <label>Doctor patient is seeing</label>
+                {loadingDoctors ? (
+                  <p className={styles.helpText}>Loading doctors...</p>
+                ) : (
+                  <select
+                    value={assignedDoctorId === '' ? '' : String(assignedDoctorId)}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setAssignedDoctorId(v === '' ? '' : parseInt(v, 10));
+                    }}
+                  >
+                    <option value="">Select registered doctor (optional)</option>
+                    {doctors.map((d) => {
+                      const label =
+                        [d.first_name, d.last_name].filter(Boolean).join(' ').trim() || d.username;
+                      return (
+                        <option key={d.id} value={d.id}>
+                          {label}
+                        </option>
+                      );
+                    })}
+                  </select>
+                )}
+                <p className={styles.helpText}>
+                  Lists all active users with the Doctor role. Nurses see this choice on the visit when recording vitals.
+                </p>
+              </div>
+
+              <div className={styles.formGroup}>
                 <label>Link to Appointment (Optional)</label>
                 {loadingAppointments ? (
                   <p className={styles.helpText}>Loading appointments...</p>
@@ -339,7 +407,7 @@ export default function CreateVisitPage() {
                 {!selectedPatient.has_active_insurance && (
                   <p className={styles.helpText}>
                     Note: Cash visits start as UNPAID. Insurance visits start as INSURANCE_PENDING. 
-                    Payment must be PAID or SETTLED before clinical actions (consultation, lab orders, etc.)
+                    Consultation can proceed before payment. Billing can be completed during or after care.
                   </p>
                 )}
               </div>

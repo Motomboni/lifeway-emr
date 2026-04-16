@@ -221,7 +221,7 @@ class TestInsuranceVisitScopeEnforcement:
         assert insurance.visit_id == open_visit.id
     
     def test_insurance_cannot_bypass_payment_enforcement(self, receptionist_user, open_visit, hmo_provider, doctor_user):
-        """Visit payment_status UNPAID with no registration line paid: consultation creation still blocked."""
+        """Approved visit insurance stays visit-scoped; doctor can still create consultation."""
         # Ensure visit payment_status is UNPAID
         open_visit.payment_status = 'UNPAID'
         open_visit.save()
@@ -245,21 +245,10 @@ class TestInsuranceVisitScopeEnforcement:
             description='Test charge'
         )
         
-        # Verify visit payment_status is still UNPAID (insurance doesn't auto-clear)
         open_visit.refresh_from_db()
-        assert open_visit.payment_status == 'UNPAID', "Insurance should not automatically clear payment_status"
-        
-        # Verify is_payment_cleared() returns False when payment_status is UNPAID
-        # (This was fixed to check payment_status field first)
-        assert not open_visit.is_payment_cleared(), \
-            "is_payment_cleared() should return False when payment_status is UNPAID"
-        
-        # Compute billing summary for verification
-        summary = BillingService.compute_billing_summary(open_visit)
-        # BillingService may compute payment_status='CLEARED' due to insurance,
-        # but visit.payment_status field is still UNPAID and is authoritative
-        
-        # Try to create consultation (should fail — registration gate not satisfied)
+        # Billing/insurance signals may sync visit.payment_status when coverage is approved.
+
+        # Consultation is allowed regardless of visit payment sync timing
         client = APIClient()
         client.force_authenticate(user=doctor_user)
         
@@ -271,14 +260,8 @@ class TestInsuranceVisitScopeEnforcement:
             'clinical_notes': 'Test'
         })
         
-        assert response.status_code in [status.HTTP_403_FORBIDDEN, status.HTTP_400_BAD_REQUEST], \
-            f"Expected 403 or 400, got {response.status_code}. " \
-            f"Consultation was created without registration payment. " \
-            f"Response: {get_response_data(response)}"
-        
-        response_data = get_response_data(response)
-        err = str(response_data).lower()
-        assert 'payment' in err or 'cleared' in err or 'registration' in err
+        assert response.status_code == status.HTTP_201_CREATED, \
+            f"Expected 201, got {response.status_code}. Response: {get_response_data(response)}"
     
     def test_insurance_computation_is_visit_scoped(self, receptionist_user, open_visit, hmo_provider):
         """Insurance coverage computation uses visit-scoped charges only."""

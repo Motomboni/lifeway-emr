@@ -11,7 +11,7 @@
 ✅ **Visit-Scoped Architecture**: Endpoint is nested under `/visits/{visit_id}/`  
 ✅ **Doctor-Only Access**: Enforced via `IsDoctor` permission  
 ✅ **Visit Status Check**: Visit must be `OPEN` (enforced via `IsVisitOpen`)  
-✅ **Payment Enforcement**: Payment must be `CLEARED` (enforced via `IsPaymentCleared`)  
+✅ **Consultation Before Payment**: Consultation is allowed regardless of payment status  
 ✅ **Audit Logging**: All actions logged to `AuditLog`  
 ✅ **CLOSED Visit Rejection**: CLOSED visits are immutable  
 ✅ **No Standalone Endpoints**: Consultation cannot exist without Visit  
@@ -40,8 +40,8 @@ The implementation assumes the following middleware stack (in order):
    - **Required**: Must run before payment/role guards
 
 3. **PaymentClearedGuard** (`core.middleware.payment_guard`)
-   - Checks `request.visit.is_payment_cleared()`
-   - Raises `PermissionDenied` if payment not cleared
+   - Enforces payment on non-consultation clinical actions
+   - Consultation endpoint is exempt from payment blocking
    - **Required**: Must run after `VisitLookupMiddleware`
 
 4. **RoleGuard** (if exists)
@@ -56,9 +56,8 @@ The implementation assumes the following middleware stack (in order):
 - **IsVisitOpen**: Ensures `request.visit.status == 'OPEN'`
   - Requires `VisitLookupMiddleware` to set `request.visit`
   
-- **IsPaymentCleared**: Ensures `request.visit.is_payment_cleared()`
-  - Requires `VisitLookupMiddleware` to set `request.visit`
-  - Redundant with `PaymentClearedGuard` but provides defense-in-depth
+- **IsPaymentCleared**: Used by other clinical modules that still require payment clearance
+  - Consultation endpoints do not depend on this permission
 
 ## Audit Logging
 
@@ -86,7 +85,6 @@ Audit log includes:
 ### 403 Forbidden
 - User is not a doctor (`IsDoctor` fails)
 - Visit is CLOSED (`IsVisitOpen` fails)
-- Payment not cleared (`IsPaymentCleared` fails)
 
 ### 404 Not Found
 - Visit does not exist
@@ -146,7 +144,7 @@ The implementation is designed to pass all security tests:
 - ✅ B1: Receptionist attempting consultation → 403
 - ✅ C1: Cross-visit access → 403 (if visit ownership enforced)
 - ✅ C2: Closed visit mutation → 403/409
-- ✅ D1: Consultation before payment → 403/402
+- ✅ D1: Consultation before payment → allowed (201/200)
 
 ## Compliance Notes
 

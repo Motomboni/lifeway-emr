@@ -7,7 +7,7 @@ Per EMR Rules:
 - No diagnosis fields allowed
 - Records are immutable after creation
 - Visit must be OPEN (ACTIVE) - returns 409 Conflict if closed
-- Visit payment must be CLEARED
+- Visit payment does not gate nursing actions
 """
 from rest_framework import permissions
 from rest_framework.permissions import BasePermission
@@ -55,12 +55,12 @@ class CanViewNursingRecords(BasePermission):
 
 class IsVisitActiveAndPaid(BasePermission):
     """
-    Permission: Visit must be OPEN (ACTIVE) and payment must be CLEARED.
+    Permission: Visit must be OPEN (ACTIVE). Payment does not gate nursing workflows.
     Returns 409 Conflict for closed visits.
     """
     
     def has_permission(self, request, view):
-        """Check if visit is OPEN and payment is cleared."""
+        """Check if visit is OPEN."""
         from rest_framework.exceptions import APIException
         
         visit = getattr(request, 'visit', None)
@@ -83,14 +83,6 @@ class IsVisitActiveAndPaid(BasePermission):
             raise PermissionDenied(
                 detail=f"Visit must be OPEN (ACTIVE) to perform this action. Current status: {visit.status}",
                 code='visit_not_active'
-            )
-        
-        # Check if payment is cleared
-        if not visit.is_payment_cleared():
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied(
-                detail=f"Payment must be cleared before performing this action. Current payment status: {visit.payment_status}",
-                code='payment_not_cleared'
             )
         
         return True

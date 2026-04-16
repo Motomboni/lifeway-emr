@@ -8,7 +8,7 @@ Enforcement:
 2. Consultation-dependent: Consultation must exist before lab orders
 3. Doctor: Can create orders, view all (including results)
 4. Lab Tech: Can only update results, cannot create orders
-5. Payment must be CLEARED
+5. Payment does not gate lab orders (billing follows care)
 6. Visit must be OPEN
 7. Audit logging required
 8. No standalone lab flow allowed
@@ -32,7 +32,7 @@ from .serializers import (
 )
 from apps.visits.models import Visit
 from apps.consultations.models import Consultation
-from core.permissions import IsVisitOpen, IsPaymentCleared, IsVisitAccessible
+from core.permissions import IsVisitOpen, IsVisitAccessible
 from .permissions import (
     IsDoctorOrLabTech,
     CanCreateLabOrder,
@@ -100,7 +100,7 @@ class LabOrderViewSet(viewsets.ModelViewSet):
     - Consultation-dependent (consultation must exist)
     - Doctor: Create orders, view all
     - Lab Tech: Update results only, cannot create
-    - Payment must be CLEARED
+    - Payment does not gate lab orders
     - Visit must be OPEN
     - Audit logging
     """
@@ -125,21 +125,19 @@ class LabOrderViewSet(viewsets.ModelViewSet):
         """
         Return appropriate permissions based on action.
         
-        - Create: Doctor only (CanCreateLabOrder) + Payment + Visit Open
-        - Update: Lab Tech only (CanUpdateLabResult) + Payment + Visit Open
+        - Create: Doctor only (CanCreateLabOrder) + Visit Open
+        - Update: Lab Tech only (CanUpdateLabResult) + Visit Open
         - Read: Both roles (CanViewLabOrder) - no payment/status check for reads
         """
         if self.action == 'create':
             permission_classes = [
                 CanCreateLabOrder,
                 IsVisitOpen,
-                IsPaymentCleared,
             ]
         elif self.action in ['update', 'partial_update']:
             permission_classes = [
                 CanUpdateLabResult,
                 IsVisitOpen,
-                IsPaymentCleared,
             ]
         else:
             # Read operations: Allow authenticated users (for billing/audit purposes)
@@ -238,17 +236,6 @@ class LabOrderViewSet(viewsets.ModelViewSet):
                 code='visit_closed'
             )
     
-    def check_payment_status(self, visit):
-        """Ensure payment is cleared before allowing lab orders."""
-        if not visit.is_payment_cleared():
-            raise PermissionDenied(
-                detail="Payment must be cleared before creating lab orders. "
-                       "Current payment status: {status}".format(
-                           status=visit.payment_status
-                       ),
-                code='payment_not_cleared'
-            )
-    
     def perform_create(self, serializer):
         """
         Create lab order with strict enforcement.
@@ -256,8 +243,7 @@ class LabOrderViewSet(viewsets.ModelViewSet):
         Rules:
         1. Only Doctor can create (enforced by CanCreateLabOrder)
         2. Visit must be OPEN
-        3. Payment must be CLEARED
-        4. Consultation must exist
+        3. Consultation must exist
         5. ordered_by set to authenticated user (doctor)
         6. Audit log created
         """
@@ -269,9 +255,6 @@ class LabOrderViewSet(viewsets.ModelViewSet):
             
             # Enforce visit status
             self.check_visit_status(visit)
-            
-            # Enforce payment status
-            self.check_payment_status(visit)
             
             # Get consultation (required)
             consultation = self.get_consultation(visit)
@@ -323,17 +306,13 @@ class LabOrderViewSet(viewsets.ModelViewSet):
         1. Lab Tech can only update results
         2. Doctor cannot update (only view)
         3. Visit must be OPEN
-        4. Payment must be CLEARED
-        5. Audit log created
+        4. Audit log created
         """
         lab_order = self.get_object()
         visit = lab_order.visit
         
         # Enforce visit status
         self.check_visit_status(visit)
-        
-        # Enforce payment status
-        self.check_payment_status(visit)
         
         # Check user role
         user_role = getattr(self.request.user, 'role', None) or \
