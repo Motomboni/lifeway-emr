@@ -16,6 +16,7 @@ import NotificationBell from '../components/common/NotificationBell';
 import ThemeToggle from '../components/common/ThemeToggle';
 import Logo from '../components/common/Logo';
 import { useDefaultKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { formatDoctorDisplayName } from '../utils/doctorDisplay';
 import styles from '../styles/Dashboard.module.css';
 
 // Visit Search Component for Nurse Dashboard
@@ -224,6 +225,9 @@ export default function DashboardPage() {
     pendingVerifications: 0,
   });
   const [loading, setLoading] = useState(true);
+  const userDisplayName = user
+    ? (user.role === 'DOCTOR' ? formatDoctorDisplayName(user) : `${user.first_name} ${user.last_name}`.trim())
+    : '';
 
   // Enable keyboard shortcuts
   useDefaultKeyboardShortcuts();
@@ -315,7 +319,7 @@ export default function DashboardPage() {
           <div className={styles.dashboardContent}>
             <div className={styles.dashboardHeader}>
               <h2>Doctor Dashboard</h2>
-              <p>Welcome back, Dr. {user?.first_name} {user?.last_name}</p>
+              <p>Welcome back, {userDisplayName}</p>
             </div>
 
             <div className={styles.statsGrid}>
@@ -1022,7 +1026,7 @@ export default function DashboardPage() {
           <div className={styles.dashboardContent}>
             <div className={styles.dashboardHeader}>
               <h2>IVF Specialist Dashboard</h2>
-              <p>Welcome back, Dr. {user?.first_name} {user?.last_name}</p>
+              <p>Welcome back, {userDisplayName}</p>
             </div>
 
             <div className={styles.statsGrid}>
@@ -1155,7 +1159,7 @@ export default function DashboardPage() {
           <div className={styles.userInfo}>
             <ThemeToggle />
             <NotificationBell />
-            <span>{user?.first_name} {user?.last_name} ({user?.role})</span>
+            <span>{userDisplayName} ({user?.role})</span>
             <button
               type="button"
               className={styles.accountButton}

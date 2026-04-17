@@ -22,6 +22,8 @@ class AppointmentSerializer(serializers.ModelSerializer):
     patient_name = serializers.SerializerMethodField()
     patient_id = serializers.SerializerMethodField()
     doctor_name = serializers.SerializerMethodField()
+    doctor_specialization = serializers.SerializerMethodField()
+    doctor_display_name = serializers.SerializerMethodField()
     created_by_name = serializers.SerializerMethodField()
     cancelled_by_name = serializers.SerializerMethodField()
     
@@ -42,6 +44,16 @@ class AppointmentSerializer(serializers.ModelSerializer):
         if obj.doctor:
             return f"{obj.doctor.first_name} {obj.doctor.last_name}".strip()
         return None
+
+    def get_doctor_specialization(self, obj):
+        if obj.doctor:
+            return (obj.doctor.specialization or '').strip() or None
+        return None
+
+    def get_doctor_display_name(self, obj):
+        if obj.doctor:
+            return obj.doctor.get_display_name_with_specialization()
+        return None
     
     def get_created_by_name(self, obj):
         """Get created by user's full name."""
@@ -58,6 +70,8 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'patient_id',
             'doctor',
             'doctor_name',
+            'doctor_specialization',
+            'doctor_display_name',
             'visit',
             'appointment_date',
             'duration_minutes',

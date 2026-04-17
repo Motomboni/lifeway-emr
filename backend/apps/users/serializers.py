@@ -19,6 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
             'first_name',
             'last_name',
             'role',
+            'specialization',
             'is_active',
             'is_superuser',
             'date_joined',
@@ -132,6 +133,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             'first_name',
             'last_name',
             'role',
+            'specialization',
         ]
         extra_kwargs = {
             'username': {'required': True},
@@ -140,6 +142,9 @@ class RegisterSerializer(serializers.ModelSerializer):
             'last_name': {'required': True},
             'role': {'required': True},
         }
+
+    def validate_specialization(self, value):
+        return (value or '').strip()
     
     def validate_username(self, value):
         """Check if username already exists."""
@@ -166,6 +171,14 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 'password_confirm': "Password fields didn't match."
             })
+        role = attrs.get('role')
+        specialization = (attrs.get('specialization') or '').strip()
+        if role == 'DOCTOR' and not specialization:
+            raise serializers.ValidationError({
+                'specialization': "Specialization is required for doctors."
+            })
+        if role != 'DOCTOR':
+            attrs['specialization'] = ''
         return attrs
     
     def create(self, validated_data):
@@ -266,20 +279,22 @@ class AccountUpdateSerializer(serializers.Serializer):
     )
     new_email = serializers.EmailField(required=False, allow_blank=False)
     new_username = serializers.CharField(required=False, allow_blank=False)
+    new_specialization = serializers.CharField(required=False, allow_blank=True)
 
     def validate(self, attrs):
         """
         Ensure:
-        - At least one of new_password/new_email/new_username is provided
+        - At least one of new_password/new_email/new_username/new_specialization is provided
         - Password confirmation matches when provided
         """
         has_password_change = bool(attrs.get('new_password') or attrs.get('new_password_confirm'))
         has_email_change = 'new_email' in attrs
         has_username_change = 'new_username' in attrs
+        has_specialization_change = 'new_specialization' in attrs
 
-        if not (has_password_change or has_email_change or has_username_change):
+        if not (has_password_change or has_email_change or has_username_change or has_specialization_change):
             raise serializers.ValidationError(
-                "No changes provided. Specify at least one of new_password, new_email, or new_username."
+                "No changes provided. Specify at least one of new_password, new_email, new_username, or new_specialization."
             )
 
         if attrs.get('new_password') or attrs.get('new_password_confirm'):
@@ -305,6 +320,13 @@ class AccountUpdateSerializer(serializers.Serializer):
         if value and User.objects.filter(username__iexact=value).exclude(pk=user.pk).exists():
             raise serializers.ValidationError("A user with this username already exists.")
         return value
+
+    def validate_new_specialization(self, value: str) -> str:
+        user = self.context['request'].user
+        specialization = (value or '').strip()
+        if user.role == 'DOCTOR' and not specialization:
+            raise serializers.ValidationError("Specialization is required for doctors.")
+        return specialization
 
     def save(self, **kwargs):
         """
@@ -335,6 +357,13 @@ class AccountUpdateSerializer(serializers.Serializer):
             user.set_password(new_password)
             # Password is saved via set_password; include it explicitly
             updated_fields.append('password')
+
+        if 'new_specialization' in self.validated_data:
+            if user.role == 'DOCTOR':
+                user.specialization = self.validated_data.get('new_specialization', '').strip()
+            else:
+                user.specialization = ''
+            updated_fields.append('specialization')
 
         if updated_fields:
             user.save(update_fields=updated_fields)

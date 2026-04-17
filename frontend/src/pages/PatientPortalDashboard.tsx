@@ -313,8 +313,8 @@ export default function PatientPortalDashboard() {
                       </span>
                     </div>
                     <div className={styles.cardDetails}>
-                      {appointment.doctor_name && (
-                        <p><strong>Doctor:</strong> {appointment.doctor_name}</p>
+                      {(appointment.doctor_display_name || appointment.doctor_name) && (
+                        <p><strong>Doctor:</strong> {appointment.doctor_display_name || appointment.doctor_name}</p>
                       )}
                       {appointment.reason && (
                         <p><strong>Reason:</strong> {appointment.reason}</p>

@@ -166,8 +166,8 @@ export default function PatientPortalTelemedicinePage() {
                     </span>
                   </div>
                   <div className={styles.cardDetails}>
-                    {session.doctor_name && (
-                      <p><strong>Doctor:</strong> {session.doctor_name}</p>
+                    {(session.doctor_display_name || session.doctor_name) && (
+                      <p><strong>Doctor:</strong> {session.doctor_display_name || session.doctor_name}</p>
                     )}
                     {session.scheduled_start && (
                       <p><strong>Scheduled:</strong> {formatDateTime(session.scheduled_start)}</p>

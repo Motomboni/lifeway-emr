@@ -49,6 +49,7 @@ class TelemedicineSessionSerializer(serializers.ModelSerializer):
     """Serializer for Telemedicine Session."""
     
     doctor_name = serializers.SerializerMethodField()
+    doctor_display_name = serializers.SerializerMethodField()
     patient_name = serializers.SerializerMethodField()
     participants = TelemedicineParticipantSerializer(many=True, read_only=True)
     is_active = serializers.BooleanField(read_only=True)
@@ -65,6 +66,7 @@ class TelemedicineSessionSerializer(serializers.ModelSerializer):
             'status',
             'doctor',
             'doctor_name',
+            'doctor_display_name',
             'patient',
             'patient_name',
             'scheduled_start',
@@ -110,6 +112,11 @@ class TelemedicineSessionSerializer(serializers.ModelSerializer):
         """Get doctor's full name."""
         if obj.doctor:
             return f"{obj.doctor.first_name} {obj.doctor.last_name}".strip()
+        return None
+
+    def get_doctor_display_name(self, obj):
+        if obj.doctor:
+            return obj.doctor.get_display_name_with_specialization()
         return None
     
     def get_patient_name(self, obj):

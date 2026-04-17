@@ -36,6 +36,7 @@ export interface RegisterData {
   first_name: string;
   last_name: string;
   role: UserRole;
+  specialization?: string;
 }
 
 export interface LoginResponse {
@@ -168,6 +169,7 @@ export interface AccountUpdateRequest {
   new_password_confirm?: string;
   new_email?: string;
   new_username?: string;
+  new_specialization?: string;
 }
 
 export async function updateAccount(data: AccountUpdateRequest): Promise<User> {

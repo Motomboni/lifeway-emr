@@ -18,6 +18,7 @@ class VisitSerializer(serializers.ModelSerializer):
     patient_name = serializers.SerializerMethodField()
     patient_id = serializers.SerializerMethodField()
     assigned_doctor_name = serializers.SerializerMethodField()
+    assigned_doctor_specialization = serializers.SerializerMethodField()
     
     class Meta:
         model = Visit
@@ -31,6 +32,7 @@ class VisitSerializer(serializers.ModelSerializer):
             'appointment',
             'assigned_doctor',
             'assigned_doctor_name',
+            'assigned_doctor_specialization',
             'status',
             'payment_type',
             'payment_status',
@@ -42,6 +44,7 @@ class VisitSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'id',
             'assigned_doctor_name',
+            'assigned_doctor_specialization',
             'closed_by',
             'closed_at',
             'created_at',
@@ -65,8 +68,13 @@ class VisitSerializer(serializers.ModelSerializer):
         user = getattr(obj, 'assigned_doctor', None)
         if not user:
             return None
-        name = (user.get_full_name() or '').strip()
-        return name or user.username
+        return user.get_display_name_with_specialization()
+
+    def get_assigned_doctor_specialization(self, obj):
+        user = getattr(obj, 'assigned_doctor', None)
+        if not user:
+            return None
+        return (user.specialization or '').strip() or None
 
 
 class VisitCreateSerializer(VisitSerializer):

@@ -68,6 +68,12 @@ class User(AbstractUser):
         blank=False,  # Required field
         help_text="User role for RBAC enforcement"
     )
+    specialization = models.CharField(
+        max_length=120,
+        blank=True,
+        default='',
+        help_text="Clinical specialization for doctors (e.g., Gynaecologist)"
+    )
     
     # Patient Portal Link (for PATIENT role users)
     patient = models.OneToOneField(
@@ -168,6 +174,19 @@ class User(AbstractUser):
     def get_role(self):
         """Get user role (for compatibility with permission checks)."""
         return self.role
+
+    def get_display_name_with_specialization(self):
+        """
+        Return display name and append specialization for doctors when set.
+        Example: "Dr. Jane Doe (Gynaecologist)".
+        """
+        name = (self.get_full_name() or '').strip() or self.username
+        if self.role == 'DOCTOR':
+            title_name = name if name.lower().startswith('dr.') else f"Dr. {name}"
+            if self.specialization:
+                return f"{title_name} ({self.specialization})"
+            return title_name
+        return name
     
     def is_locked(self):
         """Check if account is currently locked."""

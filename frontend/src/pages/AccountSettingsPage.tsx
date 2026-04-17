@@ -16,6 +16,7 @@ export default function AccountSettingsPage() {
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [newEmail, setNewEmail] = useState(user?.email || '');
   const [newUsername, setNewUsername] = useState(user?.username || '');
+  const [newSpecialization, setNewSpecialization] = useState(user?.specialization || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,6 +39,17 @@ export default function AccountSettingsPage() {
     if (trimmedUsername && trimmedUsername !== user?.username) {
       payload.new_username = trimmedUsername;
     }
+    if (user?.role === 'DOCTOR') {
+      const trimmedSpecialization = newSpecialization.trim();
+      if (!trimmedSpecialization) {
+        showError('Specialization is required for doctors.');
+        setIsSubmitting(false);
+        return;
+      }
+      if (trimmedSpecialization !== (user?.specialization || '').trim()) {
+        payload.new_specialization = trimmedSpecialization;
+      }
+    }
 
     try {
       const updated = await updateAccount(payload);
@@ -59,6 +71,7 @@ export default function AccountSettingsPage() {
         data.new_password?.[0] ||
         data.new_email?.[0] ||
         data.new_username?.[0] ||
+        data.new_specialization?.[0] ||
         data.detail ||
         (err instanceof Error ? err.message : 'Failed to update account');
       showError(firstError);
@@ -72,7 +85,7 @@ export default function AccountSettingsPage() {
       <div className={styles.loginCard} style={{ maxWidth: 520 }}>
         <BackToDashboard />
         <h1 className={styles.title}>Account Settings</h1>
-        <h2 className={styles.subtitle}>Update your login details</h2>
+        <h2 className={styles.subtitle}>Update your account details</h2>
 
         <form onSubmit={handleSubmit} className={styles.loginForm}>
           <div className={styles.formGroup}>
@@ -130,6 +143,20 @@ export default function AccountSettingsPage() {
               disabled={isSubmitting}
             />
           </div>
+
+          {user?.role === 'DOCTOR' && (
+            <div className={styles.formGroup}>
+              <label htmlFor="newSpecialization">Specialization</label>
+              <input
+                id="newSpecialization"
+                type="text"
+                value={newSpecialization}
+                onChange={(e) => setNewSpecialization(e.target.value)}
+                disabled={isSubmitting}
+                placeholder="e.g. Gynaecologist"
+              />
+            </div>
+          )}
 
           <button
             type="submit"

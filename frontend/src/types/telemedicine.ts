@@ -11,6 +11,7 @@ export interface TelemedicineSession {
   status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'FAILED';
   doctor: number;
   doctor_name: string;
+  doctor_display_name?: string;
   patient: number;
   patient_name: string;
   scheduled_start: string;

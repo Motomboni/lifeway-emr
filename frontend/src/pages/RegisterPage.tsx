@@ -93,6 +93,7 @@ export default function RegisterPage() {
     first_name: '',
     last_name: '',
     role: '' as UserRole | '',
+    specialization: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -115,7 +116,11 @@ export default function RegisterPage() {
 
   const handleRoleSelect = (role: UserRole) => {
     setSelectedRole(role);
-    setFormData(prev => ({ ...prev, role }));
+    setFormData(prev => ({
+      ...prev,
+      role,
+      specialization: role === 'DOCTOR' ? prev.specialization : '',
+    }));
     if (errors.role) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -164,6 +169,9 @@ export default function RegisterPage() {
     if (!formData.role) {
       newErrors.role = 'Please select a role';
     }
+    if (formData.role === 'DOCTOR' && !formData.specialization.trim()) {
+      newErrors.specialization = 'Specialization is required for doctors';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -187,6 +195,7 @@ export default function RegisterPage() {
         first_name: formData.first_name,
         last_name: formData.last_name,
         role: formData.role as UserRole,
+        specialization: formData.role === 'DOCTOR' ? formData.specialization.trim() : undefined,
       });
 
       showSuccess('Account created successfully! Please sign in.');
@@ -283,6 +292,23 @@ export default function RegisterPage() {
                 {errors.last_name && <span className={styles.errorText}>{errors.last_name}</span>}
               </div>
             </div>
+            {formData.role === 'DOCTOR' && (
+              <div className={styles.formGroup}>
+                <label htmlFor="specialization">Specialization *</label>
+                <input
+                  id="specialization"
+                  name="specialization"
+                  type="text"
+                  value={formData.specialization}
+                  onChange={handleInputChange}
+                  required
+                  disabled={isLoading}
+                  placeholder="e.g. Gynaecologist, Cardiologist"
+                  className={errors.specialization ? styles.inputError : ''}
+                />
+                {errors.specialization && <span className={styles.errorText}>{errors.specialization}</span>}
+              </div>
+            )}
           </div>
 
           {/* Account Information */}

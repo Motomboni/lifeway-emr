@@ -20,6 +20,7 @@ import { VisitCreateData } from '../types/visit';
 import { User } from '../types/auth';
 import BackToDashboard from '../components/common/BackToDashboard';
 import { logger } from '../utils/logger';
+import { formatDoctorDisplayName } from '../utils/doctorDisplay';
 import styles from '../styles/CreateVisit.module.css';
 
 export default function CreateVisitPage() {
@@ -349,8 +350,7 @@ export default function CreateVisitPage() {
                   >
                     <option value="">Select registered doctor (optional)</option>
                     {doctors.map((d) => {
-                      const label =
-                        [d.first_name, d.last_name].filter(Boolean).join(' ').trim() || d.username;
+                      const label = formatDoctorDisplayName(d);
                       return (
                         <option key={d.id} value={d.id}>
                           {label}

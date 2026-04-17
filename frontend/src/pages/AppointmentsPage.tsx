@@ -27,6 +27,7 @@ import { apiRequest } from '../utils/apiClient';
 import { useToast } from '../hooks/useToast';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import BackToDashboard from '../components/common/BackToDashboard';
+import { formatDoctorDisplayName } from '../utils/doctorDisplay';
 import styles from '../styles/Appointments.module.css';
 
 export default function AppointmentsPage() {
@@ -545,7 +546,7 @@ export default function AppointmentsPage() {
                 <option value={0}>Select a doctor...</option>
                 {doctors.map((doctor) => (
                   <option key={doctor.id} value={doctor.id}>
-                    Dr. {doctor.first_name} {doctor.last_name}
+                    {formatDoctorDisplayName(doctor)}
                     {user?.role === 'DOCTOR' && doctor.id === user.id ? ' (You)' : ''}
                   </option>
                 ))}
@@ -648,7 +649,7 @@ export default function AppointmentsPage() {
                 </div>
 
                 <div className={styles.appointmentDetails}>
-                  <p><strong>Doctor:</strong> {appointment.doctor_name || 'Unknown'}</p>
+                  <p><strong>Doctor:</strong> {appointment.doctor_display_name || appointment.doctor_name || 'Unknown'}</p>
                   <p><strong>Duration:</strong> {appointment.duration_minutes} minutes</p>
                   {appointment.reason && (
                     <p><strong>Reason:</strong> {appointment.reason}</p>

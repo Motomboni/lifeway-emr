@@ -22,6 +22,7 @@ export interface Visit {
   /** Reception-selected registered doctor (user id), if set at visit creation */
   assigned_doctor?: number | null;
   assigned_doctor_name?: string | null;
+  assigned_doctor_specialization?: string | null;
   visit_type?: 'CONSULTATION' | 'FOLLOW_UP' | 'EMERGENCY' | 'ROUTINE' | 'SPECIALIST';
   chief_complaint?: string;
   appointment?: number;

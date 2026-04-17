@@ -10,6 +10,7 @@ export interface User {
   email: string;
   first_name: string;
   last_name: string;
+  specialization?: string;
   role: UserRole;
   is_active: boolean;
   is_superuser?: boolean;

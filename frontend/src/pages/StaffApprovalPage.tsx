@@ -13,6 +13,7 @@ import { User } from '../types/auth';
 import { useToast } from '../hooks/useToast';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import BackToDashboard from '../components/common/BackToDashboard';
+import { formatDoctorDisplayName } from '../utils/doctorDisplay';
 import styles from '../styles/StaffApproval.module.css';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -41,6 +42,10 @@ export default function StaffApprovalPage() {
 
   const isAdmin = user?.is_superuser === true || user?.role === 'ADMIN';
   const isSuperuser = user?.is_superuser === true;
+  const getStaffDisplayName = (staffUser: User) =>
+    staffUser.role === 'DOCTOR'
+      ? formatDoctorDisplayName(staffUser)
+      : `${staffUser.first_name} ${staffUser.last_name}`.trim();
 
   const loadPendingStaff = useCallback(async () => {
     try {
@@ -81,7 +86,7 @@ export default function StaffApprovalPage() {
     try {
       setApprovingId(staffUser.id);
       await approveStaffUser(staffUser.id);
-      showSuccess(`${staffUser.first_name} ${staffUser.last_name} has been approved and can now log in.`);
+      showSuccess(`${getStaffDisplayName(staffUser)} has been approved and can now log in.`);
       setPendingStaff((prev) => prev.filter((u) => u.id !== staffUser.id));
       if (isSuperuser) loadAllStaff();
     } catch (err) {
@@ -93,13 +98,13 @@ export default function StaffApprovalPage() {
   };
 
   const handleDeactivate = async (staffUser: User) => {
-    if (!window.confirm(`Deactivate ${staffUser.first_name} ${staffUser.last_name}? They will no longer be able to log in.`)) {
+    if (!window.confirm(`Deactivate ${getStaffDisplayName(staffUser)}? They will no longer be able to log in.`)) {
       return;
     }
     try {
       setDeactivatingId(staffUser.id);
       await deactivateStaffUser(staffUser.id);
-      showSuccess(`${staffUser.first_name} ${staffUser.last_name} has been deactivated.`);
+      showSuccess(`${getStaffDisplayName(staffUser)} has been deactivated.`);
       setAllStaff((prev) => prev.map((u) => (u.id === staffUser.id ? { ...u, is_active: false } : u)));
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to deactivate staff';
@@ -155,7 +160,7 @@ export default function StaffApprovalPage() {
               {pendingStaff.map((staff) => (
                 <div key={staff.id} className={styles.staffCard}>
                   <div className={styles.staffInfo}>
-                    <h3>{staff.first_name} {staff.last_name}</h3>
+                    <h3>{getStaffDisplayName(staff)}</h3>
                     <p className={styles.role}>{ROLE_LABELS[staff.role] || staff.role}</p>
                     <p className={styles.details}>{staff.username} · {staff.email}</p>
                     <p className={styles.registered}>
@@ -187,7 +192,7 @@ export default function StaffApprovalPage() {
               {allStaff.map((staff) => (
                 <div key={staff.id} className={styles.staffCard}>
                   <div className={styles.staffInfo}>
-                    <h3>{staff.first_name} {staff.last_name}</h3>
+                    <h3>{getStaffDisplayName(staff)}</h3>
                     <p className={styles.role}>
                       {ROLE_LABELS[staff.role] || staff.role}
                       {!staff.is_active && <span className={styles.inactiveBadge}> (Deactivated)</span>}

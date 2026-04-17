@@ -452,7 +452,7 @@ export default function TelemedicinePage() {
               
               <div className={styles.sessionDetails}>
                 <p><strong>Patient:</strong> {session.patient_name}</p>
-                <p><strong>Doctor:</strong> {session.doctor_name}</p>
+                <p><strong>Doctor:</strong> {session.doctor_display_name || session.doctor_name}</p>
                 <p><strong>Scheduled:</strong> {formatDateTime(session.scheduled_start)}</p>
                 {session.actual_start && (
                   <p><strong>Started:</strong> {formatDateTime(session.actual_start)}</p>
