@@ -4,7 +4,7 @@ Reporting Views
 Provides advanced reporting and analytics endpoints.
 Per EMR Rules: Visit-scoped, role-based access.
 """
-from rest_framework import viewsets, status
+from rest_framework import serializers, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -23,6 +23,10 @@ from apps.appointments.models import Appointment
 from apps.patients.models import Patient
 
 
+class ReportSchemaSerializer(serializers.Serializer):
+    """Schema placeholder for read-only report actions."""
+
+
 class ReportViewSet(viewsets.ViewSet):
     """
     ViewSet for generating reports.
@@ -30,6 +34,7 @@ class ReportViewSet(viewsets.ViewSet):
     Endpoint: /api/v1/reports/
     """
     permission_classes = [IsAuthenticated]
+    serializer_class = ReportSchemaSerializer
 
     def _parse_date_range(self, request):
         """
@@ -116,6 +121,64 @@ class ReportViewSet(viewsets.ViewSet):
                 'to': date_to,
             }
         }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='revenue-by-method')
+    def revenue_by_method(self, request):
+        from_datetime, to_datetime, _, _ = self._parse_date_range(request)
+        payments_qs = Payment.objects.filter(status='CLEARED')
+        if from_datetime:
+            payments_qs = payments_qs.filter(created_at__gte=from_datetime)
+        if to_datetime:
+            payments_qs = payments_qs.filter(created_at__lte=to_datetime)
+
+        return Response([
+            {
+                'payment_method': row['payment_method'],
+                'total': float(row['total'] or 0),
+            }
+            for row in payments_qs.values('payment_method').annotate(total=Sum('amount'))
+        ], status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='revenue-trend')
+    def revenue_trend(self, request):
+        from_datetime, to_datetime, _, _ = self._parse_date_range(request)
+        payments_qs = Payment.objects.filter(status='CLEARED')
+        if from_datetime:
+            payments_qs = payments_qs.filter(created_at__gte=from_datetime)
+        if to_datetime:
+            payments_qs = payments_qs.filter(created_at__lte=to_datetime)
+
+        trend = (
+            payments_qs
+            .annotate(day=TruncDate('created_at'))
+            .values('day')
+            .annotate(total=Sum('amount'))
+            .order_by('day')
+        )
+        return Response([
+            {
+                'date': row['day'].isoformat(),
+                'revenue': float(row['total'] or 0),
+            }
+            for row in trend
+        ], status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='visits-by-status')
+    def visits_by_status(self, request):
+        from_datetime, to_datetime, _, _ = self._parse_date_range(request)
+        visits_qs = Visit.objects.all()
+        if from_datetime:
+            visits_qs = visits_qs.filter(created_at__gte=from_datetime)
+        if to_datetime:
+            visits_qs = visits_qs.filter(created_at__lte=to_datetime)
+
+        return Response([
+            {
+                'status': row['status'],
+                'count': int(row['count'] or 0),
+            }
+            for row in visits_qs.values('status').annotate(count=Count('id'))
+        ], status=status.HTTP_200_OK)
     
     @action(detail=False, methods=['get'], url_path='visits-summary')
     def visits_summary(self, request):

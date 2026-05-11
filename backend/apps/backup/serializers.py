@@ -2,6 +2,8 @@
 Backup and Restore Serializers.
 """
 from rest_framework import serializers
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from .models import Backup, Restore
 
 
@@ -56,13 +58,13 @@ class BackupSerializer(serializers.ModelSerializer):
             'is_expired',
         ]
     
-    def get_created_by_name(self, obj):
+    def get_created_by_name(self, obj) -> str | None:
         """Get created by user's full name."""
         if obj.created_by:
             return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip()
         return None
     
-    def get_duration_seconds(self, obj):
+    def get_duration_seconds(self, obj) -> float | None:
         """Get backup duration in seconds."""
         duration = obj.duration
         if duration:
@@ -134,20 +136,21 @@ class RestoreSerializer(serializers.ModelSerializer):
             'duration_seconds',
         ]
     
-    def get_created_by_name(self, obj):
+    def get_created_by_name(self, obj) -> str | None:
         """Get created by user's full name."""
         if obj.created_by:
             return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip()
         return None
     
-    def get_duration_seconds(self, obj):
+    def get_duration_seconds(self, obj) -> float | None:
         """Get restore duration in seconds."""
         duration = obj.duration
         if duration:
             return duration.total_seconds()
         return None
     
-    def get_backup_info(self, obj):
+    @extend_schema_field(OpenApiTypes.OBJECT)
+    def get_backup_info(self, obj) -> dict[str, object] | None:
         """Get backup information."""
         if obj.backup:
             return {

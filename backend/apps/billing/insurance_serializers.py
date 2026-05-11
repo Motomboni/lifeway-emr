@@ -112,21 +112,21 @@ class VisitInsuranceSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
     
-    def get_patient_payable(self, obj):
+    def get_patient_payable(self, obj) -> str:
         """Compute patient payable amount using centralized BillingService."""
         from .billing_service import BillingService
         
         summary = BillingService.compute_billing_summary(obj.visit)
         return str(summary.patient_payable)
     
-    def get_insurance_amount(self, obj):
+    def get_insurance_amount(self, obj) -> str:
         """Compute insurance-covered amount using centralized BillingService."""
         from .billing_service import BillingService
         
         summary = BillingService.compute_billing_summary(obj.visit)
         return str(summary.insurance_amount)
     
-    def get_is_fully_covered(self, obj):
+    def get_is_fully_covered(self, obj) -> bool:
         """Check if patient is fully covered using centralized BillingService."""
         from .billing_service import BillingService
         

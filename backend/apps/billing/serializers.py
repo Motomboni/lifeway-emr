@@ -43,7 +43,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
     
-    def get_processed_by_name(self, obj):
+    def get_processed_by_name(self, obj) -> str | None:
         """Get processor's full name."""
         if obj.processed_by:
             return f"{obj.processed_by.first_name} {obj.processed_by.last_name}"
@@ -177,7 +177,7 @@ class PaymentIntentSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
     
-    def get_created_by_name(self, obj):
+    def get_created_by_name(self, obj) -> str | None:
         """Get creator's full name."""
         if obj.created_by:
             return f"{obj.created_by.first_name} {obj.created_by.last_name}"

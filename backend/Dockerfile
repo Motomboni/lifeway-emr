@@ -19,11 +19,18 @@ FROM python:3.11-slim AS runtime
 
 WORKDIR /app
 
-# Runtime deps: libpq, curl, gosu (for drop to app user in entrypoint)
+# Runtime deps: libpq, curl, gosu, and WeasyPrint native PDF libraries.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
     gosu \
+    libcairo2 \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libgdk-pixbuf-2.0-0 \
+    libffi8 \
+    shared-mime-info \
+    fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 # Non-root user for running Gunicorn

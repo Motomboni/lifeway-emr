@@ -29,6 +29,7 @@ class VisitSerializer(serializers.ModelSerializer):
             'patient_id',
             'visit_type',
             'chief_complaint',
+            'service_area',
             'appointment',
             'assigned_doctor',
             'assigned_doctor_name',

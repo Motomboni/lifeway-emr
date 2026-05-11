@@ -1,0 +1,133 @@
+source_table,source_column,target_model,target_field,transform_rule,required_default,validation_owner,mapping_status,notes
+tblOutPatientRecord,PatientID,apps.patients.Patient,legacy_patient_id,copy_int_as_legacy_id,required,Data Engineering,proposed,Confirm legacy ID storage approach (field vs sidecar map table).
+tblOutPatientRecord,Surname,apps.patients.Patient,last_name,trim_titlecase,required,Clinical Operations,proposed,Confirm capitalization policy for surnames.
+tblOutPatientRecord,Othernames,apps.patients.Patient,first_name,trim_titlecase,required,Clinical Operations,proposed,Confirm handling of middle names.
+tblOutPatientRecord,Sex,apps.patients.Patient,gender,map_gender(M/F/O->MALE/FEMALE/OTHER),required_if_present,Clinical Operations,proposed,Confirm accepted legacy variants (Male/Female/U/etc.).
+tblOutPatientRecord,DOB,apps.patients.Patient,date_of_birth,parse_date_or_null,optional_null,Clinical Operations,proposed,Decide fallback for impossible dates.
+tblOutPatientRecord,PhoneNo,apps.patients.Patient,phone,normalize_phone_e164_or_local,optional_null,Front Desk Lead,proposed,Confirm country code default for normalization.
+tblOutPatientRecord,Email,apps.patients.Patient,email,lowercase_trim_validate_email,optional_null,Front Desk Lead,proposed,Decide invalid-email retention strategy.
+tblOutPatientRecord,Address,apps.patients.Patient,address,trim_preserve_case,optional_null,Front Desk Lead,proposed,Confirm multiline address format.
+tblUsers,UserID,apps.users.User,legacy_user_id,copy_int_as_legacy_id,required,Data Engineering,proposed,Confirm whether to keep legacy IDs in user model.
+tblUsers,UserName,apps.users.User,username,slugify_unique_with_suffix,required,IT Admin,proposed,Confirm username collision suffix format.
+tblUsers,Password,apps.users.User,password,rehash_or_force_reset_token,required_security_rule,Security Lead,proposed,Do not import plain hashes unless verified algorithm support.
+tblUsers,FullName,apps.users.User,first_name+last_name,split_full_name_with_fallback,required,HR/Admin,proposed,Confirm split heuristics for single-word names.
+tblUsers,Role,apps.users.User,role,map_legacy_role_to_ROLE_CHOICES,required,HR/Admin,proposed,Finalize role mapping dictionary.
+tblUsers,Specialization,apps.users.User,specialization,trim_doctor_only_else_blank,default_blank_non_doctor,Medical Director,proposed,Confirm specialization source quality.
+tblPatientVisits,VisitID,apps.visits.Visit,legacy_visit_id,copy_int_as_legacy_id,required,Data Engineering,proposed,Confirm visit ID preservation method.
+tblPatientVisits,PatientID,apps.visits.Visit,patient,lookup_patient_by_legacy_id,required_fk,Data Engineering,proposed,Requires patient mapping table.
+tblPatientVisits,ClinicID,apps.visits.Visit,legacy_clinic_charge_item_id,copy_int_as_legacy_id,optional_fk,Data Engineering,proposed,LIFEWAY ClinicID; join tblChargeItem for ClinicName in export.
+tblPatientVisits,ClinicName,apps.visits.Visit,service_area,trim_preserve_case,optional_null,Clinical Operations,proposed,Canonical service area label from tblChargeItem.Name.
+tblPatientVisits,Date,apps.visits.Visit,created_at,parse_datetime_to_utc,required,Data Engineering,proposed,Confirm source timezone assumptions.
+tblPatientVisits,VisitType,apps.visits.Visit,visit_type,map_visit_type_enum,default_CONSULTATION,Clinical Operations,proposed,Review unmapped legacy visit types.
+tblPatientVisits,Status,apps.visits.Visit,status,map_visit_status_enum(OPEN/CLOSED),default_OPEN,Clinical Operations,proposed,Confirm closed/cancelled handling.
+tblPatientVisits,PaymentStatus,apps.visits.Visit,payment_status,map_payment_status_enum,default_UNPAID,Billing Lead,proposed,Confirm INSURANCE_PENDING legacy equivalents.
+tblPatientVisits,ChiefComplaint,apps.visits.Visit,chief_complaint,trim_preserve_case,optional_null,Clinical Operations,proposed,Also mapped to Visit.chief_complaint in load.py.
+tblPatientVisits,Reason,apps.visits.Visit,reason_line,trim_preserve_case,optional_null,Clinical Operations,proposed,Reserved; export may emit null Reason column.
+tblPatientVisits,VisitNotes,apps.visits.Visit,_export_visit_notes,trim_preserve_case,optional_null,Clinical Operations,proposed,Loader merges into Consultation.history (tblPatientVisits.Notes).
+tblPatientVisits,HPC,apps.visits.Visit,_export_hpc,trim_preserve_case,optional_null,Clinical Operations,proposed,Loader merges into Consultation.history.
+tblPatientVisits,PMH,apps.visits.Visit,_export_pmh,trim_preserve_case,optional_null,Clinical Operations,proposed,Loader merges into Consultation.history.
+tblPatientVisits,FHx,apps.visits.Visit,_export_fhx,trim_preserve_case,optional_null,Clinical Operations,proposed,Loader merges into Consultation.history.
+tblPatientVisits,Exam,apps.visits.Visit,_export_exam,trim_preserve_case,optional_null,Clinical Operations,proposed,Loader maps to Consultation.examination.
+tblPatientVisits,Assessment,apps.visits.Visit,_export_assessment,trim_preserve_case,optional_null,Clinical Operations,proposed,Loader maps to Consultation.diagnosis (legacy Assesment column).
+tblPatientVisits,TreatPlan,apps.visits.Visit,_export_treat_plan,trim_preserve_case,optional_null,Clinical Operations,proposed,Loader merges into Consultation.clinical_notes.
+tblPatientVisits,ResultsText,apps.visits.Visit,_export_results_text,trim_preserve_case,optional_null,Clinical Operations,proposed,Loader merges into Consultation.clinical_notes (legacy results).
+tblPatientVisits,Treatment,apps.visits.Visit,_export_treatment,trim_preserve_case,optional_null,Clinical Operations,proposed,Loader merges into Consultation.clinical_notes.
+tblPatientVisits,Summary,apps.visits.Visit,_export_summary,trim_preserve_case,optional_null,Clinical Operations,proposed,Loader merges into Consultation.clinical_notes.
+tblPatientVisits,FollowUp,apps.visits.Visit,_export_follow_up,trim_preserve_case,optional_null,Clinical Operations,proposed,Loader merges into Consultation.clinical_notes.
+tblPatientVisits,IMH,apps.visits.Visit,_export_imh,trim_preserve_case,optional_null,Clinical Operations,proposed,Loader merges into Consultation.history.
+tblPatientVisits,DH,apps.visits.Visit,_export_dh,trim_preserve_case,optional_null,Clinical Operations,proposed,Loader merges into Consultation.history.
+tblPatientVisits,Weight,apps.visits.Visit,_export_weight,trim_preserve_case,optional_null,Clinical Operations,proposed,Loader appends visit measurements line in Consultation.history.
+tblPatientVisits,Temperature,apps.visits.Visit,_export_temperature,trim_preserve_case,optional_null,Clinical Operations,proposed,Loader appends visit measurements line in Consultation.history.
+tblPatientVisits,LegacyDoctor,apps.visits.Visit,_export_legacy_doctor,trim_preserve_case,optional_null,Clinical Operations,proposed,Exported for audit; Consultation.created_by uses migration_doctor when present.
+tblPatientPayment,PatientPayID,apps.billing.Payment,legacy_payment_id,copy_int_as_legacy_id,required,Data Engineering,proposed,Idempotency via [Legacy PatientPayID:N] prefix in Payment.notes.
+tblPatientPayment,PatientID,apps.billing.Payment,patient,lookup_patient_by_legacy_id,required_fk,Data Engineering,proposed,LIFEWAY OutPatientID key; visit resolved by nearest PaymentDate to Visit.created_at.
+tblPatientPayment,PaymentDate,apps.billing.Payment,created_at,parse_datetime_to_utc,required,Data Engineering,proposed,Loader sets Payment.created_at after bulk_create/update.
+tblPatientPayment,LegacyStatus,apps.billing.Payment,status,map_payment_status_enum,default_PENDING,Billing Lead,proposed,Maps PAID/CLEAR-ish strings to CLEARED; REFUND to REFUNDED.
+tblPatientPayment,ReceiptNo,apps.billing.Payment,transaction_reference,copy_int_as_receipt,optional_null,Billing Lead,proposed,Stored as string in transaction_reference.
+tblPatientPayment,PayAmount,apps.billing.Payment,amount,parse_decimal_money,required,Billing Lead,proposed,COALESCE non-zero AmountPaid then Total in SQL export.
+tblPatientPayment,ServiceLine,apps.billing.Payment,notes,append_service_to_notes,optional_null,Billing Lead,proposed,Combined into Payment.notes with legacy tag.
+tblPatientPayment,DiagnosisLine,apps.billing.Payment,notes,append_diagnosis_to_notes,optional_null,Clinical Operations,proposed,Combined into Payment.notes.
+tblPatientPayment,HMOCode,apps.billing.Payment,payment_method,map_insurance_vs_cash,optional_null,Billing Lead,proposed,Non-blank HMOCode maps to INSURANCE else CASH.
+tblPatientPayment,PayerName,apps.billing.Payment,notes,append_payer_to_notes,optional_null,Front Desk Lead,proposed,Combined into Payment.notes.
+tblTempReceipt,TempReceiptID,apps.billing.VisitCharge,legacy_temp_receipt_id,copy_int_as_legacy_id,required,Data Engineering,proposed,Idempotency via [Legacy TempReceipt:N] prefix in VisitCharge.description.
+tblTempReceipt,GridReceiptID,apps.billing.VisitCharge,legacy_grid_receipt_id,copy_int_as_legacy_id,optional_fk,Data Engineering,proposed,tblReceiptGrid.ReceiptID join key.
+tblTempReceipt,ReceiptNo,apps.billing.VisitCharge,legacy_receipt_no,copy_int_as_receipt,optional_null,Billing Lead,proposed,From tblReceiptGrid.ReceiptNo.
+tblTempReceipt,PatientID,apps.billing.VisitCharge,patient,lookup_patient_by_legacy_id,required_fk,Data Engineering,proposed,Visit resolved by nearest LineDate.
+tblTempReceipt,LineDate,apps.billing.VisitCharge,line_date,parse_datetime_to_utc,required,Data Engineering,proposed,tblReceiptGrid.Date.
+tblTempReceipt,ServiceLine,apps.billing.VisitCharge,description_source,trim_preserve_case,optional_null,Billing Lead,proposed,tblTempReceipt.Service text.
+tblTempReceipt,FieldName,apps.billing.VisitCharge,field_name,trim_preserve_case,optional_null,Billing Lead,proposed,tblTempReceipt.FieldName.
+tblTempReceipt,LineAmount,apps.billing.VisitCharge,amount,parse_decimal_money,required,Billing Lead,proposed,tblTempReceipt.Total; VisitCharge.save bypassed via bulk_create/update.
+tblOPDAppointment,AppointmentID,apps.appointments.Appointment,legacy_appointment_id,copy_int_as_legacy_id,required,Data Engineering,proposed,Confirm if appointment IDs are unique globally.
+tblOPDAppointment,PatientID,apps.appointments.Appointment,patient,lookup_patient_by_legacy_id,required_fk,Data Engineering,proposed,Requires patient mapping readiness.
+tblOPDAppointment,Clinic,apps.appointments.Appointment,service_area,trim_preserve_case,optional_null,Clinical Operations,proposed,LIFEWAY OPD clinic code/text (tblOPDAppointment.Clinic).
+tblOPDAppointment,DoctorID,apps.appointments.Appointment,doctor,lookup_user_by_legacy_id_and_role_doctor,required_fk,IT Admin,proposed,Confirm doctor IDs from tblUsers vs tblStaff.
+tblOPDAppointment,AppointmentDate,apps.appointments.Appointment,appointment_date,parse_datetime_to_utc,required,Data Engineering,proposed,Need timezone normalization rule.
+tblOPDAppointment,Status,apps.appointments.Appointment,status,map_appointment_status_enum,default_SCHEDULED,Clinical Operations,proposed,Confirm NO_SHOW and cancellation mapping.
+tblVitalSign,VSID,apps.clinical.VitalSigns,legacy_vitals_id,copy_int_as_legacy_id,required,Data Engineering,proposed,Confirm retention need after import.
+tblVitalSign,VisitID,apps.clinical.VitalSigns,visit,lookup_visit_by_legacy_id,required_fk,Data Engineering,proposed,Depends on visit crosswalk.
+tblVitalSign,Temperature,apps.clinical.VitalSigns,temperature_c,convert_f_to_c_if_needed,optional_null,Nursing Lead,proposed,Need rule to detect F vs C in legacy rows.
+tblVitalSign,BloodPressure,apps.clinical.VitalSigns,blood_pressure,normalize_bp_format_systolic_diastolic,optional_null,Nursing Lead,proposed,Handle malformed BP strings.
+tblVitalSign,Pulse,apps.clinical.VitalSigns,heart_rate,cast_int_range_check,optional_null,Nursing Lead,proposed,Confirm acceptable outlier range.
+tblVitalSign,RecordedAt,apps.clinical.VitalSigns,recorded_at,parse_datetime_to_utc,required,Nursing Lead,proposed,Set after insert due to Django auto_now_add on recorded_at.
+tblVitalSign,Resp,apps.clinical.VitalSigns,respiratory_rate,cast_int_range_check,optional_null,Nursing Lead,proposed,Legacy tblVitalSign.Resp.
+tblVitalSign,SPO2,apps.clinical.VitalSigns,oxygen_saturation,cast_decimal_percent,optional_null,Nursing Lead,proposed,SpO2 percent 0–100.
+tblVitalSign,Wt,apps.clinical.VitalSigns,weight,cast_decimal_kg,optional_null,Nursing Lead,proposed,Confirm kg vs lb in legacy; loader assumes kg range.
+tblVitalSign,Ht,apps.clinical.VitalSigns,height,cast_decimal_cm,optional_null,Nursing Lead,proposed,Confirm cm vs inches in legacy; loader assumes cm range.
+tblLabRequest,RequestID,apps.laboratory.LabOrder,legacy_lab_order_id,copy_int_as_legacy_id,required,Data Engineering,proposed,Confirm order key strategy.
+tblLabRequest,PatientID,apps.laboratory.LabOrder,patient,lookup_patient_by_legacy_id,required_fk,Data Engineering,proposed,Requires patient crosswalk.
+tblLabRequest,VisitID,apps.laboratory.LabOrder,visit,lookup_visit_by_legacy_id,optional_fk,Data Engineering,proposed,Decide behavior when visit missing.
+tblLabRequest,DateRequested,apps.laboratory.LabOrder,ordered_at,parse_datetime_to_utc,required,Lab Lead,proposed,Confirm if DateRequested or Date is canonical.
+tblLabRequest,Sender,apps.laboratory.LabOrder,ordered_by,lookup_user_by_name_or_legacy_id,optional_fk,Lab Lead,proposed,Loader uses migration_doctor when Sender does not match a user.
+tblLabRequest,Status,apps.laboratory.LabOrder,status,map_lab_order_status_enum,default_ORDERED,Lab Lead,proposed,Finalize status dictionary.
+tblLabRequest,Diagnosis,apps.laboratory.LabOrder,clinical_indication,trim_preserve_case,optional_null,Lab Lead,proposed,Prefixed with [Legacy RequestID:N] for idempotency.
+tblLabRequest,TestsRequested,apps.laboratory.LabOrder,tests_requested,pipe_list_to_json_array,required,Lab Lead,proposed,LIFEWAY export STRING_AGG TestName with pipe delimiter.
+tblLabResult,RequestID,apps.laboratory.LabResult,order,lookup_lab_order_by_legacy_id,required_fk,Data Engineering,proposed,CSV one row per RequestID; links to LabOrder from tblLabRequest.
+tblLabResult,Date,apps.laboratory.LabResult,reported_at,parse_datetime_to_utc,optional_null,Lab Lead,proposed,MAX(Date) across tblLabResult rows for request.
+tblLabResult,AuthorizedBy,apps.laboratory.LabResult,legacy_authorized_by,trim_preserve_case,optional_null,Lab Lead,proposed,Appended into result_data; recorded_by is LAB_TECH.
+tblLabResult,HeaderNotes,apps.laboratory.LabResult,result_header_notes,normalize_multiline_text,optional_null,Lab Lead,proposed,From tblLabResult.notes (aggregated).
+tblLabResult,ResultData,apps.laboratory.LabResult,result_data,normalize_multiline_text,required,Lab Lead,proposed,STRING_AGG of tblLabResultDetails lines per LIFEWAY export.
+tblRadRequest,RequestID,apps.radiology.RadiologyRequest,legacy_radiology_request_id,copy_int_as_legacy_id,required,Data Engineering,proposed,Confirm request ID uniqueness.
+tblRadRequest,PatientID,apps.radiology.RadiologyRequest,patient,lookup_patient_by_legacy_id,required_fk,Data Engineering,proposed,Requires patient crosswalk.
+tblRadRequest,VisitID,apps.radiology.RadiologyRequest,visit,lookup_visit_by_legacy_id,optional_fk,Data Engineering,proposed,Define fallback when no visit link.
+tblRadRequest,Date,apps.radiology.RadiologyRequest,requested_at,parse_datetime_to_utc,required,Radiology Lead,proposed,Confirm date source if multiple fields exist.
+tblRadRequest,Sender,apps.radiology.RadiologyRequest,ordered_by,lookup_user_by_name_or_legacy_id,optional_fk,Radiology Lead,proposed,Loader falls back to migration_doctor when sender lookup fails.
+tblRadRequest,Status,apps.radiology.RadiologyRequest,status,map_radiology_status_enum,default_PENDING,Radiology Lead,proposed,Legacy completed-like states map to COMPLETED else PENDING.
+tblRadRequest,Diagnosis,apps.radiology.RadiologyRequest,clinical_indication,trim_preserve_case,optional_null,Radiology Lead,proposed,Prefixed with [Legacy RadRequestID:N] for idempotency.
+tblRadRequest,Investigations,apps.radiology.RadiologyRequest,study_type,pipe_list_take_first,optional_null,Radiology Lead,proposed,Aggregated from tblRadRequestDetails+tblChargeItem; first item becomes study_type.
+tblRadResult,RequestID,apps.radiology.RadiologyRequest,request_link,lookup_radiology_request_by_legacy_request_id,required_fk,Data Engineering,proposed,Matches RadiologyRequest via [Legacy RadRequestID:N] tag.
+tblRadResult,PatientID,apps.radiology.RadiologyRequest,patient_fallback,lookup_patient_and_nearest_request,optional_fk,Data Engineering,proposed,Fallback when direct RequestID match fails.
+tblRadResult,Date,apps.radiology.RadiologyRequest,report_date,parse_datetime_to_utc,optional_null,Radiology Lead,proposed,Used when present.
+tblRadResult,ReportBy,apps.radiology.RadiologyRequest,reported_by,lookup_radiology_tech_user,optional_fk,Radiology Lead,proposed,Loader uses migration_radiology_tech/first RADIOLOGY_TECH fallback.
+tblRadResult,ReportText,apps.radiology.RadiologyRequest,report,normalize_multiline_text,required,Radiology Lead,proposed,Writes report and marks request COMPLETED.
+tblDrugPresItems,PresItemID,apps.pharmacy.Prescription,legacy_pres_item_id,copy_int_as_legacy_id,required,Data Engineering,proposed,One Prescription per line; idempotency [Legacy PresItemID:N] in instructions.
+tblDrugPresItems,PrescriptionID,apps.pharmacy.Prescription,legacy_prescription_header_id,copy_int_as_legacy_id,optional_fk,Data Engineering,proposed,From tblDrugPrescription join.
+tblDrugPresItems,PatientID,apps.pharmacy.Prescription,patient,lookup_patient_by_legacy_id,required_fk,Data Engineering,proposed,Visit resolved by nearest PrescriptionDate.
+tblDrugPresItems,PrescriptionDate,apps.pharmacy.Prescription,created_at,parse_datetime_to_utc,required,Pharmacy Lead,proposed,tblDrugPrescription.Date.
+tblDrugPresItems,Sender,apps.pharmacy.Prescription,legacy_sender,trim_preserve_case,optional_null,Pharmacy Lead,proposed,Not yet mapped to user; prescribed_by uses migration_doctor.
+tblDrugPresItems,DrugItemID,apps.pharmacy.Prescription,legacy_drug_item_id,copy_int_as_legacy_id,optional_fk,Pharmacy Lead,proposed,Resolves Drug.name via drug_code LIFEWAY-{id} after tblPhamDrugItem load.
+tblDrugPresItems,DrugName,apps.pharmacy.Prescription,drug_name_fallback,trim_preserve_case,optional_null,Pharmacy Lead,proposed,From tblPhamDrugItem.Name join.
+tblDrugPresItems,QtyIssued,apps.pharmacy.Prescription,qty_issued,cast_int_nonnegative,optional_null,Pharmacy Lead,proposed,Dispensed when QtyIssued>0; is_emergency=True for migration.
+tblDrugPresItems,ItemNotes,apps.pharmacy.Prescription,instructions_notes,trim_preserve_case,optional_null,Pharmacy Lead,proposed,Merged into instructions with legacy ids.
+tblPhamDrugItem,DrugItemID,apps.pharmacy.Drug,legacy_drug_id,copy_int_as_legacy_id,required,Data Engineering,proposed,Confirm no duplicate drug IDs.
+tblPhamDrugItem,DrugName,apps.pharmacy.Drug,name,trim_preserve_case_unique,required,Pharmacy Lead,proposed,Need dedupe rules for variant names.
+tblPhamDrugItem,UnitPrice,apps.pharmacy.Drug,unit_price,cast_decimal_2dp_nonnegative,default_0.00,Pharmacy Lead,proposed,Confirm currency and tax inclusions.
+tblPhamDrugItem,Cost,apps.pharmacy.Drug,cost_price,cast_decimal_2dp_nonnegative,optional_null,Pharmacy Lead,proposed,Used by migrate_lmc load for Drug.cost_price when present in CSV.
+tblPhamDrugLedger,Date,apps.pharmacy.StockMovement,moved_at,parse_datetime_to_utc,required,Pharmacy Lead,proposed,Confirm posting date semantics.
+tblPhamDrugLedger,StockIn,apps.pharmacy.StockMovement,quantity,cast_int_positive_for_in,required_if_stockin,Pharmacy Lead,proposed,Mutually exclusive with StockOut.
+tblPhamDrugLedger,StockOut,apps.pharmacy.StockMovement,quantity,cast_int_negative_for_out,required_if_stockout,Pharmacy Lead,proposed,Mutually exclusive with StockIn.
+tblPatientPayment,PaymentID,apps.billing.Payment,legacy_payment_id,copy_int_as_legacy_id,required,Data Engineering,draft,LMC-only schema; LIFEWAY export uses PatientPayID/PayAmount (see rows above).
+tblPatientPayment,VisitID,apps.billing.Payment,visit,lookup_visit_by_legacy_id,required_fk,Data Engineering,draft,LMC-only; LIFEWAY resolves visit from PaymentDate + PatientID.
+tblPatientPayment,Amount,apps.billing.Payment,amount,cast_decimal_2dp_nonnegative,required,Billing Lead,draft,LMC-only; LIFEWAY uses PayAmount.
+tblPatientPayment,PaymentDate,apps.billing.Payment,paid_at,parse_datetime_to_utc,required,Billing Lead,draft,Duplicate source col; LIFEWAY PaymentDate maps to created_at in row 44.
+tblPatientPayment,PaymentMode,apps.billing.Payment,payment_method,map_payment_method_enum,required,Billing Lead,draft,LMC-only; LIFEWAY uses HMOCode for insurance vs cash.
+tblReceiptGrid,ItemName,apps.billing.VisitCharge,description,trim_preserve_case,required,Billing Lead,proposed,Confirm service catalog linkage strategy.
+tblReceiptGrid,Amount,apps.billing.VisitCharge,amount,cast_decimal_2dp_nonnegative,required,Billing Lead,proposed,Validate charge totals against receipts.
+tblReferal,ReferralID,apps.referrals.Referral,legacy_referral_id,copy_int_as_legacy_id,required,Data Engineering,proposed,Confirm spelling variants (Referal/Referral).
+tblReferal,PatientID,apps.referrals.Referral,patient,lookup_patient_by_legacy_id,required_fk,Data Engineering,proposed,Requires patient crosswalk.
+tblReferal,ReferredTo,apps.referrals.Referral,referred_to,trim_preserve_case,required,Clinical Operations,proposed,Define internal vs external destination rules.
+tblReferal,Reason,apps.referrals.Referral,reason,normalize_multiline_text,optional_null,Clinical Operations,proposed,Confirm requiredness for compliance.
+tblANC,ANCID,apps.antenatal.AntenatalRecord,legacy_anc_id,copy_int_as_legacy_id,required,Data Engineering,proposed,Confirm one ANC record per pregnancy rule.
+tblANC,PatientID,apps.antenatal.AntenatalRecord,patient,lookup_patient_by_legacy_id,required_fk,Data Engineering,proposed,Requires patient crosswalk.
+tblANCVisits,VisitDate,apps.antenatal.AntenatalVisit,visit_date,parse_date_or_datetime_to_date,required,Antenatal Lead,proposed,Confirm ANC visit sequencing logic.
+tblAdmissionRequest,RequestID,apps.visits.Visit,admission_request_legacy_id,copy_int_as_legacy_ref,optional_null,Inpatient Lead,proposed,May need dedicated admission model mapping.
+tblAdmission,AdmissionID,apps.visits.Visit,admission_legacy_id,copy_int_as_legacy_ref,optional_null,Inpatient Lead,proposed,Likely better mapped to admission/discharge domain tables.

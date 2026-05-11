@@ -149,12 +149,13 @@ class PaymentClearedGuard:
             
             # Block access to clinical action endpoints when payment is PENDING
             if self._is_clinical_action(path):
-                # Allow GET requests (read-only) for prescriptions - pharmacists need to view them
-                # Block POST/PUT/PATCH (create/update) - these require payment clearance
-                if '/prescriptions/' in path and request.method == 'GET':
-                    # Allow read-only access to prescriptions even when payment is pending
-                    # This allows pharmacists to view prescriptions for dispensation planning
-                    # The view-level permissions will still enforce role-based access
+                # Allow read-only access to downstream clinical objects; create/update
+                # actions still require payment clearance.
+                if (
+                    request.method == 'GET'
+                    and ('/prescriptions/' in path or '/radiology/' in path)
+                ):
+                    # View-level permissions still enforce role-based access.
                     return self.get_response(request)
                 
                 if self._clinical_allowed_before_payment(path):

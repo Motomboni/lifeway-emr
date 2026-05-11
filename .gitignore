@@ -12,6 +12,7 @@ __pycache__/
 venv/
 backend/db.sqlite3
 backend/staticfiles/
+staticfiles/
 *.log
 logs/
 
@@ -29,6 +30,14 @@ Thumbs.db
 
 # Media and uploads (optional: remove if you want them in repo)
 media/
+
+# Local migration scratch (CSV exports, reconciliation, temp SQLite)
+tmp/
+
+# Raw legacy database dumps / exported PHI
+LMC.sql
+*.bak
+*.dump
 
 # Test and coverage
 .pytest_cache/

@@ -4,7 +4,7 @@
  * Displays a list of visits with filtering options.
  * Per EMR Rules: Visit-scoped, role-based access.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchVisits } from '../api/visits';
@@ -41,13 +41,12 @@ export default function VisitsListPage() {
   }>({});
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  // Only fetch when auth is ready and user is present (avoids 401 from firing before session is set)
-  useEffect(() => {
-    if (authLoading || !user) return;
-    loadVisits();
-  }, [filters, authLoading, user]);
+  const updateFilters = (nextFilters: typeof filters) => {
+    setPagination(prev => ({ ...prev, currentPage: 1 }));
+    setFilters(nextFilters);
+  };
 
-  const loadVisits = async () => {
+  const loadVisits = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetchVisits({
@@ -79,7 +78,13 @@ export default function VisitsListPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, pagination.currentPage, pagination.pageSize, showError]);
+
+  // Only fetch when auth is ready and user is present (avoids 401 from firing before session is set)
+  useEffect(() => {
+    if (authLoading || !user) return;
+    loadVisits();
+  }, [authLoading, user, loadVisits]);
 
   const handleVisitClick = (visitId: number) => {
     if (user?.role === 'DOCTOR') {
@@ -139,7 +144,7 @@ export default function VisitsListPage() {
           <label>Status:</label>
           <select
             value={filters.status || ''}
-            onChange={(e) => setFilters({
+            onChange={(e) => updateFilters({
               ...filters,
               status: e.target.value as 'OPEN' | 'CLOSED' | undefined || undefined
             })}
@@ -154,20 +159,24 @@ export default function VisitsListPage() {
           <label>Payment:</label>
           <select
             value={filters.payment_status || ''}
-            onChange={(e) => setFilters({
+            onChange={(e) => updateFilters({
               ...filters,
               payment_status: e.target.value as 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'INSURANCE_PENDING' | 'INSURANCE_CLAIMED' | 'SETTLED' | undefined || undefined
             })}
           >
             <option value="">All</option>
-            <option value="PENDING">Pending</option>
-            <option value="CLEARED">Cleared</option>
+            <option value="UNPAID">Unpaid</option>
+            <option value="PARTIALLY_PAID">Partially paid</option>
+            <option value="PAID">Paid</option>
+            <option value="INSURANCE_PENDING">Insurance pending</option>
+            <option value="INSURANCE_CLAIMED">Insurance claimed</option>
+            <option value="SETTLED">Settled</option>
           </select>
         </div>
 
         <button
           className={styles.clearFiltersButton}
-          onClick={() => setFilters({})}
+          onClick={() => updateFilters({})}
         >
           Clear Filters
         </button>
@@ -266,6 +275,21 @@ export default function VisitsListPage() {
 
       {!loading && visits.length > 0 && pagination.totalPages > 1 && (
         <div className={styles.pagination}>
+          <label className={styles.pageSizeControl}>
+            Rows per page:
+            <select
+              value={pagination.pageSize}
+              onChange={(e) => setPagination(prev => ({
+                ...prev,
+                currentPage: 1,
+                pageSize: Number(e.target.value),
+              }))}
+            >
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </label>
           <button
             className={styles.paginationButton}
             onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}

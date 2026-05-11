@@ -1,0 +1,25 @@
+# Optional SQL Server container to restore SERVER_LIFEWAY_*.bak and export CSVs for migrate_lmc.
+# Set LIFEWAY_BAK_HOST_DIR to the folder containing the .bak (Windows path). Default matches this workspace owner.
+#
+#   docker compose -f docker-compose.lifeway-mssql.yml up -d
+#
+# SA password (must match restore_export.py DEFAULT_SA_PASSWORD): LifewayRestore1!
+
+services:
+  lifeway-mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: lifeway-mssql
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "LifewayRestore1!"
+    ports:
+      - "14333:1433"
+    volumes:
+      - "${LIFEWAY_BAK_HOST_DIR:-C:/Users/Damian Motomboni/Downloads/LIFEWAY}:/backup:ro"
+    healthcheck:
+      # -C: trust server cert (required for ODBC 18 against local SQL Server)
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'LifewayRestore1!' -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 25
+      start_period: 90s

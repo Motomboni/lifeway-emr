@@ -52,6 +52,13 @@ class Visit(models.Model):
         null=True,
         help_text="Chief complaint or reason for visit"
     )
+
+    service_area = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        help_text="Legacy clinic desk / charge item name (LIFEWAY visit ClinicID -> tblChargeItem.Name)",
+    )
     
     appointment = models.ForeignKey(
         'appointments.Appointment',

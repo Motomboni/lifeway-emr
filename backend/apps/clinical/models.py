@@ -36,7 +36,7 @@ class VitalSigns(models.Model):
         decimal_places=2,
         null=True,
         blank=True,
-        validators=[MinValueValidator(30.0), MaxValueValidator(45.0)],
+        validators=[MinValueValidator(Decimal('30.0')), MaxValueValidator(Decimal('45.0'))],
         help_text="Body temperature in Celsius"
     )
     
@@ -82,7 +82,7 @@ class VitalSigns(models.Model):
         decimal_places=2,
         null=True,
         blank=True,
-        validators=[MinValueValidator(0.1), MaxValueValidator(500)],
+        validators=[MinValueValidator(Decimal('0.1')), MaxValueValidator(Decimal('500'))],
         help_text="Weight in kilograms"
     )
     
@@ -91,7 +91,7 @@ class VitalSigns(models.Model):
         decimal_places=2,
         null=True,
         blank=True,
-        validators=[MinValueValidator(0.1), MaxValueValidator(300)],
+        validators=[MinValueValidator(Decimal('0.1')), MaxValueValidator(Decimal('300'))],
         help_text="Height in centimeters"
     )
     
@@ -109,7 +109,7 @@ class VitalSigns(models.Model):
         decimal_places=2,
         null=True,
         blank=True,
-        validators=[MinValueValidator(0.1), MaxValueValidator(50)],
+        validators=[MinValueValidator(Decimal('0.1')), MaxValueValidator(Decimal('50'))],
         help_text="Mid-Upper Arm Circumference (MUAC) in cm - for pediatrics"
     )
     

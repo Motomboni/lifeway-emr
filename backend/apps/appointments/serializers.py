@@ -27,35 +27,35 @@ class AppointmentSerializer(serializers.ModelSerializer):
     created_by_name = serializers.SerializerMethodField()
     cancelled_by_name = serializers.SerializerMethodField()
     
-    def get_patient_name(self, obj):
+    def get_patient_name(self, obj) -> str | None:
         """Get patient's full name."""
         if obj.patient:
             return obj.patient.get_full_name()
         return None
     
-    def get_patient_id(self, obj):
+    def get_patient_id(self, obj) -> str | None:
         """Get patient's ID."""
         if obj.patient:
             return obj.patient.patient_id
         return None
     
-    def get_doctor_name(self, obj):
+    def get_doctor_name(self, obj) -> str | None:
         """Get doctor's full name."""
         if obj.doctor:
             return f"{obj.doctor.first_name} {obj.doctor.last_name}".strip()
         return None
 
-    def get_doctor_specialization(self, obj):
+    def get_doctor_specialization(self, obj) -> str | None:
         if obj.doctor:
             return (obj.doctor.specialization or '').strip() or None
         return None
 
-    def get_doctor_display_name(self, obj):
+    def get_doctor_display_name(self, obj) -> str | None:
         if obj.doctor:
             return obj.doctor.get_display_name_with_specialization()
         return None
     
-    def get_created_by_name(self, obj):
+    def get_created_by_name(self, obj) -> str | None:
         """Get created by user's full name."""
         if obj.created_by:
             return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip()
@@ -78,6 +78,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'status',
             'reason',
             'notes',
+            'service_area',
             'created_by',
             'created_by_name',
             'created_at',
@@ -98,7 +99,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'cancelled_by_name',
         ]
     
-    def get_cancelled_by_name(self, obj):
+    def get_cancelled_by_name(self, obj) -> str | None:
         """Get cancelled by user's full name."""
         if obj.cancelled_by:
             return obj.cancelled_by.get_full_name()
@@ -206,6 +207,7 @@ class AppointmentUpdateSerializer(serializers.ModelSerializer):
             'status',
             'reason',
             'notes',
+            'service_area',
             'visit',
             'cancellation_reason',
         ]

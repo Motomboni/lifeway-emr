@@ -84,6 +84,13 @@ class Appointment(models.Model):
         blank=True,
         help_text="Additional notes about the appointment"
     )
+
+    service_area = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        help_text="Legacy clinic / service point (e.g. LIFEWAY tblOPDAppointment.Clinic: GOPD, etc.)",
+    )
     
     # User tracking
     created_by = models.ForeignKey(

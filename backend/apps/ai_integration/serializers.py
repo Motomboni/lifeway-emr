@@ -39,7 +39,7 @@ class AIRequestSerializer(serializers.ModelSerializer):
             'response_time_ms',
             'timestamp',
         ]
-        read_only_fields = '__all__'
+        read_only_fields = fields
 
 
 class ClinicalDecisionSupportRequestSerializer(serializers.Serializer):

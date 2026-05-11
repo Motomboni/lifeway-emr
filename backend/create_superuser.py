@@ -1,5 +1,13 @@
 """
-Script to create a superuser for the EMR system
+Create or update a superuser for local/staging setup.
+
+Required environment variable:
+    DJANGO_SUPERUSER_PASSWORD
+
+Optional environment variables:
+    DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_EMAIL,
+    DJANGO_SUPERUSER_FIRST_NAME, DJANGO_SUPERUSER_LAST_NAME,
+    DJANGO_SUPERUSER_ROLE
 """
 import os
 import django
@@ -9,10 +17,18 @@ django.setup()
 
 from apps.users.models import User
 
-# Create superuser
-username = 'Damiano'
-email = 'damiano@emr.local'
-password = 'Von@@@&&&1968'
+username = os.environ.get('DJANGO_SUPERUSER_USERNAME', 'Damiano')
+email = os.environ.get('DJANGO_SUPERUSER_EMAIL', 'damiano@emr.local')
+password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
+first_name = os.environ.get('DJANGO_SUPERUSER_FIRST_NAME', 'Damiano')
+last_name = os.environ.get('DJANGO_SUPERUSER_LAST_NAME', 'Admin')
+role = os.environ.get('DJANGO_SUPERUSER_ROLE', 'ADMIN')
+
+if not password:
+    raise SystemExit(
+        "DJANGO_SUPERUSER_PASSWORD is required. "
+        "Set it in the shell before running this script."
+    )
 
 if User.objects.filter(username=username).exists():
     print(f"User '{username}' already exists. Updating password...")
@@ -21,9 +37,10 @@ if User.objects.filter(username=username).exists():
     user.is_superuser = True
     user.is_staff = True
     user.is_active = True
-    user.role = 'DOCTOR'
-    user.first_name = 'Damiano'
-    user.last_name = 'Admin'
+    user.role = role
+    user.email = email
+    user.first_name = first_name
+    user.last_name = last_name
     user.save()
     print(f"User '{username}' updated successfully!")
 else:
@@ -31,14 +48,13 @@ else:
         username=username,
         email=email,
         password=password,
-        first_name='Damiano',
-        last_name='Admin',
-        role='DOCTOR'
+        first_name=first_name,
+        last_name=last_name,
+        role=role
     )
     print(f"Superuser '{username}' created successfully!")
 
 print(f"\nLogin credentials:")
 print(f"  Username: {username}")
-print(f"  Password: {password}")
 print(f"  Role: {user.role}")
 print(f"  Is Superuser: {user.is_superuser}")

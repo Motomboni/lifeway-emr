@@ -2,6 +2,8 @@
 Serializers for End-of-Day Reconciliation.
 """
 from rest_framework import serializers
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from .reconciliation_models import EndOfDayReconciliation
 
 
@@ -77,23 +79,25 @@ class EndOfDayReconciliationSerializer(serializers.ModelSerializer):
             'reconciliation_details',
         ]
     
-    def get_prepared_by_name(self, obj):
+    def get_prepared_by_name(self, obj) -> str | None:
         """Get prepared by user's full name."""
         return obj.prepared_by.get_full_name() if obj.prepared_by else None
     
-    def get_reviewed_by_name(self, obj):
+    def get_reviewed_by_name(self, obj) -> str | None:
         """Get reviewed by user's full name."""
         return obj.reviewed_by.get_full_name() if obj.reviewed_by else None
     
-    def get_finalized_by_name(self, obj):
+    def get_finalized_by_name(self, obj) -> str | None:
         """Get finalized by user's full name."""
         return obj.finalized_by.get_full_name() if obj.finalized_by else None
     
-    def get_payment_method_breakdown(self, obj):
+    @extend_schema_field(OpenApiTypes.OBJECT)
+    def get_payment_method_breakdown(self, obj) -> dict[str, object]:
         """Get payment method breakdown."""
         return obj.get_payment_method_breakdown()
     
-    def get_summary(self, obj):
+    @extend_schema_field(OpenApiTypes.OBJECT)
+    def get_summary(self, obj) -> dict[str, object]:
         """Get reconciliation summary."""
         return obj.get_summary()
 

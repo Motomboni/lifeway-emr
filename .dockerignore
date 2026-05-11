@@ -9,6 +9,8 @@
 .env
 .env.*
 !.env.prod.example
+backend/.env
+backend/.env.*
 
 # Python
 __pycache__

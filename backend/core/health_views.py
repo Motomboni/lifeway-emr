@@ -7,12 +7,15 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from django.db import connection
 from django.core.cache import cache
 from django.utils import timezone
 import os
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def health_check(request):
@@ -27,6 +30,7 @@ def health_check(request):
     }, status=status.HTTP_200_OK)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT, 503: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def health_detailed(request):
@@ -83,6 +87,7 @@ def health_detailed(request):
     return Response(response_data, status=status_code)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def health_info(request):

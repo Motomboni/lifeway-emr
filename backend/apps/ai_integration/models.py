@@ -9,7 +9,7 @@ Per EMR Rules:
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from decimal import Decimal
 
 User = get_user_model()
@@ -184,7 +184,7 @@ class AIConfiguration(models.Model):
         max_digits=3,
         decimal_places=2,
         default=Decimal('0.7'),
-        validators=[MinValueValidator(Decimal('0.0')), MinValueValidator(Decimal('2.0'))],
+        validators=[MinValueValidator(Decimal('0.0')), MaxValueValidator(Decimal('2.0'))],
         help_text="Temperature for AI responses (0.0-2.0)"
     )
     rate_limit_per_minute = models.IntegerField(

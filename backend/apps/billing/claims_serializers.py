@@ -15,7 +15,7 @@ class ClaimPolicySerializer(serializers.ModelSerializer):
             'created_at', 'updated_at',
         ]
 
-    def get_patient_name(self, obj):
+    def get_patient_name(self, obj) -> str | None:
         return obj.patient.get_full_name() if obj.patient else None
 
 
@@ -34,8 +34,8 @@ class ClaimSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at',
         ]
 
-    def get_patient_name(self, obj):
+    def get_patient_name(self, obj) -> str | None:
         return obj.patient.get_full_name() if obj.patient else None
 
-    def get_provider_name(self, obj):
+    def get_provider_name(self, obj) -> str | None:
         return obj.policy.provider.name if obj.policy else None

@@ -34,19 +34,19 @@ class LeakRecordSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'detected_at']
     
-    def get_visit_patient_name(self, obj):
+    def get_visit_patient_name(self, obj) -> str | None:
         """Get patient name from visit."""
         if obj.visit and obj.visit.patient:
             return obj.visit.patient.get_full_name()
         return None
     
-    def get_resolved_by_name(self, obj):
+    def get_resolved_by_name(self, obj) -> str | None:
         """Get resolver name."""
         if obj.resolved_by:
             return obj.resolved_by.get_full_name()
         return None
     
-    def get_is_resolved(self, obj):
+    def get_is_resolved(self, obj) -> bool:
         """Check if leak is resolved."""
         return obj.is_resolved()
 
