@@ -116,11 +116,61 @@ export interface BillingPendingQueueResponse {
   visits: PendingQueueVisit[];
 }
 
+export interface GlobalPayment {
+  id: number;
+  visit: number;
+  visit_id: number;
+  amount: string;
+  payment_method: 'CASH' | 'POS' | 'TRANSFER' | 'PAYSTACK' | 'WALLET' | 'INSURANCE';
+  status: 'PENDING' | 'PARTIAL' | 'CLEARED' | 'FAILED' | 'REFUNDED';
+  transaction_reference?: string;
+  notes?: string;
+  processed_by: number;
+  processed_by_name?: string | null;
+  created_at: string;
+  updated_at: string;
+  is_legacy: boolean;
+  patient: {
+    id: number;
+    patient_id: string;
+    name: string;
+  };
+  visit_status: string;
+}
+
+export interface PaymentHistoryResponse {
+  count: number;
+  page: number;
+  page_size: number;
+  results: GlobalPayment[];
+}
+
 /**
  * Get central billing pending queue (Receptionist only)
  */
 export async function getBillingPendingQueue(): Promise<BillingPendingQueueResponse> {
   return apiRequest<BillingPendingQueueResponse>('/billing/pending-queue/');
+}
+
+/**
+ * Get global payment history, including migrated legacy payments.
+ */
+export async function getPaymentHistory(params: {
+  search?: string;
+  status?: string;
+  legacyOnly?: boolean;
+  page?: number;
+  pageSize?: number;
+} = {}): Promise<PaymentHistoryResponse> {
+  const searchParams = new URLSearchParams();
+  if (params.search) searchParams.append('search', params.search);
+  if (params.status) searchParams.append('status', params.status);
+  if (params.legacyOnly) searchParams.append('legacy_only', 'true');
+  if (params.page) searchParams.append('page', params.page.toString());
+  if (params.pageSize) searchParams.append('page_size', params.pageSize.toString());
+
+  const queryString = searchParams.toString();
+  return apiRequest<PaymentHistoryResponse>(`/billing/payments/${queryString ? `?${queryString}` : ''}`);
 }
 
 /**

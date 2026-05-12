@@ -116,7 +116,7 @@ class DrugSerializer(serializers.ModelSerializer):
     created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True)
     
     profit = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    profit_margin = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
+    profit_margin = serializers.SerializerMethodField()
 
     # Inventory info for doctors (read-only, from DrugInventory)
     current_stock = serializers.SerializerMethodField()
@@ -201,6 +201,12 @@ class DrugSerializer(serializers.ModelSerializer):
     def get_is_low_stock(self, obj):
         inv = self._get_inventory(obj)
         return inv.is_low_stock if inv else False
+
+    def get_profit_margin(self, obj):
+        margin = obj.profit_margin
+        if margin is None:
+            return None
+        return round(float(margin), 2)
 
 
 class DrugCreateSerializer(DrugSerializer):

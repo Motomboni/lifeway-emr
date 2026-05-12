@@ -632,10 +632,10 @@ export default function DashboardPage() {
                 </div>
                 <div 
                   className={styles.actionCard}
-                  onClick={() => navigate('/visits')}
+                  onClick={() => navigate('/payments')}
                 >
                   <h3>Billing & Payments</h3>
-                  <p>Access visit-scoped billing from visit details</p>
+                  <p>Review migrated and current payment records</p>
                 </div>
                 <div 
                   className={styles.actionCard}

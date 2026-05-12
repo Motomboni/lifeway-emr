@@ -273,22 +273,25 @@
 }
 
 .paymentsList {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: stretch;
 }
 
 .paymentCard {
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  padding: 1.5rem;
+  padding: 1rem;
   background: #f8f9fa;
+  min-width: 0;
 }
 
 .paymentHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 0.75rem;
   margin-bottom: 1rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid #e0e0e0;
@@ -307,6 +310,7 @@
   margin: 0.5rem 0;
   color: #555;
   font-size: 0.9rem;
+  overflow-wrap: anywhere;
 }
 
 .paymentDetails strong {
@@ -351,4 +355,22 @@
   padding: 2rem;
   text-align: center;
   color: #e74c3c;
+}
+
+@media (max-width: 1400px) {
+  .paymentsList {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1000px) {
+  .paymentsList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .paymentsList {
+    grid-template-columns: 1fr;
+  }
 }

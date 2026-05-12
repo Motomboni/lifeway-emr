@@ -12,10 +12,10 @@ import {
   initializePaystackPayment,
   verifyPaystackPayment,
   getPaymentIntents,
-  PaymentCreateData,
-  WalletDebitData,
   BillingSummary,
 } from '../../api/billing';
+import { fetchPayments as fetchVisitPayments } from '../../api/payment';
+import { Payment } from '../../types/payment';
 import { formatCurrency, isValidAmount } from '../../utils/currency';
 import { BillingPermissions } from '../../hooks/useBillingPermissions';
 import { Visit } from '../../types/visit';
@@ -44,6 +44,7 @@ export default function PaymentOptions({
   const [activeMethod, setActiveMethod] = useState<PaymentMethod | null>(null);
   const [loading, setLoading] = useState(false);
   const [paymentIntents, setPaymentIntents] = useState<any[]>([]);
+  const [recordedPayments, setRecordedPayments] = useState<Payment[]>([]);
   const [patientWallet, setPatientWallet] = useState<any>(null);
 
   // Form states
@@ -68,8 +69,19 @@ export default function PaymentOptions({
     if (visit.status === 'OPEN') {
       loadPaymentIntents();
     }
+    loadRecordedPayments();
     loadPatientWallet();
   }, [visitId, visit.status]);
+
+  const loadRecordedPayments = async () => {
+    try {
+      const payments = await fetchVisitPayments(visitId.toString());
+      setRecordedPayments(payments);
+    } catch (error) {
+      console.error('Failed to load recorded payments:', error);
+      setRecordedPayments([]);
+    }
+  };
 
   const loadPaymentIntents = async () => {
     try {
@@ -109,6 +121,7 @@ export default function PaymentOptions({
       showSuccess('Cash payment recorded successfully');
       setCashForm({ amount: '', notes: '' });
       setActiveMethod(null);
+      await loadRecordedPayments();
       onUpdate();
     } catch (error: any) {
       showError(error.message || 'Failed to record cash payment');
@@ -135,6 +148,7 @@ export default function PaymentOptions({
       showSuccess('POS payment recorded successfully');
       setPosForm({ amount: '', transaction_reference: '', notes: '' });
       setActiveMethod(null);
+      await loadRecordedPayments();
       onUpdate();
     } catch (error: any) {
       showError(error.message || 'Failed to record POS payment');
@@ -166,6 +180,7 @@ export default function PaymentOptions({
       showSuccess('Transfer payment recorded successfully');
       setTransferForm({ amount: '', transaction_reference: '', notes: '' });
       setActiveMethod(null);
+      await loadRecordedPayments();
       onUpdate();
     } catch (error: any) {
       showError(error.message || 'Failed to record transfer payment');
@@ -204,6 +219,7 @@ export default function PaymentOptions({
         setPaystackForm({ amount: '', customer_email: '' });
         setActiveMethod(null);
         await loadPaymentIntents();
+        await loadRecordedPayments();
         onUpdate();
       } else {
         showError('Failed to initialize Paystack payment');
@@ -243,6 +259,7 @@ export default function PaymentOptions({
       setWalletForm({ amount: '', description: '' });
       setActiveMethod(null);
       await loadPatientWallet();
+      await loadRecordedPayments();
       onUpdate();
     } catch (error: any) {
       showError(error.message || 'Failed to process wallet payment');
@@ -262,6 +279,7 @@ export default function PaymentOptions({
       await verifyPaystackPayment(visitId, paymentIntent.id, paymentIntent.paystack_reference);
       showSuccess('Payment verified successfully');
       await loadPaymentIntents();
+      await loadRecordedPayments();
       onUpdate();
     } catch (error: any) {
       showError(error.message || 'Failed to verify payment');
@@ -279,6 +297,10 @@ export default function PaymentOptions({
 
   const isVisitClosed = visit.status === 'CLOSED';
   const isInsuranceVisit = visit.payment_type === 'INSURANCE';
+  const totalRecorded = recordedPayments.reduce(
+    (sum, payment) => sum + parseFloat(payment.amount || '0'),
+    0
+  );
 
   if (!permissions.canProcessPayments) {
     return (
@@ -290,6 +312,46 @@ export default function PaymentOptions({
 
   return (
     <div className={styles.container}>
+      <div className={styles.paymentIntentsSection}>
+        <h4 className={styles.paymentIntentsTitle}>
+          Recorded Payments ({recordedPayments.length})
+        </h4>
+        {recordedPayments.length > 0 ? (
+          <div className={styles.paymentIntentsList}>
+            <p className={styles.helpText}>
+              Total recorded for this visit: {formatCurrency(totalRecorded)}
+            </p>
+            {recordedPayments.map((payment) => {
+              const isLegacy = (payment.notes || '').startsWith('[Legacy PatientPayID:');
+              return (
+                <div key={payment.id} className={styles.paymentIntentCard}>
+                  <div className={styles.paymentIntentContent}>
+                    <div className={styles.paymentIntentDetails}>
+                      <p className={styles.paymentIntentAmount}>
+                        {formatCurrency(payment.amount)} {isLegacy ? '(Legacy)' : ''}
+                      </p>
+                      <p className={styles.paymentIntentReference}>
+                        Method: {payment.payment_method} | Status: {payment.status}
+                      </p>
+                      {payment.transaction_reference && (
+                        <p className={styles.paymentIntentReference}>
+                          Reference: {payment.transaction_reference}
+                        </p>
+                      )}
+                      <p className={styles.paymentIntentStatus}>
+                        Created: {new Date(payment.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className={styles.helpText}>No payments recorded for this visit.</p>
+        )}
+      </div>
+
       {/* Outstanding Balance */}
       {outstandingBalance > 0 && (
         <div className={styles.outstandingBalance}>

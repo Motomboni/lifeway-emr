@@ -81,6 +81,7 @@ class DrugInventoryViewSet(viewsets.ModelViewSet):
         'drug', 'last_restocked_by'
     )
     permission_classes = [CanManageDrugs]
+    pagination_class = None  # Unified drug/inventory page needs the full catalog for local matching.
     
     def get_serializer_class(self):
         """Return appropriate serializer based on action."""

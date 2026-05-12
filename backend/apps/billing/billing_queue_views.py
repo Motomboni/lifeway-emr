@@ -17,7 +17,7 @@ from apps.visits.models import Visit
 from apps.consultations.models import Consultation
 from .billing_line_item_models import BillingLineItem
 from .billing_service import BillingService
-from .models import VisitCharge
+from .models import Payment, VisitCharge
 from .permissions import CanProcessPayment
 from core.audit import AuditLog
 
@@ -132,3 +132,87 @@ class BillingPendingQueueView(APIView):
             request=request,
         )
         return Response({'visits': result}, status=status.HTTP_200_OK)
+
+
+class BillingPaymentHistoryView(APIView):
+    """
+    GET /api/v1/billing/payments/
+
+    Receptionist-facing payment history across all visits. This is intentionally
+    read-only and includes migrated legacy payments that were attached to visits.
+    """
+    permission_classes = [IsAuthenticated, CanProcessPayment]
+
+    def get(self, request):
+        page = max(int(request.query_params.get('page', 1)), 1)
+        page_size = min(max(int(request.query_params.get('page_size', 50)), 1), 200)
+        status_filter = (request.query_params.get('status') or '').strip().upper()
+        legacy_only = (request.query_params.get('legacy_only') or '').strip().lower() in {'1', 'true', 'yes'}
+        search = (request.query_params.get('search') or '').strip()
+
+        queryset = Payment.objects.select_related('visit__patient', 'processed_by').order_by('-created_at', '-id')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        if legacy_only:
+            queryset = queryset.filter(notes__startswith='[Legacy PatientPayID:')
+        if search:
+            search_q = (
+                Q(transaction_reference__icontains=search)
+                | Q(notes__icontains=search)
+                | Q(visit__patient__first_name__icontains=search)
+                | Q(visit__patient__last_name__icontains=search)
+                | Q(visit__patient__patient_id__icontains=search)
+            )
+            if search.isdigit():
+                search_q = search_q | Q(id=int(search)) | Q(visit_id=int(search))
+            queryset = queryset.filter(search_q)
+
+        total = queryset.count()
+        start = (page - 1) * page_size
+        end = start + page_size
+        results = []
+        for payment in queryset[start:end]:
+            patient = payment.visit.patient
+            processor = payment.processed_by
+            results.append({
+                'id': payment.id,
+                'visit': payment.visit_id,
+                'visit_id': payment.visit_id,
+                'amount': str(payment.amount),
+                'payment_method': payment.payment_method,
+                'status': payment.status,
+                'transaction_reference': payment.transaction_reference,
+                'notes': payment.notes,
+                'processed_by': payment.processed_by_id,
+                'processed_by_name': (
+                    f"{processor.first_name} {processor.last_name}".strip()
+                    if processor else None
+                ),
+                'created_at': payment.created_at,
+                'updated_at': payment.updated_at,
+                'is_legacy': payment.notes.startswith('[Legacy PatientPayID:'),
+                'patient': {
+                    'id': patient.id,
+                    'patient_id': patient.patient_id,
+                    'name': patient.get_full_name() if hasattr(patient, 'get_full_name') else (
+                        f"{patient.first_name} {patient.last_name}".strip()
+                    ),
+                },
+                'visit_status': payment.visit.status,
+            })
+
+        AuditLog.log(
+            user=request.user,
+            role=getattr(request.user, 'role', None),
+            action='BILLING_PAYMENT_HISTORY_VIEWED',
+            visit_id=None,
+            resource_type='payment_history',
+            resource_id=None,
+            request=request,
+        )
+        return Response({
+            'count': total,
+            'page': page,
+            'page_size': page_size,
+            'results': results,
+        }, status=status.HTTP_200_OK)
