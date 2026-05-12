@@ -14,7 +14,9 @@ Enforcement:
 """
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.exceptions import (
     PermissionDenied,
     NotFound,
@@ -36,6 +38,69 @@ from apps.consultations.models import Consultation
 from core.permissions import IsVisitOpen, IsPaymentCleared, IsVisitAccessible
 from .permissions import IsDoctor, CanViewPrescription, CanDispensePrescription, CanManageDrugs
 from core.audit import AuditLog
+
+
+class PrescriptionWorklistView(APIView):
+    """
+    Global pharmacy prescription worklist.
+
+    Pharmacists need a direct list of visits with prescriptions; scanning a
+    paginated visit list misses migrated historical prescriptions.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        status_filter = request.query_params.get('status', 'all').lower()
+        page = max(int(request.query_params.get('page', 1)), 1)
+        page_size = min(max(int(request.query_params.get('page_size', 100)), 1), 500)
+
+        queryset = Prescription.objects.select_related('visit__patient').order_by('-created_at')
+        if status_filter == 'pending':
+            queryset = queryset.filter(status='PENDING')
+
+        by_visit = {}
+        for prescription in queryset:
+            item = by_visit.setdefault(
+                prescription.visit_id,
+                {
+                    'visit': prescription.visit,
+                    'total_count': 0,
+                    'pending_count': 0,
+                    'latest_order_at': prescription.created_at,
+                },
+            )
+            item['total_count'] += 1
+            if prescription.status == 'PENDING':
+                item['pending_count'] += 1
+
+        rows = list(by_visit.values())
+        total = len(rows)
+        start = (page - 1) * page_size
+        end = start + page_size
+        payload = []
+        for row in rows[start:end]:
+            visit = row['visit']
+            patient = visit.patient
+            payload.append({
+                'id': visit.id,
+                'patient': patient.id,
+                'patient_name': patient.get_full_name(),
+                'patient_id': patient.patient_id,
+                'status': visit.status,
+                'payment_status': visit.payment_status,
+                'created_at': visit.created_at,
+                'updated_at': visit.updated_at,
+                'total_prescriptions': row['total_count'],
+                'pending_prescriptions': row['pending_count'],
+                'latest_prescription_at': row['latest_order_at'],
+            })
+
+        return Response({
+            'count': total,
+            'page': page,
+            'page_size': page_size,
+            'results': payload,
+        })
 
 
 def log_prescription_action(

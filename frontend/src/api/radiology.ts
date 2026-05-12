@@ -3,6 +3,7 @@
  */
 import { apiRequest } from '../utils/apiClient';
 import type { RadiologyOrder, RadiologyResult } from '../types/radiology';
+import type { Visit } from '../types/visit';
 
 // Types
 export interface RadiologyStudy {
@@ -55,6 +56,13 @@ export interface StudyImagesResponse {
   }>;
 }
 
+interface WorklistResponse<T> {
+  count: number;
+  page: number;
+  page_size: number;
+  results: T[];
+}
+
 /**
  * Get study by ID.
  */
@@ -89,6 +97,13 @@ export const getImageUrl = async (imageId: number): Promise<{ image_url: string 
 export const fetchRadiologyOrders = async (visitId: string): Promise<RadiologyOrder[]> => {
   const response = await apiRequest<any>(`/visits/${visitId}/radiology/`);
   return Array.isArray(response) ? response : (response?.results || []);
+};
+
+export const fetchRadiologyWorklist = async (status: 'all' | 'pending' = 'all'): Promise<Visit[]> => {
+  const response = await apiRequest<WorklistResponse<Visit>>(
+    `/radiology/requests/worklist/?status=${status}&page_size=500`
+  );
+  return response.results || [];
 };
 
 /**

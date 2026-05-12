@@ -17,32 +17,58 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
+export interface PatientListOptions {
+  searchQuery?: string;
+  includeInactive?: boolean;
+  page?: number;
+  pageSize?: number;
+}
+
 /**
  * Fetch patients (with optional search)
  * Returns paginated response - extracts results array
  */
 export async function fetchPatients(searchQuery?: string): Promise<Patient[]> {
-  const endpoint = searchQuery 
-    ? `/patients/?search=${encodeURIComponent(searchQuery)}`
-    : '/patients/';
+  const response = await fetchPatientsPage({ searchQuery });
+  return response.results || [];
+}
+
+/**
+ * Fetch one paginated page of patients.
+ */
+export async function fetchPatientsPage(options: PatientListOptions = {}): Promise<PaginatedResponse<Patient>> {
+  const params = new URLSearchParams();
+  if (options.searchQuery) params.append('search', options.searchQuery);
+  if (options.includeInactive) params.append('include_inactive', 'true');
+  if (options.page) params.append('page', String(options.page));
+  if (options.pageSize) params.append('page_size', String(options.pageSize));
+
+  const queryString = params.toString();
+  const endpoint = queryString ? `/patients/?${queryString}` : '/patients/';
   const response = await apiRequest<PaginatedResponse<Patient> | Patient[]>(endpoint);
-  
+
   // Handle both paginated and non-paginated responses
   if (Array.isArray(response)) {
-    return response;
+    return {
+      count: response.length,
+      next: null,
+      previous: null,
+      results: response,
+    };
   }
-  
-  // Paginated response
-  return response.results || [];
+
+  return response;
 }
 
 /**
  * Search patients
  * Note: The search endpoint returns a plain array, not paginated
  */
-export async function searchPatients(query: string): Promise<Patient[]> {
+export async function searchPatients(query: string, includeInactive = true): Promise<Patient[]> {
+  const params = new URLSearchParams({ q: query });
+  if (includeInactive) params.append('include_inactive', 'true');
   const response = await apiRequest<Patient[]>(
-    `/patients/search/?q=${encodeURIComponent(query)}`
+    `/patients/search/?${params.toString()}`
   );
   
   // Search endpoint returns plain array

@@ -15,7 +15,9 @@ Enforcement:
 """
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.exceptions import (
     PermissionDenied,
     NotFound,
@@ -40,6 +42,78 @@ from .permissions import (
     CanViewLabOrder,
 )
 from core.audit import AuditLog
+
+
+def _visit_worklist_payload(visit, total_count, pending_count, latest_order_at):
+    patient = visit.patient
+    return {
+        'id': visit.id,
+        'patient': patient.id,
+        'patient_name': patient.get_full_name(),
+        'patient_id': patient.patient_id,
+        'status': visit.status,
+        'payment_status': visit.payment_status,
+        'created_at': visit.created_at,
+        'updated_at': visit.updated_at,
+        'total_orders': total_count,
+        'pending_orders': pending_count,
+        'latest_order_at': latest_order_at,
+    }
+
+
+class LabOrderWorklistView(APIView):
+    """
+    Global lab worklist used by Lab Orders page.
+
+    This avoids scanning only the first page of visits and makes migrated
+    historical lab orders visible even when the visit is closed.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        status_filter = request.query_params.get('status', 'all').lower()
+        page = max(int(request.query_params.get('page', 1)), 1)
+        page_size = min(max(int(request.query_params.get('page_size', 100)), 1), 500)
+
+        queryset = LabOrder.objects.select_related('visit__patient').order_by('-created_at')
+        if status_filter == 'pending':
+            queryset = queryset.filter(status__in=[LabOrder.Status.ORDERED, LabOrder.Status.SAMPLE_COLLECTED])
+
+        by_visit = {}
+        for order in queryset:
+            visit_id = order.visit_id
+            item = by_visit.setdefault(
+                visit_id,
+                {
+                    'visit': order.visit,
+                    'total_count': 0,
+                    'pending_count': 0,
+                    'latest_order_at': order.created_at,
+                },
+            )
+            item['total_count'] += 1
+            if order.status in [LabOrder.Status.ORDERED, LabOrder.Status.SAMPLE_COLLECTED]:
+                item['pending_count'] += 1
+
+        rows = list(by_visit.values())
+        total = len(rows)
+        start = (page - 1) * page_size
+        end = start + page_size
+        payload = [
+            _visit_worklist_payload(
+                row['visit'],
+                row['total_count'],
+                row['pending_count'],
+                row['latest_order_at'],
+            )
+            for row in rows[start:end]
+        ]
+        return Response({
+            'count': total,
+            'page': page,
+            'page_size': page_size,
+            'results': payload,
+        })
 
 
 def log_lab_order_action(

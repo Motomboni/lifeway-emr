@@ -36,6 +36,7 @@ tmp/
 
 # Raw legacy database dumps / exported PHI
 LMC.sql
+/modern_emr_local.sql
 *.bak
 *.dump
 

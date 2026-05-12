@@ -4,10 +4,9 @@
  * For Lab Techs to view and process lab orders.
  * Per EMR Rules: Visit-scoped, shows visits with pending lab orders.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchVisits, PaginatedResponse } from '../api/visits';
-import { fetchLabOrders, createLabResult } from '../api/lab';
+import { fetchLabOrders, fetchLabOrderWorklist, createLabResult } from '../api/lab';
 import { Visit } from '../types/visit';
 import { LabOrder } from '../types/lab';
 import { useToast } from '../hooks/useToast';
@@ -83,42 +82,20 @@ export default function LabOrdersPage() {
   const [resultFlag, setResultFlag] = useState<Record<number, 'NORMAL' | 'ABNORMAL' | 'CRITICAL'>>({});
   const [savingResult, setSavingResult] = useState(false);
 
-  useEffect(() => {
-    loadVisitsWithPendingOrders();
-  }, []);
-
-  useEffect(() => {
-    if (selectedVisit) {
-      loadLabOrders(selectedVisit.toString());
-    }
-  }, [selectedVisit]);
-
-  const loadVisitsWithPendingOrders = async () => {
+  const loadVisitsWithPendingOrders = useCallback(async () => {
     try {
       setLoading(true);
-      // Fetch all open visits with cleared payment (including PARTIALLY_PAID)
-      const visitsResponse = await fetchVisits({ status: 'OPEN' });
-      const allVisitsRaw = Array.isArray(visitsResponse) ? visitsResponse : (visitsResponse as PaginatedResponse<Visit>).results;
-      // Include PARTIALLY_PAID as cleared payment status (allows clinical actions)
-      const allVisits = allVisitsRaw.filter((v: Visit) => 
-        v.payment_status === 'PAID' || 
-        v.payment_status === 'SETTLED' || 
-        v.payment_status === 'PARTIALLY_PAID'
-      );
-      
-      // For each visit, check if it has pending lab orders
-      // Note: In a real implementation, you'd want a backend endpoint for this
-      // For now, we'll show all open visits and let the user select
-      setVisits(allVisits);
+      const worklistVisits = await fetchLabOrderWorklist('all');
+      setVisits(worklistVisits);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load visits';
       showError(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [showError]);
 
-  const loadLabOrders = async (visitId: string) => {
+  const loadLabOrders = useCallback(async (visitId: string) => {
     try {
       setLoadingOrders(true);
       const response = await fetchLabOrders(visitId);
@@ -131,18 +108,24 @@ export default function LabOrdersPage() {
           ? (response as any).results
           : [];
       
-      // Filter to show only pending orders (ORDERED or SAMPLE_COLLECTED status)
-      const pendingOrders = ordersArray.filter(
-        (order: LabOrder) => order.status === 'ORDERED' || order.status === 'SAMPLE_COLLECTED'
-      );
-      setLabOrders(pendingOrders);
+      setLabOrders(ordersArray);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load lab orders';
       showError(errorMessage);
     } finally {
       setLoadingOrders(false);
     }
-  };
+  }, [showError]);
+
+  useEffect(() => {
+    loadVisitsWithPendingOrders();
+  }, [loadVisitsWithPendingOrders]);
+
+  useEffect(() => {
+    if (selectedVisit) {
+      loadLabOrders(selectedVisit.toString());
+    }
+  }, [selectedVisit, loadLabOrders]);
 
   const handleCreateResult = async (orderId: number) => {
     const data = resultData[orderId];
@@ -198,17 +181,17 @@ export default function LabOrdersPage() {
       <BackToDashboard />
       <header className={styles.header}>
         <h1>Lab Orders</h1>
-        <p>Select a visit to view and process pending lab orders</p>
+        <p>Select a visit to view migrated and current lab orders</p>
       </header>
 
       <div className={styles.content}>
         <div className={styles.visitsPanel}>
-          <h2>Visits with Pending Orders</h2>
+          <h2>Visits with Lab Orders</h2>
           {loading ? (
             <LoadingSkeleton count={5} />
           ) : visits.length === 0 ? (
             <div className={styles.emptyState}>
-              <p>No visits with pending lab orders</p>
+              <p>No visits with lab orders</p>
             </div>
           ) : (
             <div className={styles.visitsList}>

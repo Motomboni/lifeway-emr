@@ -8,7 +8,7 @@ All authenticated users can view (for reference when creating prescriptions).
 """
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import DrugViewSet
+from .views import DrugViewSet, PrescriptionWorklistView
 
 # Create router for drug viewset
 router = DefaultRouter()
@@ -19,5 +19,6 @@ router.register(
 )
 
 urlpatterns = [
+    path('prescriptions/worklist/', PrescriptionWorklistView.as_view(), name='prescription-worklist'),
     path('', include(router.urls)),
 ]

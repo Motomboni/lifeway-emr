@@ -15,7 +15,9 @@ Enforcement:
 """
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.exceptions import (
     PermissionDenied,
     NotFound,
@@ -42,6 +44,69 @@ from .permissions import (
     CanViewRadiologyRequest,
 )
 from core.audit import AuditLog
+
+
+class RadiologyRequestWorklistView(APIView):
+    """
+    Global radiology worklist used by Radiology Orders page.
+
+    This lists visits that actually have radiology requests instead of relying
+    on the first page of open/paid visits, which hides migrated history.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        status_filter = request.query_params.get('status', 'all').lower()
+        page = max(int(request.query_params.get('page', 1)), 1)
+        page_size = min(max(int(request.query_params.get('page_size', 100)), 1), 500)
+
+        queryset = RadiologyRequest.objects.select_related('visit__patient').order_by('-created_at')
+        if status_filter == 'pending':
+            queryset = queryset.filter(status='PENDING')
+
+        by_visit = {}
+        for req in queryset:
+            item = by_visit.setdefault(
+                req.visit_id,
+                {
+                    'visit': req.visit,
+                    'total_count': 0,
+                    'pending_count': 0,
+                    'latest_order_at': req.created_at,
+                },
+            )
+            item['total_count'] += 1
+            if req.status == 'PENDING':
+                item['pending_count'] += 1
+
+        rows = list(by_visit.values())
+        total = len(rows)
+        start = (page - 1) * page_size
+        end = start + page_size
+        payload = []
+        for row in rows[start:end]:
+            visit = row['visit']
+            patient = visit.patient
+            payload.append({
+                'id': visit.id,
+                'patient': patient.id,
+                'patient_name': patient.get_full_name(),
+                'patient_id': patient.patient_id,
+                'status': visit.status,
+                'payment_status': visit.payment_status,
+                'created_at': visit.created_at,
+                'updated_at': visit.updated_at,
+                'total_orders': row['total_count'],
+                'pending_orders': row['pending_count'],
+                'latest_order_at': row['latest_order_at'],
+            })
+
+        return Response({
+            'count': total,
+            'page': page,
+            'page_size': page_size,
+            'results': payload,
+        })
 
 
 def _ensure_radiology_billing_for_visit(visit, created_by=None):

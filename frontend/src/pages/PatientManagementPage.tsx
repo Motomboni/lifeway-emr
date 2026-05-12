@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchPatients, searchPatients, getPatient, updatePatient, archivePatient } from '../api/patient';
+import { fetchPatientsPage, searchPatients, getPatient, updatePatient, archivePatient } from '../api/patient';
 import { Patient, PatientCreateData } from '../types/patient';
 import { useToast } from '../hooks/useToast';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
@@ -20,6 +20,7 @@ export default function PatientManagementPage() {
   const { showError, showSuccess } = useToast();
 
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [patientCount, setPatientCount] = useState(0);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -33,8 +34,9 @@ export default function PatientManagementPage() {
   const loadRecentPatients = useCallback(async () => {
     try {
       setLoading(true);
-      const allPatients = await fetchPatients();
-      setPatients(allPatients);
+      const response = await fetchPatientsPage({ includeInactive: true, pageSize: 100 });
+      setPatients(response.results || []);
+      setPatientCount(response.count || 0);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load patients';
       showError(errorMessage);
@@ -58,6 +60,7 @@ export default function PatientManagementPage() {
       setIsSearching(true);
       const results = await searchPatients(searchQuery);
       setPatients(results);
+      setPatientCount(results.length);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Search failed';
       showError(errorMessage);
@@ -155,7 +158,7 @@ export default function PatientManagementPage() {
           <div className={styles.searchBox}>
             <input
               type="text"
-              placeholder="Search by name, phone, patient ID, or national ID..."
+              placeholder="Search by name, phone, patient ID, legacy ID, NHID, or national ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -168,6 +171,9 @@ export default function PatientManagementPage() {
               {isSearching ? 'Searching...' : 'Search'}
             </button>
           </div>
+          <p className={styles.resultCount}>
+            Showing {patients.length} of {patientCount} patient record{patientCount === 1 ? '' : 's'}
+          </p>
 
           <div className={styles.patientsList}>
             {loading ? (

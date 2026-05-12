@@ -40,6 +40,7 @@ class PatientSerializer(serializers.ModelSerializer):
             'emergency_contact_phone',
             'emergency_contact_relationship',
             'national_id',
+            'national_health_id',
             'blood_group',
             'allergies',
             'medical_history',
@@ -584,6 +585,7 @@ class PatientSearchSerializer(serializers.ModelSerializer):
             'gender',
             'phone',
             'national_id',
+            'national_health_id',
         ]
         read_only_fields = fields
     

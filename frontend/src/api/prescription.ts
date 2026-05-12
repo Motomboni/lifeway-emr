@@ -8,16 +8,31 @@
  * - POST   /api/v1/visits/{visitId}/pharmacy/dispense/      - Dispense prescription (Pharmacist)
  */
 import { Prescription, PrescriptionCreateData } from '../types/prescription';
+import { Visit } from '../types/visit';
 import { apiRequest } from '../utils/apiClient';
 
 // Re-export types for convenience
 export type { Prescription, PrescriptionCreateData } from '../types/prescription';
+
+interface WorklistResponse<T> {
+  count: number;
+  page: number;
+  page_size: number;
+  results: T[];
+}
 
 /**
  * Fetch prescriptions for a visit
  */
 export async function fetchPrescriptions(visitId: string): Promise<Prescription[]> {
   return apiRequest<Prescription[]>(`/visits/${visitId}/prescriptions/`);
+}
+
+export async function fetchPrescriptionWorklist(status: 'all' | 'pending' = 'all'): Promise<Visit[]> {
+  const response = await apiRequest<WorklistResponse<Visit>>(
+    `/drugs/prescriptions/worklist/?status=${status}&page_size=500`
+  );
+  return response.results || [];
 }
 
 /**

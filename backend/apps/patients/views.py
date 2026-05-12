@@ -9,6 +9,7 @@ Per EMR Rules:
 """
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.exceptions import (
     PermissionDenied,
@@ -32,6 +33,12 @@ from .permissions import CanRegisterPatient, CanSearchPatient, CanDeletePatient
 from core.audit import AuditLog
 
 
+class PatientPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 200
+
+
 class PatientViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Patient management.
@@ -46,6 +53,7 @@ class PatientViewSet(viewsets.ModelViewSet):
     """
     
     queryset = Patient.objects.filter(is_active=True)
+    pagination_class = PatientPagination
     
     def get_serializer_class(self):
         """
@@ -91,7 +99,16 @@ class PatientViewSet(viewsets.ModelViewSet):
         Get patients queryset.
         Filter by is_active=True by default.
         """
-        queryset = Patient.objects.filter(is_active=True)
+        include_inactive = self.request.query_params.get('include_inactive', '').lower()
+        show_inactive = include_inactive in {'1', 'true', 'yes'} or self.action in {
+            'retrieve',
+            'update',
+            'partial_update',
+            'destroy',
+            'create_portal',
+            'toggle_portal',
+        }
+        queryset = Patient.objects.all() if show_inactive else Patient.objects.filter(is_active=True)
         
         # Add search filtering if search query provided
         search_query = self.request.query_params.get('search', None)
@@ -101,6 +118,7 @@ class PatientViewSet(viewsets.ModelViewSet):
                 Q(last_name__icontains=search_query) |
                 Q(patient_id__icontains=search_query) |
                 Q(national_id__icontains=search_query) |
+                Q(national_health_id__icontains=search_query) |
                 Q(phone__icontains=search_query)
             )
         
@@ -327,14 +345,16 @@ class PatientViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Search in multiple fields
-        queryset = Patient.objects.filter(
-            is_active=True
-        ).filter(
+        include_inactive = request.query_params.get('include_inactive', '').lower()
+        base_queryset = Patient.objects.all() if include_inactive in {'1', 'true', 'yes'} else Patient.objects.filter(is_active=True)
+
+        # Search in multiple fields, including migration-era patient identifiers.
+        queryset = base_queryset.filter(
             Q(first_name__icontains=search_term) |
             Q(last_name__icontains=search_term) |
             Q(patient_id__icontains=search_term) |
             Q(national_id__icontains=search_term) |
+            Q(national_health_id__icontains=search_term) |
             Q(phone__icontains=search_term)
         )[:20]  # Limit to 20 results
         

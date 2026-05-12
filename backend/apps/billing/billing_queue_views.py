@@ -10,13 +10,14 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import PermissionDenied
-from django.db.models import Sum, Q, Prefetch
+from django.db.models import Q, Prefetch
 from decimal import Decimal
 
 from apps.visits.models import Visit
 from apps.consultations.models import Consultation
 from .billing_line_item_models import BillingLineItem
+from .billing_service import BillingService
+from .models import VisitCharge
 from .permissions import CanProcessPayment
 from core.audit import AuditLog
 
@@ -26,7 +27,7 @@ class BillingPendingQueueView(APIView):
     GET /api/v1/billing/pending-queue/
     
     Unified billing queue for Receptionist: all visits with pending (unpaid or partially paid)
-    BillingLineItems. Receptionist-only.
+    BillingLineItems, plus legacy VisitCharges from migrated visits. Receptionist-only.
     
     Returns:
     - visits: list of { visit_id, patient, items[], total_pending, status, consultation_ref }
@@ -35,15 +36,21 @@ class BillingPendingQueueView(APIView):
     
     def get(self, request):
         # Only Receptionist can access (CanProcessPayment)
-        visit_ids_with_pending = (
+        visit_ids_with_pending_line_items = (
             BillingLineItem.objects.filter(
                 bill_status__in=['PENDING', 'PARTIALLY_PAID']
             )
             .values_list('visit_id', flat=True)
             .distinct()
         )
+        visit_ids_with_legacy_charges = (
+            VisitCharge.objects.values_list('visit_id', flat=True).distinct()
+        )
         visits = (
-            Visit.objects.filter(id__in=visit_ids_with_pending)
+            Visit.objects.filter(
+                Q(id__in=visit_ids_with_pending_line_items) |
+                Q(id__in=visit_ids_with_legacy_charges)
+            )
             .select_related('patient')
             .prefetch_related(
                 Prefetch(
@@ -51,8 +58,13 @@ class BillingPendingQueueView(APIView):
                     queryset=BillingLineItem.objects.filter(
                         bill_status__in=['PENDING', 'PARTIALLY_PAID']
                     ).select_related('service_catalog').order_by('service_catalog__department', 'created_at')
-                )
+                ),
+                Prefetch(
+                    'charges',
+                    queryset=VisitCharge.objects.order_by('category', 'created_at'),
+                ),
             )
+            .distinct()
             .order_by('-updated_at')
         )
         department_to_category = {
@@ -66,7 +78,8 @@ class BillingPendingQueueView(APIView):
         for visit in visits:
             items = []
             total_pending = Decimal('0.00')
-            for li in visit.billing_line_items.all():
+            line_items = list(visit.billing_line_items.all())
+            for li in line_items:
                 dept = li.service_catalog.department if li.service_catalog else 'MISC'
                 category = department_to_category.get(dept, 'MISC')
                 items.append({
@@ -79,6 +92,24 @@ class BillingPendingQueueView(APIView):
                     'status': li.bill_status,
                 })
                 total_pending += li.outstanding_amount
+            if not line_items:
+                summary = BillingService.compute_billing_summary(visit)
+                if summary.outstanding_balance <= 0:
+                    continue
+                legacy_charges = list(visit.charges.all())
+                if not legacy_charges:
+                    continue
+                total_pending = summary.outstanding_balance
+                for charge in legacy_charges:
+                    items.append({
+                        'id': -charge.id,
+                        'department': charge.category,
+                        'description': charge.description,
+                        'amount': str(charge.amount),
+                        'amount_paid': '0.00',
+                        'outstanding': str(charge.amount),
+                        'status': 'PENDING',
+                    })
             consultation = Consultation.objects.filter(visit=visit).first()
             result.append({
                 'visit_id': visit.id,

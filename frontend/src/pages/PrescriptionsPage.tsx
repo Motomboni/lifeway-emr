@@ -4,10 +4,9 @@
  * For Pharmacists to view and dispense prescriptions.
  * Per EMR Rules: Visit-scoped, shows visits with pending prescriptions.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchVisits, PaginatedResponse } from '../api/visits';
-import { fetchPrescriptions, dispensePrescription } from '../api/prescription';
+import { fetchPrescriptions, fetchPrescriptionWorklist, dispensePrescription } from '../api/prescription';
 import { Visit } from '../types/visit';
 import { Prescription } from '../types/prescription';
 import { useToast } from '../hooks/useToast';
@@ -83,38 +82,11 @@ export default function PrescriptionsPage() {
   const [dispensedQuantityById, setDispensedQuantityById] = useState<Record<number, string>>({});
   const [dispensingNotesById, setDispensingNotesById] = useState<Record<number, string>>({});
 
-  useEffect(() => {
-    loadVisitsWithPendingPrescriptions();
-  }, []);
-
-  useEffect(() => {
-    if (selectedVisit) {
-      loadPrescriptions(selectedVisit.toString());
-    }
-  }, [selectedVisit]);
-
-  const loadVisitsWithPendingPrescriptions = async () => {
+  const loadVisitsWithPendingPrescriptions = useCallback(async () => {
     try {
       setLoading(true);
-      // Load all visits (both OPEN and CLOSED) - pharmacists need to see all visits with prescriptions
-      // Payment status doesn't matter for viewing prescriptions (only for dispensing)
-      const response = await fetchVisits({});
-      const allVisits = Array.isArray(response) ? response : (response as PaginatedResponse<Visit>).results;
-      
-      // Filter visits to only show those with prescriptions
-      const visitsWithPrescriptions: Visit[] = [];
-      for (const visit of allVisits) {
-        try {
-          const prescriptions = await fetchPrescriptions(visit.id.toString());
-          // Only include visits that have at least one prescription
-          if (prescriptions.length > 0) {
-            visitsWithPrescriptions.push(visit);
-          }
-        } catch (err) {
-          // Skip visits where we can't load prescriptions (might be permission issue or no prescriptions)
-        }
-      }
-      setVisits(visitsWithPrescriptions);
+      const worklistVisits = await fetchPrescriptionWorklist('all');
+      setVisits(worklistVisits);
     } catch (error) {
       console.error('Error loading visits:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to load visits';
@@ -122,9 +94,9 @@ export default function PrescriptionsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showError]);
 
-  const loadPrescriptions = async (visitId: string) => {
+  const loadPrescriptions = useCallback(async (visitId: string) => {
     try {
       setLoadingPrescriptions(true);
       const prescs = await fetchPrescriptions(visitId);
@@ -138,7 +110,17 @@ export default function PrescriptionsPage() {
     } finally {
       setLoadingPrescriptions(false);
     }
-  };
+  }, [showError]);
+
+  useEffect(() => {
+    loadVisitsWithPendingPrescriptions();
+  }, [loadVisitsWithPendingPrescriptions]);
+
+  useEffect(() => {
+    if (selectedVisit) {
+      loadPrescriptions(selectedVisit.toString());
+    }
+  }, [selectedVisit, loadPrescriptions]);
 
   const handleDispense = async (prescriptionId: number) => {
     if (!selectedVisit) return;
@@ -205,7 +187,7 @@ export default function PrescriptionsPage() {
       <BackToDashboard />
       <header className={styles.header}>
         <h1>Prescriptions</h1>
-        <p>Select a visit to view and dispense prescriptions</p>
+        <p>Select a visit to view migrated and current prescriptions</p>
       </header>
 
       <div className={styles.content}>
