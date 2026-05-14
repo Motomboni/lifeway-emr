@@ -140,6 +140,7 @@ def load_transformed_data(
     patient_id_map: dict[int, int] = {}
     payer_patient_map: dict[str, int] = {}
     visit_id_map: dict[int, int] = {}
+    backfill_visit_by_patient: dict[int, int] = {}
     lab_order_pk_by_request_id: dict[int, int] = {}
     doctor_user_cache: dict[int, object] = {}
     name_doctor_cache: dict[str, object] = {}
