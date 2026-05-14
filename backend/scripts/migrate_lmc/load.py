@@ -757,6 +757,11 @@ def load_transformed_data(
                 )
                 continue
 
+            if backfill_mode and amt > 0:
+                existing_tag = f"[Legacy PatientPayID:{legacy_pay_id}]"
+                if Payment.objects.filter(notes__startswith=existing_tag).exists():
+                    continue
+
             # LIFEWAY flexible billing: zero/blank PayAmount means service rendered; payment deferred.
             if amt <= 0:
                 svc = (str(source_row.get("ServiceLine") or "")).strip()

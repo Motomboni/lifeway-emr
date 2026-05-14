@@ -33,6 +33,14 @@ BACKFILL_TABLES = (
     "tblVitalSign",
 )
 
+BACKFILL_TABLES_WITHOUT_PAYMENTS = (
+    "tblPatientVisits",
+    "tblTempReceipt",
+    "tblLabRequest",
+    "tblLabResult",
+    "tblVitalSign",
+)
+
 
 def _repo_root() -> Path:
     return Path(__file__).resolve().parents[5]
@@ -70,11 +78,18 @@ class Command(BaseCommand):
             default=(os.environ.get("LEGACY_PATIENT_ID_PREFIX") or "LIFEWAYLEG"),
             help="Migrated patient_id prefix.",
         )
+        parser.add_argument(
+            "--skip-payments",
+            action="store_true",
+            help="Skip tblPatientPayment (use after import_deferred_legacy_charges / fix_legacy_payment_status).",
+        )
 
     def handle(self, *args, **options):
         csv_dir = Path(options["csv_dir"]) if options["csv_dir"] else _default_csv_dir()
         dry_run = options["dry_run"]
+        skip_payments = bool(options["skip_payments"])
         prefix = (options["legacy_prefix"] or "").strip()
+        tables = BACKFILL_TABLES_WITHOUT_PAYMENTS if skip_payments else BACKFILL_TABLES
 
         if not csv_dir.is_dir():
             self.stdout.write(self.style.ERROR(f"CSV directory not found: {csv_dir}"))
@@ -85,6 +100,8 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("Legacy migration backfill"))
         self.stdout.write(f"CSV dir: {csv_dir}")
         self.stdout.write(f"Dry run: {dry_run}")
+        self.stdout.write(f"Skip payments: {skip_payments}")
+        self.stdout.write(f"Tables: {', '.join(tables)}")
         self.stdout.write(f"Legacy prefix: {prefix}")
         self._print_counts("Before", before)
 
@@ -107,7 +124,7 @@ class Command(BaseCommand):
         mapping_rows = load_mapping_rows(mapping_file)
 
         extracted: dict[str, list[dict]] = {}
-        for table in BACKFILL_TABLES:
+        for table in tables:
             rows = _read_csv_table(csv_dir, table)
             if rows:
                 extracted[table] = rows
