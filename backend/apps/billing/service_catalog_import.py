@@ -59,6 +59,95 @@ def _parse_allowed_roles(value):
     return [r for r in roles if r]
 
 
+def _normalize_department(raw_department: str) -> tuple[str, str]:
+    """
+    Map spreadsheet department labels to ServiceCatalog department codes.
+
+    Lab catalogs often use sub-disciplines (e.g. CHEMICAL PATHOLOGY, HEMATOLOGY)
+    instead of the top-level LAB code. Returns (canonical_department, subsection_label).
+    """
+    dept = str(raw_department or '').strip().upper()
+    if not dept:
+        return '', ''
+
+    valid_departments = {choice[0] for choice in ServiceCatalog.DEPARTMENT_CHOICES}
+    if dept in valid_departments:
+        return dept, ''
+
+    lab_aliases = {
+        'LABORATORY',
+        'CHEMICAL PATHOLOGY',
+        'CLINICAL PATHOLOGY',
+        'PATHOLOGY',
+        'HEMATOLOGY',
+        'HAEMATOLOGY',
+        'MICROBIOLOGY',
+        'IMMUNOLOGY',
+        'SEROLOGY',
+        'ENDOCRINOLOGY',
+        'TOXICOLOGY',
+        'URINALYSIS',
+        'CLINICAL CHEMISTRY',
+        'CHEMISTRY',
+        'BLOOD BANK',
+        'MOLECULAR',
+        'HISTOLOGY',
+        'CYTOLOGY',
+        'PARASITOLOGY',
+        'VIROLOGY',
+        'BACTERIOLOGY',
+        'MYCOLOGY',
+        'BIOCHEMISTRY',
+    }
+    if dept in lab_aliases or 'PATHOLOGY' in dept or dept.endswith(' LAB'):
+        subsection = '' if dept in {'LAB', 'LABORATORY'} else dept
+        return 'LAB', subsection
+
+    pharmacy_aliases = {
+        'DRUGS',
+        'DRUG',
+        'MEDICATION',
+        'MEDICATIONS',
+        'VACCINES',
+        'VACCINE',
+    }
+    if dept in pharmacy_aliases:
+        return 'PHARMACY', ''
+
+    radiology_aliases = {
+        'IMAGING',
+        'X-RAY',
+        'XRAY',
+        'ULTRASOUND',
+        'SCAN',
+    }
+    if dept in radiology_aliases:
+        return 'RADIOLOGY', ''
+
+    consultation_aliases = {
+        'CONSULTATIONS',
+        'CLINIC',
+        'CLINICAL CONSULTATION',
+        'OUTPATIENT',
+        'GOPD',
+    }
+    if dept in consultation_aliases:
+        return 'CONSULTATION', ''
+
+    procedure_aliases = {
+        'PROCEDURES',
+        'SURGERY',
+        'THEATRE',
+        'OPERATING ROOM',
+        'ANC',
+        'DENTAL',
+    }
+    if dept in procedure_aliases:
+        return 'PROCEDURE', ''
+
+    return dept, ''
+
+
 def import_services(data: list, update_existing: bool = False, dry_run: bool = False) -> dict:
     """
     Import services from a list of row dicts (e.g. from pandas df.to_dict('records')).
@@ -96,7 +185,8 @@ def import_services(data: list, update_existing: bool = False, dry_run: bool = F
                     if nk:
                         normalized_row[nk] = value
 
-                department = str(normalized_row.get('department', '')).strip().upper()
+                raw_department = str(normalized_row.get('department', '')).strip()
+                department, lab_subsection = _normalize_department(raw_department)
                 service_code = str(normalized_row.get('service_code', '')).strip()
                 name = str(normalized_row.get('name', '')).strip()
                 amount_str = str(normalized_row.get('amount', '0'))
@@ -129,6 +219,9 @@ def import_services(data: list, update_existing: bool = False, dry_run: bool = F
                     continue
 
                 description = str(normalized_row.get('description', '')).strip()
+                if lab_subsection:
+                    prefix = f'[{lab_subsection}]'
+                    description = f'{prefix} {description}'.strip() if description else prefix
                 requires_visit = _parse_boolean(normalized_row.get('requires_visit'), default=True)
                 requires_consultation = _parse_boolean(normalized_row.get('requires_consultation'), default=False)
                 auto_bill = _parse_boolean(normalized_row.get('auto_bill'), default=True)
@@ -139,7 +232,9 @@ def import_services(data: list, update_existing: bool = False, dry_run: bool = F
                 valid_depts = [c[0] for c in ServiceCatalog.DEPARTMENT_CHOICES]
                 if department not in valid_depts:
                     stats['errors'].append(
-                        f"Row {index}: Invalid department '{department}'. Must be one of: {', '.join(valid_depts)}"
+                        f"Row {index}: Invalid department '{raw_department}'. "
+                        f"Must be one of: {', '.join(valid_depts)} "
+                        f"(lab sub-disciplines such as HEMATOLOGY or CHEMICAL PATHOLOGY are accepted)"
                     )
                     stats['skipped'] += 1
                     continue

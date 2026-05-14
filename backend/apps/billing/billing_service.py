@@ -262,11 +262,20 @@ class BillingService:
         - Multiple charges: Sums all charges from all sources
         """
         # Get charges from VisitCharge (legacy system)
-        visit_charge_total = VisitCharge.objects.filter(
-            visit=visit
-        ).aggregate(
-            total=Sum('amount')
-        )['total'] or Decimal('0.00')
+        from .legacy_deferred_service import effective_charge_amount
+
+        visit_charge_total = Decimal("0.00")
+        charges = list(VisitCharge.objects.filter(visit=visit).only("id", "amount", "description"))
+        if charges:
+            from .legacy_deferred_service import _DeferredListContext, effective_charge_amount
+
+            deferred_ctx = _DeferredListContext.build()
+            for charge in charges:
+                if (charge.description or "").startswith("[Legacy Deferred PatientPayID:"):
+                    amount, _, _ = deferred_ctx.effective_charge_amount(charge)
+                else:
+                    amount, _, _ = effective_charge_amount(charge)
+                visit_charge_total += amount
         
         # Get charges from BillingLineItem (ServiceCatalog system)
         from .billing_line_item_models import BillingLineItem

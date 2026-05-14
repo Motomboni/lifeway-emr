@@ -41,6 +41,13 @@ class AppointmentSerializer(serializers.ModelSerializer):
     
     def get_doctor_name(self, obj) -> str | None:
         """Get doctor's full name."""
+        if obj.doctor and obj.doctor.username != "migration_doctor":
+            return f"{obj.doctor.first_name} {obj.doctor.last_name}".strip()
+        from apps.appointments.legacy_appointment_attribution import extract_legacy_doctor_name
+
+        legacy_name = extract_legacy_doctor_name(obj.notes)
+        if legacy_name:
+            return legacy_name
         if obj.doctor:
             return f"{obj.doctor.first_name} {obj.doctor.last_name}".strip()
         return None
@@ -51,6 +58,15 @@ class AppointmentSerializer(serializers.ModelSerializer):
         return None
 
     def get_doctor_display_name(self, obj) -> str | None:
+        from apps.appointments.legacy_appointment_attribution import extract_legacy_doctor_name
+
+        if obj.doctor and obj.doctor.username != "migration_doctor":
+            return obj.doctor.get_display_name_with_specialization()
+        legacy_name = extract_legacy_doctor_name(obj.notes)
+        if legacy_name:
+            return legacy_name if legacy_name.lower().startswith("dr") else f"Dr. {legacy_name}"
+        if obj.doctor and obj.doctor.username == "migration_doctor":
+            return "Doctor not recorded"
         if obj.doctor:
             return obj.doctor.get_display_name_with_specialization()
         return None

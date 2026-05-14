@@ -19,8 +19,8 @@ module.exports = function(app) {
       changeOrigin: true,
       secure: false,
       logLevel: 'info',
-      timeout: 30000, // 30 second timeout
-      proxyTimeout: 30000, // 30 second proxy timeout
+      timeout: 120000,
+      proxyTimeout: 120000,
       // Add /api back to the path since Express strips it when using app.use('/api', ...)
       // req.url will be '/v1/auth/login/' but we need '/api/v1/auth/login/'
       pathRewrite: function (path, req) {

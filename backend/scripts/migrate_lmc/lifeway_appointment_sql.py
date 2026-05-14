@@ -36,6 +36,10 @@ LIFEWAY_OPD_APPOINTMENT_SELECT_BODY = f"""
             )
         ) AS int
     ) AS DoctorID,
+    CAST(
+        REPLACE(REPLACE(REPLACE(ISNULL(a.ToSee, N''), N',', N';'), CHAR(10), N' '), CHAR(13), N' ')
+        AS nvarchar(200)
+    ) AS DoctorName,
     CAST(a.[Date] AS datetime) AS AppointmentDate,
     CAST(a.[Status] AS nvarchar(50)) AS [Status],
     CAST(NULL AS int) AS VisitID,

@@ -145,6 +145,44 @@ export interface PaymentHistoryResponse {
   results: GlobalPayment[];
 }
 
+export interface DeferredLegacyPayment {
+  charge_id: number;
+  legacy_pay_id: number | null;
+  visit_id: number;
+  visit_status: string;
+  patient: {
+    id: number;
+    patient_id: string;
+    name: string;
+  };
+  service_line: string;
+  category: string;
+  recorded_amount: string;
+  catalog_amount: string | null;
+  catalog_match_name?: string | null;
+  amount_due: string;
+  price_source?: 'recorded' | 'catalog' | 'legacy_median' | 'unknown';
+  needs_price: boolean;
+  description: string;
+  created_at: string;
+}
+
+export interface DeferredLegacyPaymentsResponse {
+  count: number;
+  page?: number;
+  page_size?: number;
+  results: DeferredLegacyPayment[];
+}
+
+export interface SettleDeferredPaymentResult {
+  payment_id: number;
+  charge_id: number;
+  visit_id: number;
+  amount: string;
+  payment_status: string;
+  outstanding_balance: string;
+}
+
 /**
  * Get central billing pending queue (Receptionist only)
  */
@@ -171,6 +209,31 @@ export async function getPaymentHistory(params: {
 
   const queryString = searchParams.toString();
   return apiRequest<PaymentHistoryResponse>(`/billing/payments/${queryString ? `?${queryString}` : ''}`);
+}
+
+export async function getDeferredLegacyPayments(
+  search = '',
+  page = 1,
+  pageSize = 48,
+): Promise<DeferredLegacyPaymentsResponse> {
+  const params = new URLSearchParams();
+  if (search) params.append('search', search);
+  if (page > 1) params.append('page', String(page));
+  if (pageSize !== 48) params.append('page_size', String(pageSize));
+  const query = params.toString();
+  return apiRequest<DeferredLegacyPaymentsResponse>(
+    `/billing/deferred-payments/${query ? `?${query}` : ''}`,
+  );
+}
+
+export async function settleDeferredLegacyPayment(
+  chargeId: number,
+  data: PaymentCreateData,
+): Promise<SettleDeferredPaymentResult> {
+  return apiRequest<SettleDeferredPaymentResult>(`/billing/deferred-payments/${chargeId}/settle/`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
 /**
@@ -217,7 +280,11 @@ export async function createInsurance(visitId: number, data: InsuranceCreateData
  * Get list of HMO Providers
  */
 export async function getHMOProviders(): Promise<any[]> {
-  return apiRequest<any[]>(`/billing/hmo-providers/`);
+  const response = await apiRequest<any[] | { results?: any[] }>(`/billing/hmo-providers/`);
+  if (Array.isArray(response)) {
+    return response;
+  }
+  return response?.results ?? [];
 }
 
 /**

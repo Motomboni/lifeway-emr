@@ -65,6 +65,14 @@ export default function PaymentProcessingPage() {
       <header className={styles.header}>
         <h1>Billing & Payments</h1>
         <p>Review migrated legacy payments and current visit-scoped payments.</p>
+        <button
+          type="button"
+          className={styles.newPaymentButton}
+          style={{ marginTop: '0.75rem' }}
+          onClick={() => navigate('/billing/deferred-payments')}
+        >
+          Deferred legacy payments
+        </button>
       </header>
 
       <div className={styles.paymentSummary}>
@@ -136,8 +144,16 @@ export default function PaymentProcessingPage() {
                   {formatCurrency(payment.amount)}
                   {payment.is_legacy ? ' | Legacy' : ''}
                 </h3>
-                <span className={payment.status === 'CLEARED' ? styles.badgeCleared : styles.badgePending}>
-                  {payment.status}
+                <span
+                  className={
+                    payment.status === 'CLEARED'
+                      ? styles.badgeCleared
+                      : payment.status === 'PENDING'
+                        ? styles.badgePending
+                        : styles.badgePartial
+                  }
+                >
+                  {payment.status === 'CLEARED' ? 'Cleared' : payment.status}
                 </span>
               </div>
               <div className={styles.paymentDetails}>

@@ -646,6 +646,13 @@ export default function DashboardPage() {
                 </div>
                 <div 
                   className={styles.actionCard}
+                  onClick={() => navigate('/billing/deferred-payments')}
+                >
+                  <h3>Deferred Payments</h3>
+                  <p>Settle LIFEWAY flexible-payment services (pay later)</p>
+                </div>
+                <div 
+                  className={styles.actionCard}
                   onClick={() => navigate('/patients/verification')}
                 >
                   <h3>

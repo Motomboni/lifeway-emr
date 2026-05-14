@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q, Prefetch
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from apps.visits.models import Visit
 from apps.consultations.models import Consultation
@@ -20,6 +20,7 @@ from .billing_service import BillingService
 from .models import Payment, VisitCharge
 from .permissions import CanProcessPayment
 from core.audit import AuditLog
+from .legacy_deferred_service import list_and_serialize_unsettled_deferred_charges, settle_deferred_charge
 
 
 class BillingPendingQueueView(APIView):
@@ -216,3 +217,99 @@ class BillingPaymentHistoryView(APIView):
             'page_size': page_size,
             'results': results,
         }, status=status.HTTP_200_OK)
+
+
+class DeferredLegacyPaymentsView(APIView):
+    """
+    GET /api/v1/billing/deferred-payments/
+
+    Lists unsettled LIFEWAY flexible-payment services (legacy deferred VisitCharges).
+    """
+
+    permission_classes = [IsAuthenticated, CanProcessPayment]
+
+    def get(self, request):
+        search = (request.query_params.get("search") or "").strip()
+        try:
+            page = max(1, int(request.query_params.get("page") or 1))
+        except (TypeError, ValueError):
+            page = 1
+        try:
+            page_size = min(200, max(1, int(request.query_params.get("page_size") or 48)))
+        except (TypeError, ValueError):
+            page_size = 48
+
+        total, results = list_and_serialize_unsettled_deferred_charges(
+            search=search,
+            page=page,
+            page_size=page_size,
+        )
+        AuditLog.log(
+            user=request.user,
+            role=getattr(request.user, "role", None),
+            action="DEFERRED_LEGACY_PAYMENTS_VIEWED",
+            visit_id=None,
+            resource_type="deferred_legacy_payments",
+            resource_id=None,
+            request=request,
+        )
+        return Response(
+            {"count": total, "page": page, "page_size": page_size, "results": results},
+            status=status.HTTP_200_OK,
+        )
+
+
+class DeferredLegacyPaymentSettleView(APIView):
+    """
+    POST /api/v1/billing/deferred-payments/{charge_id}/settle/
+
+    Settles a deferred legacy service using the standard Payment flow.
+  Body: { amount, payment_method, transaction_reference?, notes? }
+    """
+
+    permission_classes = [IsAuthenticated, CanProcessPayment]
+
+    def post(self, request, charge_id: int):
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        amount_raw = request.data.get("amount")
+        payment_method = (request.data.get("payment_method") or "CASH").strip().upper()
+        transaction_reference = (request.data.get("transaction_reference") or "").strip()
+        notes = (request.data.get("notes") or "").strip()
+
+        if payment_method not in {"CASH", "POS", "TRANSFER", "WALLET", "PAYSTACK", "INSURANCE"}:
+            return Response(
+                {"detail": "Invalid payment_method."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            amount = Decimal(str(amount_raw))
+        except (InvalidOperation, TypeError, ValueError):
+            return Response(
+                {"detail": "A valid settlement amount is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            result = settle_deferred_charge(
+                charge_id,
+                amount=amount,
+                payment_method=payment_method,
+                processed_by=request.user,
+                transaction_reference=transaction_reference,
+                notes=notes,
+            )
+        except DjangoValidationError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        AuditLog.log(
+            user=request.user,
+            role=getattr(request.user, "role", None),
+            action="DEFERRED_LEGACY_PAYMENT_SETTLED",
+            visit_id=result.get("visit_id"),
+            resource_type="visit_charge",
+            resource_id=charge_id,
+            request=request,
+        )
+        return Response(result, status=status.HTTP_201_CREATED)

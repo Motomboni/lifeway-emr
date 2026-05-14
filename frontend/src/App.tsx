@@ -37,6 +37,7 @@ import DrugCatalogInventoryPage from './pages/DrugCatalogInventoryPage';
 import LabTestCatalogPage from './pages/LabTestCatalogPage';
 import RadiologyStudyTypesPage from './pages/RadiologyStudyTypesPage';
 import PaymentProcessingPage from './pages/PaymentProcessingPage';
+import DeferredPaymentsPage from './pages/DeferredPaymentsPage';
 import BillingPendingQueuePage from './pages/BillingPendingQueuePage';
 import InsuranceClaimsDashboard from './components/billing/InsuranceClaimsDashboard';
 import PatientManagementPage from './pages/PatientManagementPage';
@@ -364,6 +365,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole="RECEPTIONIST">
             <BillingPendingQueuePage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Deferred legacy flexible payments - Receptionist only */}
+      <Route
+        path="/billing/deferred-payments"
+        element={
+          <ProtectedRoute requiredRole="RECEPTIONIST">
+            <DeferredPaymentsPage />
           </ProtectedRoute>
         }
       />

@@ -388,7 +388,7 @@ ORDER BY OutPatientID ASC
     ),
     (
         "tblOPDAppointment.csv",
-        "AppointmentID,PatientID,Clinic,DoctorID,AppointmentDate,Status,VisitID,Reason,Notes,Duration",
+        "AppointmentID,PatientID,Clinic,DoctorID,DoctorName,AppointmentDate,Status,VisitID,Reason,Notes,Duration",
         ("SELECT\n" + LIFEWAY_OPD_APPOINTMENT_SELECT_BODY).strip(),
     ),
     (
@@ -414,6 +414,22 @@ ORDER BY DrugItemID ASC
 
 
 def main() -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Restore LIFEWAY backup and/or export CSV tables for migrate_lmc.")
+    parser.add_argument(
+        "--only",
+        action="append",
+        metavar="FILE.csv",
+        help="Export only these CSV file names (repeatable). Skips RESTORE when used with --skip-restore.",
+    )
+    parser.add_argument(
+        "--skip-restore",
+        action="store_true",
+        help="Do not RESTORE the .bak; export from the existing LIFEWAY database in the container.",
+    )
+    args = parser.parse_args()
+
     container = os.environ.get("LIFEWAY_DOCKER_CONTAINER", "lifeway-mssql").strip()
     password = os.environ.get("LIFEWAY_MSSQL_SA_PASSWORD", DEFAULT_SA_PASSWORD)
     bak_name = os.environ.get("LIFEWAY_BAK_FILENAME", DEFAULT_BAK)
@@ -426,27 +442,49 @@ def main() -> int:
 
     _wait_for_sql(container, password, ready_sec, poll_sec)
 
-    print("Reading backup file list from", bak_in_container)
-    logical_rows = _filelistonly_from_docker(container, password, bak_in_container)
-    print("Logical files:", logical_rows)
+    if not args.skip_restore:
+        print("Reading backup file list from", bak_in_container)
+        logical_rows = _filelistonly_from_docker(container, password, bak_in_container)
+        print("Logical files:", logical_rows)
 
-    restore_sql = _restore_sql(bak_in_container, logical_rows)
-    print("Running RESTORE DATABASE [LIFEWAY] ...")
-    _run_restore(container, password, restore_sql)
-    # Brief pause: first sqlcmd -o export can rarely fail immediately post-RESTORE while files settle.
-    time.sleep(2)
+        restore_sql = _restore_sql(bak_in_container, logical_rows)
+        print("Running RESTORE DATABASE [LIFEWAY] ...")
+        _run_restore(container, password, restore_sql)
+        # Brief pause: first sqlcmd -o export can rarely fail immediately post-RESTORE while files settle.
+        time.sleep(2)
 
-    chk = _docker_exec_sqlcmd(
-        container,
-        password,
-        ["-Q", "SELECT CASE WHEN DB_ID(N'LIFEWAY') IS NULL THEN 0 ELSE 1 END", "-W", "-h", "-1"],
-        timeout=60,
-    )
-    if chk.returncode != 0 or "1" not in chk.stdout:
-        raise SystemExit(f"Database LIFEWAY not found after RESTORE. Output:\n{chk.stdout}\n{chk.stderr}")
+        chk = _docker_exec_sqlcmd(
+            container,
+            password,
+            ["-Q", "SELECT CASE WHEN DB_ID(N'LIFEWAY') IS NULL THEN 0 ELSE 1 END", "-W", "-h", "-1"],
+            timeout=60,
+        )
+        if chk.returncode != 0 or "1" not in chk.stdout:
+            raise SystemExit(f"Database LIFEWAY not found after RESTORE. Output:\n{chk.stdout}\n{chk.stderr}")
+    else:
+        chk = _docker_exec_sqlcmd(
+            container,
+            password,
+            ["-Q", "SELECT CASE WHEN DB_ID(N'LIFEWAY') IS NULL THEN 0 ELSE 1 END", "-W", "-h", "-1"],
+            timeout=60,
+        )
+        if chk.returncode != 0 or "1" not in chk.stdout:
+            raise SystemExit(
+                f"Database LIFEWAY not found in container {container}. "
+                "Run without --skip-restore first, or restore manually."
+            )
+        print("Skipping RESTORE; exporting from existing LIFEWAY database.")
+
+    exports = EXPORTS
+    if args.only:
+        only_set = {name.strip().lower() for name in args.only}
+        exports = [item for item in EXPORTS if item[0].lower() in only_set]
+        if not exports:
+            known = ", ".join(name for name, _, _ in EXPORTS)
+            raise SystemExit(f"No matching exports for --only. Known files: {known}")
 
     total = 0
-    for fname, csv_header, query in EXPORTS:
+    for fname, csv_header, query in exports:
         host_path = out_dir / fname
         container_out_posix = str(PurePosixPath(CONTAINER_EXPORT_DIR) / fname)
         print(f"Exporting -> {fname} ...")

@@ -105,6 +105,13 @@ def _charge_category_from_receipt_line(field_name: Any, service_line: Any) -> st
     return "MISC"
 
 
+def _resolve_legacy_service_line_amount(service_line: str) -> Decimal | None:
+    from apps.billing.legacy_deferred_service import resolve_deferred_price  # pylint: disable=import-outside-toplevel
+
+    amount, _, _ = resolve_deferred_price(service_line)
+    return amount if amount > 0 else None
+
+
 def resolve_model_class(target_model: str):
     """
     Resolve 'apps.patients.Patient' -> model class.
@@ -114,9 +121,13 @@ def resolve_model_class(target_model: str):
     return getattr(module, class_name)
 
 
+LEGACY_BACKFILL_VISIT_TAG = "[Legacy backfill visit]"
+
+
 def load_transformed_data(
     payloads: list[dict[str, Any]],
     dry_run: bool = True,
+    backfill_mode: bool = False,
 ) -> dict[str, int]:
     """
     Load scaffold.
@@ -127,8 +138,11 @@ def load_transformed_data(
     # In-run crosswalks for the first vertical slice.
     legacy_user_pk_by_id: dict[int, int] = {}
     patient_id_map: dict[int, int] = {}
+    payer_patient_map: dict[str, int] = {}
     visit_id_map: dict[int, int] = {}
     lab_order_pk_by_request_id: dict[int, int] = {}
+    doctor_user_cache: dict[int, object] = {}
+    name_doctor_cache: dict[str, object] = {}
 
     from django.contrib.auth.hashers import make_password  # pylint: disable=import-outside-toplevel
     from django.utils import timezone  # pylint: disable=import-outside-toplevel
@@ -169,6 +183,103 @@ def load_transformed_data(
 
     def _patient_external_id(legacy_patient_id: int) -> str:
         return f"{patient_key_prefix}{legacy_patient_id:07d}"
+
+    def _lookup_patient_pk(legacy_patient_id: int) -> int | None:
+        patient_pk = patient_id_map.get(legacy_patient_id)
+        if patient_pk:
+            return patient_pk
+        patient = Patient.objects.filter(patient_id=_patient_external_id(legacy_patient_id)).only("id").first()
+        if patient:
+            patient_id_map[legacy_patient_id] = patient.id
+            return patient.id
+        return None
+
+    def _ensure_payer_stub_patient(payer_name: str) -> int | None:
+        from apps.billing.legacy_orphan_attribution import ensure_payer_stub_patient  # pylint: disable=import-outside-toplevel
+
+        payer = (payer_name or "").strip()
+        if not payer:
+            return None
+        if not backfill_mode or dry_run:
+            return None
+        return ensure_payer_stub_patient(patient_key_prefix, payer, payer_patient_map)
+
+    def _ensure_receipt_stub_patient(receipt_no: Any) -> int | None:
+        from apps.billing.legacy_orphan_attribution import ensure_receipt_stub_patient  # pylint: disable=import-outside-toplevel
+
+        token = str(receipt_no or "").strip()
+        if not token:
+            return None
+        if not backfill_mode or dry_run:
+            return None
+        return ensure_receipt_stub_patient(patient_key_prefix, token, payer_patient_map)
+
+    def _ensure_stub_patient(legacy_patient_id: int) -> int | None:
+        if not backfill_mode or dry_run:
+            return None
+        external_id = _patient_external_id(legacy_patient_id)
+
+        def _write() -> int:
+            patient, _ = Patient.objects.update_or_create(
+                patient_id=external_id,
+                defaults={
+                    "first_name": "Legacy",
+                    "last_name": f"Patient {legacy_patient_id}",
+                    "is_active": True,
+                },
+            )
+            patient_id_map[legacy_patient_id] = patient.id
+            return patient.id
+
+        return _sqlite_lock_retry("stub_patient", _write)
+
+    def _ensure_backfill_visit(patient_pk: int, event_dt: datetime) -> int | None:
+        if dry_run:
+            return None
+        cached = backfill_visit_by_patient.get(patient_pk)
+        if cached:
+            return cached
+
+        def _write() -> int:
+            existing = Visit.objects.filter(
+                patient_id=patient_pk,
+                chief_complaint__startswith=LEGACY_BACKFILL_VISIT_TAG,
+            ).only("id").first()
+            if existing:
+                backfill_visit_by_patient[patient_pk] = existing.id
+                return existing.id
+            visit = Visit.objects.create(
+                patient_id=patient_pk,
+                created_at=event_dt,
+                visit_type="ROUTINE",
+                status="CLOSED",
+                payment_status="UNPAID",
+                chief_complaint=(
+                    f"{LEGACY_BACKFILL_VISIT_TAG} Auto-created to attach migrated billing/clinical records."
+                ),
+                service_area="Legacy migration",
+            )
+            Visit.objects.filter(pk=visit.pk).update(created_at=event_dt)
+            backfill_visit_by_patient[patient_pk] = visit.id
+            return visit.id
+
+        return _sqlite_lock_retry("backfill_visit", _write)
+
+    def _resolve_visit_pk_for_patient_event(patient_pk: int, event_dt: datetime) -> int | None:
+        same_day = list(
+            Visit.objects.filter(patient_id=patient_pk, created_at__date=event_dt.date()).only("id", "created_at")
+        )
+        cands = same_day or list(
+            Visit.objects.filter(patient_id=patient_pk).only("id", "created_at").order_by("created_at")[:1000]
+        )
+        if cands:
+            return min(
+                cands,
+                key=lambda v: abs((v.created_at - event_dt).total_seconds()) if v.created_at else float("inf"),
+            ).id
+        if backfill_mode:
+            return _ensure_backfill_visit(patient_pk, event_dt)
+        return None
 
     def _inc(model_name: str) -> None:
         created_counts[model_name] = created_counts.get(model_name, 0) + 1
@@ -288,6 +399,8 @@ def load_transformed_data(
         else:
             cc = str(can_consult).strip() in ("1", "true", "yes", "y")
         if cc or "DOCTOR" in blob or "PHYSICIAN" in blob or "CONSULT" in blob:
+            return "DOCTOR"
+        if str(designation).strip() == "1":
             return "DOCTOR"
         if "NURSE" in blob:
             return "NURSE"
@@ -604,43 +717,104 @@ def load_transformed_data(
         if source_table == "tblPatientPayment" and target_model == "apps.billing.Payment":
             legacy_pay_id = _to_int(source_row.get("PatientPayID"))
             legacy_patient_id = _to_int(source_row.get("PatientID"))
-            if legacy_pay_id is None or legacy_patient_id is None:
-                logger.warning("Skipping patient payment row missing PatientPayID/PatientID: %s", source_row)
+            payer_name = (str(source_row.get("PayerName") or "")).strip()
+            if legacy_pay_id is None:
+                logger.warning("Skipping patient payment row missing PatientPayID: %s", source_row)
                 continue
 
             amt = _to_decimal(source_row.get("PayAmount")) or Decimal("0")
-            if amt is None or amt <= 0:
-                logger.warning("Skipping patient payment %s; non-positive amount", legacy_pay_id)
-                continue
+            if amt is None:
+                amt = Decimal("0")
 
             pay_dt = _ensure_aware(_to_datetime(source_row.get("PaymentDate"))) or timezone.now()
-            patient_pk = patient_id_map.get(legacy_patient_id)
-            if not patient_pk:
-                patient = Patient.objects.filter(patient_id=_patient_external_id(legacy_patient_id)).only("id").first()
-                if patient:
-                    patient_pk = patient.id
-                    patient_id_map[legacy_patient_id] = patient_pk
-            if not patient_pk:
-                logger.warning(
-                    "Skipping patient payment %s; patient not found for legacy id %s",
-                    legacy_pay_id,
-                    legacy_patient_id,
-                )
-                continue
+            if legacy_patient_id is None or legacy_patient_id <= 0:
+                patient_pk = _ensure_payer_stub_patient(payer_name)
+                if not patient_pk:
+                    logger.warning(
+                        "Skipping patient payment %s; missing PatientID and PayerName",
+                        legacy_pay_id,
+                    )
+                    continue
+            else:
+                patient_pk = _lookup_patient_pk(legacy_patient_id)
+                if not patient_pk:
+                    patient_pk = _ensure_stub_patient(legacy_patient_id)
+                if not patient_pk:
+                    logger.warning(
+                        "Skipping patient payment %s; patient not found for legacy id %s",
+                        legacy_pay_id,
+                        legacy_patient_id,
+                    )
+                    continue
 
-            same_day = list(Visit.objects.filter(patient_id=patient_pk, created_at__date=pay_dt.date()).only("id", "created_at"))
-            cands = same_day or list(Visit.objects.filter(patient_id=patient_pk).only("id", "created_at").order_by("created_at")[:1000])
-            if not cands:
+            visit_pk = _resolve_visit_pk_for_patient_event(patient_pk, pay_dt)
+            if not visit_pk:
                 logger.warning(
                     "Skipping patient payment %s; no visit for patient %s to attach payment",
                     legacy_pay_id,
                     legacy_patient_id,
                 )
                 continue
-            visit_pk = min(
-                cands,
-                key=lambda v: abs((v.created_at - pay_dt).total_seconds()) if v.created_at else float("inf"),
-            ).id
+
+            # LIFEWAY flexible billing: zero/blank PayAmount means service rendered; payment deferred.
+            if amt <= 0:
+                svc = (str(source_row.get("ServiceLine") or "")).strip()
+                dx = (str(source_row.get("DiagnosisLine") or "")).strip()
+                charge_amount = _resolve_legacy_service_line_amount(svc) or Decimal("0")
+                deferred_tag = f"[Legacy Deferred PatientPayID:{legacy_pay_id}]"
+                desc_parts = [deferred_tag, (svc or "Legacy service (flexible payment)")]
+                if dx:
+                    desc_parts.append(f"Diagnosis (legacy): {dx[:200]}")
+                if charge_amount <= 0:
+                    desc_parts.append("Flexible payment — amount pending (not recorded in LIFEWAY export).")
+                description = " — ".join(desc_parts).strip()[:255]
+                cat = _charge_category_from_receipt_line("", svc)
+
+                def _deferred_service_write() -> None:
+                    existing = VisitCharge.objects.filter(
+                        visit_id=visit_pk,
+                        description__startswith=deferred_tag,
+                    ).first()
+                    if existing:
+                        VisitCharge.objects.filter(pk=existing.pk).update(
+                            category=cat,
+                            description=description,
+                            amount=charge_amount,
+                            created_by_system=True,
+                            created_at=pay_dt,
+                        )
+                        return
+                    VisitCharge.objects.bulk_create(
+                        [
+                            VisitCharge(
+                                visit_id=visit_pk,
+                                category=cat,
+                                description=description,
+                                amount=charge_amount,
+                                created_by_system=True,
+                            )
+                        ]
+                    )
+                    created_vc = VisitCharge.objects.filter(
+                        visit_id=visit_pk,
+                        description__startswith=deferred_tag,
+                    ).first()
+                    if created_vc:
+                        VisitCharge.objects.filter(pk=created_vc.pk).update(created_at=pay_dt)
+
+                try:
+                    _sqlite_lock_retry("tblPatientPayment_deferred", _deferred_service_write)
+                except Exception as exc:  # pylint: disable=broad-exception-caught
+                    logger.warning("Skipping deferred legacy service %s: %s", legacy_pay_id, exc)
+                    continue
+
+                try:
+                    Visit.objects.filter(pk=visit_pk, payment_status="PAID").update(payment_status="UNPAID")
+                except Exception:
+                    pass
+
+                _inc("apps.billing.VisitCharge")
+                continue
 
             receptionist = User.objects.filter(username="migration_receptionist").first() or User.objects.filter(
                 role="RECEPTIONIST"
@@ -652,16 +826,19 @@ def load_transformed_data(
                 )
                 continue
 
-            def _map_legacy_payment_status(raw: Any) -> str:
+            def _map_legacy_payment_status(raw: Any, *, amount: Decimal) -> str:
                 s = (str(raw or "").strip().upper())
                 if any(x in s for x in ("REFUND", "REVERSE", "VOID")):
                     return "REFUNDED"
-                if any(x in s for x in ("PAID", "CLEAR", "COMPLETE", "POST", "OK", "SUCCESS")):
-                    return "CLEARED"
-                if "PART" in s:
-                    return "PARTIAL"
                 if any(x in s for x in ("FAIL", "DECLIN", "REJECT", "BOUNCE")):
                     return "FAILED"
+                if "PART" in s:
+                    return "PARTIAL"
+                if any(x in s for x in ("PAID", "CLEAR", "COMPLETE", "POST", "OK", "SUCCESS")):
+                    return "CLEARED"
+                # LIFEWAY positive PayAmount rows are completed receipts even when Status is blank.
+                if amount > 0:
+                    return "CLEARED"
                 return "PENDING"
 
             def _map_legacy_payment_method(raw_hmo: Any) -> str:
@@ -669,7 +846,7 @@ def load_transformed_data(
                     return "INSURANCE"
                 return "CASH"
 
-            pay_status = _map_legacy_payment_status(source_row.get("LegacyStatus"))
+            pay_status = _map_legacy_payment_status(source_row.get("LegacyStatus"), amount=amt)
             pay_method = _map_legacy_payment_method(source_row.get("HMOCode"))
             receipt_no = _to_int(source_row.get("ReceiptNo"))
             tx_ref = (str(receipt_no) if receipt_no is not None else "")[:255]
@@ -736,8 +913,9 @@ def load_transformed_data(
         if source_table == "tblTempReceipt" and target_model == "apps.billing.VisitCharge":
             line_id = _to_int(source_row.get("TempReceiptID"))
             legacy_patient_id = _to_int(source_row.get("PatientID"))
-            if line_id is None or legacy_patient_id is None:
-                logger.warning("Skipping receipt line missing TempReceiptID/PatientID: %s", source_row)
+            receipt_no = source_row.get("ReceiptNo")
+            if line_id is None:
+                logger.warning("Skipping receipt line missing TempReceiptID: %s", source_row)
                 continue
 
             amt = _to_decimal(source_row.get("LineAmount")) or Decimal("0")
@@ -745,25 +923,23 @@ def load_transformed_data(
                 continue
 
             line_dt = _ensure_aware(_to_datetime(source_row.get("LineDate"))) or timezone.now()
-            patient_pk = patient_id_map.get(legacy_patient_id)
-            if not patient_pk:
-                patient = Patient.objects.filter(patient_id=_patient_external_id(legacy_patient_id)).only("id").first()
-                if patient:
-                    patient_pk = patient.id
-                    patient_id_map[legacy_patient_id] = patient_pk
-            if not patient_pk:
-                logger.warning("Skipping receipt line %s; patient not found for legacy id %s", line_id, legacy_patient_id)
-                continue
+            if legacy_patient_id is None or legacy_patient_id <= 0:
+                patient_pk = _ensure_receipt_stub_patient(receipt_no)
+                if not patient_pk:
+                    logger.warning("Skipping receipt line %s; missing PatientID and ReceiptNo", line_id)
+                    continue
+            else:
+                patient_pk = _lookup_patient_pk(legacy_patient_id)
+                if not patient_pk:
+                    patient_pk = _ensure_stub_patient(legacy_patient_id)
+                if not patient_pk:
+                    logger.warning("Skipping receipt line %s; patient not found for legacy id %s", line_id, legacy_patient_id)
+                    continue
 
-            same_day = list(Visit.objects.filter(patient_id=patient_pk, created_at__date=line_dt.date()).only("id", "created_at"))
-            cands = same_day or list(Visit.objects.filter(patient_id=patient_pk).only("id", "created_at").order_by("created_at")[:1000])
-            if not cands:
+            visit_pk = _resolve_visit_pk_for_patient_event(patient_pk, line_dt)
+            if not visit_pk:
                 logger.warning("Skipping receipt line %s; no visit for patient %s", line_id, legacy_patient_id)
                 continue
-            visit_pk = min(
-                cands,
-                key=lambda v: abs((v.created_at - line_dt).total_seconds()) if v.created_at else float("inf"),
-            ).id
 
             svc = (str(source_row.get("ServiceLine") or "")).strip()
             field_nm = (str(source_row.get("FieldName") or "")).strip()
@@ -817,20 +993,11 @@ def load_transformed_data(
             request_dt = _ensure_aware(_to_datetime(source_row.get("DateRequested"))) or timezone.now()
             visit_pk = visit_id_map.get(legacy_visit_id) if legacy_visit_id else None
             if not visit_pk and legacy_patient_id is not None:
-                patient_pk = patient_id_map.get(legacy_patient_id)
+                patient_pk = _lookup_patient_pk(legacy_patient_id)
                 if not patient_pk:
-                    patient = Patient.objects.filter(patient_id=_patient_external_id(legacy_patient_id)).only("id").first()
-                    if patient:
-                        patient_pk = patient.id
-                        patient_id_map[legacy_patient_id] = patient_pk
+                    patient_pk = _ensure_stub_patient(legacy_patient_id)
                 if patient_pk:
-                    same_day = list(Visit.objects.filter(patient_id=patient_pk, created_at__date=request_dt.date()).only("id", "created_at"))
-                    cands = same_day or list(Visit.objects.filter(patient_id=patient_pk).only("id", "created_at").order_by("created_at")[:1000])
-                    if cands:
-                        visit_pk = min(
-                            cands,
-                            key=lambda v: abs((v.created_at - request_dt).total_seconds()) if v.created_at else float("inf"),
-                        ).id
+                    visit_pk = _resolve_visit_pk_for_patient_event(patient_pk, request_dt)
             if not visit_pk:
                 logger.warning(
                     "Skipping lab request %s; could not resolve visit (legacy VisitID=%s, PatientID=%s)",
@@ -1309,14 +1476,19 @@ def load_transformed_data(
                 patient_id_map[legacy_patient_id] = patient_pk
 
             # DoctorID in LIFEWAY CSV is legacy tblUsers.UserID (from ToSee -> Staff -> User in export).
+            from apps.appointments.legacy_appointment_attribution import (  # pylint: disable=import-outside-toplevel
+                ensure_doctor_from_display_name,
+                format_legacy_doctor_tag,
+                resolve_legacy_doctor_user,
+            )
+
             legacy_doctor_id = _to_int(source_row.get("DoctorID"))
-            doctor = None
-            if legacy_doctor_id is not None:
-                doc_pk = legacy_user_pk_by_id.get(legacy_doctor_id)
-                if doc_pk:
-                    cand = User.objects.filter(pk=doc_pk).first()
-                    if cand and cand.role == "DOCTOR":
-                        doctor = cand
+            doctor_name = (str(source_row.get("DoctorName") or source_row.get("ToSee") or "")).strip()
+            doctor = resolve_legacy_doctor_user(legacy_doctor_id, cache=doctor_user_cache)
+            if doctor and legacy_doctor_id is not None:
+                legacy_user_pk_by_id[legacy_doctor_id] = doctor.id
+            if not doctor and doctor_name:
+                doctor = ensure_doctor_from_display_name(doctor_name, cache=name_doctor_cache)
             if not doctor:
                 doctor = User.objects.filter(username="migration_doctor").first()
             if not doctor:
@@ -1351,6 +1523,9 @@ def load_transformed_data(
                     notes = f"{appt_tag} {notes}".strip()
                 else:
                     notes = appt_tag
+
+            if doctor_name and format_legacy_doctor_tag(doctor_name) not in notes:
+                notes = f"{format_legacy_doctor_tag(doctor_name)} {notes}".strip()
 
             visit_fk = None
             legacy_visit_id = _to_int(source_row.get("VisitID"))
