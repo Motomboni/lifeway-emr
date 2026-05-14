@@ -38,6 +38,9 @@ services:
       - "8080:80"
     volumes:
       - media_data:/app/backend/media
+      # LIFEWAY CSV exports + migration docs for backfill_legacy_migration on the server
+      - ./tmp:/app/tmp:ro
+      - ./docs:/app/docs:ro
     depends_on:
       db:
         condition: service_healthy
