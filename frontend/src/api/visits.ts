@@ -57,6 +57,22 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
+export function getVisitListCount(response: Visit[] | PaginatedResponse<Visit>): number {
+  return Array.isArray(response) ? response.length : response.count;
+}
+
+export function getVisitListResults(response: Visit[] | PaginatedResponse<Visit>): Visit[] {
+  return Array.isArray(response) ? response : response.results;
+}
+
+/**
+ * Fetch total visit count for optional filters (single lightweight request).
+ */
+export async function fetchVisitCount(filters?: VisitFilters): Promise<number> {
+  const response = await fetchVisits({ ...filters, page: 1, page_size: 1 });
+  return getVisitListCount(response);
+}
+
 /**
  * Fetch visits (with optional filters and pagination)
  */

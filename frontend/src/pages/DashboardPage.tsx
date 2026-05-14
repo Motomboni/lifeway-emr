@@ -7,7 +7,11 @@
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchVisits, PaginatedResponse } from '../api/visits';
+import {
+  fetchVisits,
+  fetchVisitCount,
+  getVisitListResults,
+} from '../api/visits';
 import { Visit } from '../types/visit';
 import { getPendingVerificationPatients } from '../api/patient';
 import { useToast } from '../hooks/useToast';
@@ -235,11 +239,22 @@ export default function DashboardPage() {
   const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetchVisits();
-      const allVisits = Array.isArray(response) ? response : (response as PaginatedResponse<Visit>).results;
 
-      const openVisits = allVisits.filter((v: Visit) => v.status === 'OPEN');
-      const pendingPayments = allVisits.filter((v: Visit) => v.payment_status === 'UNPAID' || v.payment_status === 'PARTIALLY_PAID' || v.payment_status === 'INSURANCE_PENDING');
+      const [
+        totalVisits,
+        openVisits,
+        unpaidCount,
+        partialCount,
+        insurancePendingCount,
+        recentResponse,
+      ] = await Promise.all([
+        fetchVisitCount(),
+        fetchVisitCount({ status: 'OPEN' }),
+        fetchVisitCount({ payment_status: 'UNPAID' }),
+        fetchVisitCount({ payment_status: 'PARTIALLY_PAID' }),
+        fetchVisitCount({ payment_status: 'INSURANCE_PENDING' }),
+        fetchVisits({ page: 1, page_size: 5 }),
+      ]);
 
       // Fetch pending verifications for receptionists
       let pendingVerifications = 0;
@@ -254,18 +269,14 @@ export default function DashboardPage() {
       }
 
       const newStats = {
-        totalVisits: allVisits.length,
-        openVisits: openVisits.length,
-        pendingPayments: pendingPayments.length,
+        totalVisits,
+        openVisits,
+        pendingPayments: unpaidCount + partialCount + insurancePendingCount,
         pendingVerifications,
       };
       setStats(newStats);
 
-      // Get 5 most recent visits
-      const recent = allVisits
-        .sort((a: Visit, b: Visit) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 5);
-      setRecentVisits(recent);
+      setRecentVisits(getVisitListResults(recentResponse));
     } catch (error) {
       console.error('📊 Dashboard: Error loading data:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to load dashboard data';
