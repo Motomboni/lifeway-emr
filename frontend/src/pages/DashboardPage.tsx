@@ -21,6 +21,7 @@ import ThemeToggle from '../components/common/ThemeToggle';
 import Logo from '../components/common/Logo';
 import { useDefaultKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { formatDoctorDisplayName } from '../utils/doctorDisplay';
+import { formatRoleLabel } from '../utils/roleContext';
 import styles from '../styles/Dashboard.module.css';
 
 // Visit Search Component for Nurse Dashboard
@@ -859,6 +860,9 @@ export default function DashboardPage() {
             <div className={styles.dashboardHeader}>
               <h2>Admin Dashboard</h2>
               <p>Welcome back, {user?.first_name} {user?.last_name}</p>
+              <p className={styles.adminHint}>
+                Use the bar at the top of the screen to test as Receptionist, Doctor, Nurse, Lab Scientist, and other roles.
+              </p>
             </div>
 
             <div className={styles.statsGrid}>
@@ -1177,7 +1181,13 @@ export default function DashboardPage() {
           <div className={styles.userInfo}>
             <ThemeToggle />
             <NotificationBell />
-            <span>{userDisplayName} ({user?.role})</span>
+            <span>
+              {userDisplayName} ({formatRoleLabel(user?.role)}
+              {user?.viewing_as_role && user?.actual_role
+                ? ` · Admin`
+                : ''}
+              )
+            </span>
             <button
               type="button"
               className={styles.accountButton}

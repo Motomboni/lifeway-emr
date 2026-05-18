@@ -16,6 +16,9 @@ from .views import (
     forgot_password,
     reset_password,
     update_account,
+    assume_role,
+    clear_assumed_role,
+    list_assumable_roles,
 )
 
 urlpatterns = [
@@ -27,6 +30,9 @@ urlpatterns = [
     path('reset-password/', reset_password, name='auth-reset-password'),
     path('account/', update_account, name='auth-account'),
     path('me/', me, name='auth-me'),
+    path('assume-role/', assume_role, name='auth-assume-role'),
+    path('clear-assumed-role/', clear_assumed_role, name='auth-clear-assumed-role'),
+    path('assumable-roles/', list_assumable_roles, name='auth-assumable-roles'),
     path('doctors/', list_doctors, name='auth-doctors'),
     path('pending-staff/', list_pending_staff, name='auth-pending-staff'),
     path('pending-staff/<int:user_id>/approve/', approve_staff, name='auth-approve-staff'),

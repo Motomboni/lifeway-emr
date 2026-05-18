@@ -10,6 +10,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { logger } from '../../utils/logger';
+import { getActualRole, getEffectiveRole } from '../../utils/roleContext';
 
 // All valid user roles
 type UserRole = 'DOCTOR' | 'NURSE' | 'LAB_TECH' | 'RADIOLOGY_TECH' | 'PHARMACIST' | 'RECEPTIONIST' | 'PATIENT' | 'ADMIN' | 'IVF_SPECIALIST' | 'EMBRYOLOGIST';
@@ -43,8 +44,9 @@ export default function ProtectedRoute({ children, requiredRole, requireAdmin }:
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Check admin access if required (superuser OR role ADMIN)
-  const isAdmin = user?.is_superuser === true || user?.role === 'ADMIN';
+  // Admin pages use real role, not view-as role
+  const actualRole = getActualRole(user);
+  const isAdmin = user?.is_superuser === true || actualRole === 'ADMIN';
   if (requireAdmin && !isAdmin) {
     return (
       <div style={{ 
@@ -65,12 +67,12 @@ export default function ProtectedRoute({ children, requiredRole, requireAdmin }:
   // Check role if required
   if (requiredRole) {
     const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-    const userRole = user?.role;
+    const userRole = getEffectiveRole(user);
     
-    logger.debug('[ProtectedRoute] Checking access:', { userRole, allowedRoles });
+    logger.debug('[ProtectedRoute] Checking access:', { userRole, allowedRoles, actualRole });
     
-    // Admin can access any route
-    if (userRole === 'ADMIN') {
+    // Admin (not in test mode) can access any route
+    if (actualRole === 'ADMIN' && !user?.viewing_as_role) {
       // Allow access
     } else if (!userRole || !allowedRoles.includes(userRole as UserRole)) {
       logger.warn('[ProtectedRoute] Access denied:', userRole, 'not in', allowedRoles);

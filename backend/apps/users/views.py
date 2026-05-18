@@ -13,6 +13,13 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
+from core.jwt_tokens import RoleAwareRefreshToken, issue_tokens_for_user
+from .role_assumption import (
+    ASSUMABLE_ROLES,
+    can_assume_roles,
+    is_valid_assumable_role,
+    serialize_user_with_role_context,
+)
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -30,6 +37,7 @@ from .serializers import (
     ForgotPasswordSerializer,
     ResetPasswordSerializer,
     AccountUpdateSerializer,
+    AssumeRoleSerializer,
 )
 
 User = get_user_model()
@@ -77,17 +85,13 @@ def login(request):
     
     user = serializer.validated_data['user']
     
-    # Generate JWT tokens
-    refresh = RefreshToken.for_user(user)
+    refresh = issue_tokens_for_user(user)
     access = refresh.access_token
-    
-    # Serialize user data
-    user_serializer = UserSerializer(user)
-    
+
     return Response({
         'access': str(access),
         'refresh': str(refresh),
-        'user': user_serializer.data
+        'user': serialize_user_with_role_context(user),
     }, status=status.HTTP_200_OK)
 
 
@@ -139,13 +143,13 @@ def refresh_token(request):
     refresh_token_str = serializer.validated_data['refresh']
     
     try:
-        refresh = RefreshToken(refresh_token_str)
+        refresh = RoleAwareRefreshToken(refresh_token_str)
         access = refresh.access_token
-        
+
         # Rotate refresh token (security best practice)
         refresh.set_jti()
         refresh.set_exp()
-        
+
         return Response({
             'access': str(access),
             'refresh': str(refresh)
@@ -227,8 +231,117 @@ def me(request):
         ...
     }
     """
-    serializer = UserSerializer(request.user)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(
+        serialize_user_with_role_context(request.user),
+        status=status.HTTP_200_OK,
+    )
+
+
+@extend_schema(
+    tags=['Authentication'],
+    summary='Assume staff role (admin testing)',
+    description='Issue new tokens so the admin can use the app as another staff role.',
+    request=AssumeRoleSerializer,
+    responses={200: UserSerializer},
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def assume_role(request):
+    """
+    POST /api/v1/auth/assume-role/
+    { "role": "DOCTOR" }
+    """
+    if not can_assume_roles(request.user):
+        return Response(
+            {'detail': 'Only administrators can assume another role.'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    serializer = AssumeRoleSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    role = serializer.validated_data['role']
+    if not is_valid_assumable_role(role):
+        return Response(
+            {'detail': f'Invalid role. Allowed: {", ".join(ASSUMABLE_ROLES)}'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    db_user = User.objects.get(pk=request.user.pk)
+    refresh = issue_tokens_for_user(db_user, effective_role=role)
+    access = refresh.access_token
+
+    # Apply in-memory for response payload
+    db_user._actual_role = db_user.role
+    db_user._role_assumed = True
+    db_user.role = role
+
+    return Response({
+        'access': str(access),
+        'refresh': str(refresh),
+        'user': serialize_user_with_role_context(db_user),
+        'assumable_roles': ASSUMABLE_ROLES,
+    }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    tags=['Authentication'],
+    summary='Clear assumed role',
+    description='Return to the administrator\'s normal role and re-issue tokens.',
+    responses={200: UserSerializer},
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def clear_assumed_role(request):
+    """
+    POST /api/v1/auth/clear-assumed-role/
+    """
+    if not can_assume_roles(request.user):
+        return Response(
+            {'detail': 'Only administrators can clear an assumed role.'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    db_user = User.objects.get(pk=request.user.pk)
+    refresh = issue_tokens_for_user(db_user)
+    access = refresh.access_token
+
+    return Response({
+        'access': str(access),
+        'refresh': str(refresh),
+        'user': serialize_user_with_role_context(db_user),
+        'assumable_roles': ASSUMABLE_ROLES,
+    }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    tags=['Authentication'],
+    summary='List assumable roles',
+    description='Roles an admin can switch into for testing.',
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_assumable_roles(request):
+    """
+    GET /api/v1/auth/assumable-roles/
+    """
+    if not can_assume_roles(request.user):
+        return Response(
+            {'detail': 'Only administrators can list assumable roles.'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    from .role_assumption import ROLE_DISPLAY_NAMES
+    roles = [
+        {'value': r, 'label': ROLE_DISPLAY_NAMES.get(r, r)}
+        for r in ASSUMABLE_ROLES
+    ]
+    return Response({
+        'roles': roles,
+        'viewing_as_role': getattr(request.user, '_role_assumed', False),
+        'current_role': request.user.role,
+        'actual_role': getattr(request.user, '_actual_role', request.user.role),
+    })
 
 
 @extend_schema(

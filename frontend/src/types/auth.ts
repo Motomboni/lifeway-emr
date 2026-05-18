@@ -12,9 +12,17 @@ export interface User {
   last_name: string;
   specialization?: string;
   role: UserRole;
+  /** Real role when admin is viewing as another role */
+  actual_role?: UserRole;
+  viewing_as_role?: boolean;
   is_active: boolean;
   is_superuser?: boolean;
   date_joined: string;
+}
+
+export interface AssumableRoleOption {
+  value: UserRole;
+  label: string;
 }
 
 export interface AuthTokens {

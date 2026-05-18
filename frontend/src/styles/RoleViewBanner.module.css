@@ -1,0 +1,108 @@
+.bannerAdmin,
+.bannerViewing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  z-index: 1000;
+}
+
+.bannerAdmin {
+  background: linear-gradient(90deg, #1e3a5f 0%, #2d4a6f 100%);
+  color: #f8fafc;
+}
+
+.bannerViewing {
+  background: linear-gradient(90deg, #92400e 0%, #b45309 100%);
+  color: #fffbeb;
+}
+
+.bannerText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.bannerSub {
+  font-size: 0.75rem;
+  opacity: 0.9;
+}
+
+.switcher,
+.switcherCompact {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+}
+
+.switcherLabel {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.roleSelect {
+  min-width: 11rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.95);
+  color: #1e293b;
+  font-size: 0.875rem;
+}
+
+.assumeButton,
+.exitButton {
+  padding: 0.35rem 0.85rem;
+  border-radius: 6px;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.assumeButton {
+  background: #38bdf8;
+  color: #0c4a6e;
+}
+
+.assumeButton:hover:not(:disabled) {
+  background: #7dd3fc;
+}
+
+.assumeButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.exitButton {
+  background: #fff;
+  color: #92400e;
+}
+
+.exitButton:hover:not(:disabled) {
+  background: #fef3c7;
+}
+
+.hint {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+@media (max-width: 640px) {
+  .switcher,
+  .switcherCompact {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .roleSelect {
+    flex: 1;
+    min-width: 0;
+  }
+}

@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import ProtectedRoute from './components/routing/ProtectedRoute';
+import RoleViewBanner from './components/admin/RoleViewBanner';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import OfflineIndicator from './components/common/OfflineIndicator';
@@ -122,6 +123,7 @@ function AppRoutes() {
   return (
     <>
       {isOffline && <OfflineIndicator />}
+      {isAuthenticated && <RoleViewBanner />}
       <Suspense fallback={<LoadingSpinner message="Loading..." size="large" />}>
         <Routes>
       {/* Public routes */}

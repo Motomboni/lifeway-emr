@@ -4,17 +4,30 @@
  * Provides authentication state and methods throughout the app.
  */
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { User, AuthTokens } from '../types/auth';
-import { loginUser, logoutUser, refreshAccessToken as refreshTokenAPI, getCurrentUser, isAccessTokenExpired } from '../api/auth';
+import { User, AuthTokens, UserRole } from '../types/auth';
+import {
+  loginUser,
+  logoutUser,
+  refreshAccessToken as refreshTokenAPI,
+  getCurrentUser,
+  isAccessTokenExpired,
+  assumeRole as assumeRoleAPI,
+  clearAssumedRole as clearAssumedRoleAPI,
+} from '../api/auth';
+import { isViewingAsRole as checkViewingAsRole, isAdminUser } from '../utils/roleContext';
 
 interface AuthContextType {
   user: User | null;
   tokens: AuthTokens | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isAdmin: boolean;
+  isViewingAsRole: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshAccessToken: () => Promise<void>;
+  assumeRole: (role: UserRole) => Promise<void>;
+  clearAssumedRole: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -127,6 +140,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [tokens]);
 
+  const persistAuth = useCallback((nextUser: User, access: string, refresh: string) => {
+    const nextTokens = { access, refresh };
+    setUser(nextUser);
+    setTokens(nextTokens);
+    localStorage.setItem('auth_tokens', JSON.stringify(nextTokens));
+    localStorage.setItem('auth_user', JSON.stringify(nextUser));
+    localStorage.setItem('auth_token', access);
+  }, []);
+
   const refreshAccessToken = useCallback(async () => {
     if (!tokens?.refresh) {
       throw new Error('No refresh token available');
@@ -134,17 +156,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const response = await refreshTokenAPI(tokens.refresh);
-      
+
       const newTokens = {
         access: response.access,
         refresh: response.refresh,
       };
-      
+
       setTokens(newTokens);
       localStorage.setItem('auth_tokens', JSON.stringify(newTokens));
-      localStorage.setItem('auth_token', response.access); // Legacy support
+      localStorage.setItem('auth_token', response.access);
+
+      try {
+        const currentUser = await getCurrentUser();
+        setUser(currentUser);
+        localStorage.setItem('auth_user', JSON.stringify(currentUser));
+      } catch {
+        // Keep existing user if /me fails after refresh
+      }
     } catch (error) {
-      // Refresh failed, clear auth state
       setUser(null);
       setTokens(null);
       localStorage.removeItem('auth_tokens');
@@ -154,14 +183,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [tokens]);
 
+  const assumeRole = useCallback(async (role: UserRole) => {
+    const response = await assumeRoleAPI(role);
+    persistAuth(response.user, response.access, response.refresh);
+  }, [persistAuth]);
+
+  const clearAssumedRole = useCallback(async () => {
+    const response = await clearAssumedRoleAPI();
+    persistAuth(response.user, response.access, response.refresh);
+  }, [persistAuth]);
+
   const value: AuthContextType = {
     user,
     tokens,
     isAuthenticated: !!user && !!tokens,
     isLoading,
+    isAdmin: isAdminUser(user),
+    isViewingAsRole: checkViewingAsRole(user),
     login,
     logout,
     refreshAccessToken,
+    assumeRole,
+    clearAssumedRole,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

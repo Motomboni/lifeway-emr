@@ -108,6 +108,24 @@ class RefreshTokenSerializer(serializers.Serializer):
     refresh = serializers.CharField(required=True)
 
 
+class AssumeRoleSerializer(serializers.Serializer):
+    """Admin view-as-role request."""
+
+    role = serializers.ChoiceField(
+        choices=[
+            ('DOCTOR', 'Doctor'),
+            ('NURSE', 'Nurse'),
+            ('LAB_TECH', 'Lab Scientist'),
+            ('RADIOLOGY_TECH', 'Radiology Technician'),
+            ('PHARMACIST', 'Pharmacist'),
+            ('RECEPTIONIST', 'Receptionist'),
+            ('IVF_SPECIALIST', 'IVF Specialist'),
+            ('EMBRYOLOGIST', 'Embryologist'),
+        ],
+        required=True,
+    )
+
+
 class RegisterSerializer(serializers.ModelSerializer):
     """Serializer for user registration."""
     

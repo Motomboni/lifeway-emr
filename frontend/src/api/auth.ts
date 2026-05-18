@@ -2,7 +2,7 @@
  * Authentication API Client
  */
 import { apiRequest, unauthenticatedRequest } from '../utils/apiClient';
-import { User, UserRole } from '../types/auth';
+import { User, UserRole, AssumableRoleOption } from '../types/auth';
 
 /**
  * Check if a JWT access token is expired (or will expire in the next 60s).
@@ -87,6 +87,40 @@ export async function fetchRegisteredDoctors(): Promise<User[]> {
  */
 export async function getCurrentUser(): Promise<User> {
   return apiRequest<User>('/auth/me/');
+}
+
+export interface AssumeRoleResponse extends LoginResponse {
+  assumable_roles?: string[];
+}
+
+/**
+ * Admin: switch to another staff role for testing (new JWT tokens).
+ */
+export async function assumeRole(role: UserRole): Promise<AssumeRoleResponse> {
+  return apiRequest<AssumeRoleResponse>('/auth/assume-role/', {
+    method: 'POST',
+    body: JSON.stringify({ role }),
+  });
+}
+
+/**
+ * Admin: return to normal administrator session.
+ */
+export async function clearAssumedRole(): Promise<AssumeRoleResponse> {
+  return apiRequest<AssumeRoleResponse>('/auth/clear-assumed-role/', {
+    method: 'POST',
+  });
+}
+
+export interface AssumableRolesResponse {
+  roles: AssumableRoleOption[];
+  viewing_as_role: boolean;
+  current_role: UserRole;
+  actual_role: UserRole;
+}
+
+export async function fetchAssumableRoles(): Promise<AssumableRolesResponse> {
+  return apiRequest<AssumableRolesResponse>('/auth/assumable-roles/');
 }
 
 /**
