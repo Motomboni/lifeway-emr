@@ -1,0 +1,13 @@
+.shell {
+  min-height: 100vh;
+}
+
+.shellWithBanner {
+  min-height: 100vh;
+  --role-banner-height: 3rem;
+  padding-top: var(--role-banner-height);
+}
+
+.content {
+  min-height: 100%;
+}

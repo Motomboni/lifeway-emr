@@ -1,17 +1,44 @@
 /**
  * Global banner for admin role testing — switch roles or exit view-as mode.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { isAdminUser, formatRoleLabel } from '../../utils/roleContext';
+import { fetchAssumableRoles } from '../../api/auth';
+import { formatRoleLabel, isAdminUser } from '../../utils/roleContext';
 import AdminRoleSwitcher from './AdminRoleSwitcher';
 import styles from '../../styles/RoleViewBanner.module.css';
 
 export default function RoleViewBanner() {
-  const { user, isAuthenticated, isViewingAsRole, clearAssumedRole } = useAuth();
+  const { user, isAuthenticated, isAdmin, isViewingAsRole, clearAssumedRole } = useAuth();
   const navigate = useNavigate();
   const [exiting, setExiting] = useState(false);
+  const [canAssumeRoles, setCanAssumeRoles] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      setCanAssumeRoles(null);
+      return;
+    }
+
+    if (isAdmin || isViewingAsRole) {
+      setCanAssumeRoles(true);
+      return;
+    }
+
+    let cancelled = false;
+    fetchAssumableRoles()
+      .then(() => {
+        if (!cancelled) setCanAssumeRoles(true);
+      })
+      .catch(() => {
+        if (!cancelled) setCanAssumeRoles(isAdminUser(user));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, isAdmin, isViewingAsRole, user]);
 
   const handleExit = useCallback(async () => {
     setExiting(true);
@@ -23,15 +50,17 @@ export default function RoleViewBanner() {
     }
   }, [clearAssumedRole, navigate]);
 
-  if (!isAuthenticated || !isAdminUser(user)) {
+  if (!isAuthenticated || canAssumeRoles === false) {
+    return null;
+  }
+
+  if (canAssumeRoles === null) {
     return null;
   }
 
   return (
     <div
-      className={
-        isViewingAsRole ? styles.bannerViewing : styles.bannerAdmin
-      }
+      className={isViewingAsRole ? styles.bannerViewing : styles.bannerAdmin}
       role="region"
       aria-label="Administrator role testing"
     >

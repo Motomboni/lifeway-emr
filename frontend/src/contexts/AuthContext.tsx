@@ -16,6 +16,14 @@ import {
 } from '../api/auth';
 import { isViewingAsRole as checkViewingAsRole, isAdminUser } from '../utils/roleContext';
 
+function normalizeAuthUser(raw: User): User {
+  return {
+    ...raw,
+    actual_role: raw.actual_role ?? raw.role,
+    viewing_as_role: raw.viewing_as_role ?? false,
+  };
+}
+
 interface AuthContextType {
   user: User | null;
   tokens: AuthTokens | null;
@@ -46,8 +54,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (storedTokens && storedUser) {
         try {
           const parsedTokens = JSON.parse(storedTokens);
-          const parsedUser = JSON.parse(storedUser);
-          
+          const parsedUser = normalizeAuthUser(JSON.parse(storedUser));
+
           setTokens(parsedTokens);
           setUser(parsedUser);
 
@@ -60,8 +68,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             localStorage.removeItem('auth_token');
           } else {
             try {
-              const currentUser = await getCurrentUser();
+              const currentUser = normalizeAuthUser(await getCurrentUser());
               setUser(currentUser);
+              localStorage.setItem('auth_user', JSON.stringify(currentUser));
             } catch {
               setTokens(null);
               setUser(null);
@@ -105,18 +114,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await loginUser(username, password);
       
-      setUser(response.user);
+      const nextUser = normalizeAuthUser(response.user);
+      setUser(nextUser);
       setTokens({
         access: response.access,
         refresh: response.refresh,
       });
-      
-      // Store in localStorage
+
       localStorage.setItem('auth_tokens', JSON.stringify({
         access: response.access,
         refresh: response.refresh,
       }));
-      localStorage.setItem('auth_user', JSON.stringify(response.user));
+      localStorage.setItem('auth_user', JSON.stringify(nextUser));
       localStorage.setItem('auth_token', response.access); // Legacy support
     } catch (error) {
       throw error;
@@ -141,11 +150,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [tokens]);
 
   const persistAuth = useCallback((nextUser: User, access: string, refresh: string) => {
+    const normalized = normalizeAuthUser(nextUser);
     const nextTokens = { access, refresh };
-    setUser(nextUser);
+    setUser(normalized);
     setTokens(nextTokens);
     localStorage.setItem('auth_tokens', JSON.stringify(nextTokens));
-    localStorage.setItem('auth_user', JSON.stringify(nextUser));
+    localStorage.setItem('auth_user', JSON.stringify(normalized));
     localStorage.setItem('auth_token', access);
   }, []);
 
@@ -167,7 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('auth_token', response.access);
 
       try {
-        const currentUser = await getCurrentUser();
+        const currentUser = normalizeAuthUser(await getCurrentUser());
         setUser(currentUser);
         localStorage.setItem('auth_user', JSON.stringify(currentUser));
       } catch {

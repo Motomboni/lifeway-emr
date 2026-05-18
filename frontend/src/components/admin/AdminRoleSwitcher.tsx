@@ -9,7 +9,13 @@ import { AssumableRoleOption, UserRole } from '../../types/auth';
 import { formatRoleLabel } from '../../utils/roleContext';
 import styles from '../../styles/RoleViewBanner.module.css';
 
-export default function AdminRoleSwitcher({ compact = false }: { compact?: boolean }) {
+export default function AdminRoleSwitcher({
+  compact = false,
+  variant = 'banner',
+}: {
+  compact?: boolean;
+  variant?: 'banner' | 'light';
+}) {
   const { assumeRole, isViewingAsRole, user } = useAuth();
   const navigate = useNavigate();
   const [roles, setRoles] = useState<AssumableRoleOption[]>([]);
@@ -48,8 +54,15 @@ export default function AdminRoleSwitcher({ compact = false }: { compact?: boole
     return null;
   }
 
+  const switcherClass = [
+    compact ? styles.switcherCompact : styles.switcher,
+    variant === 'light' ? styles.switcherLight : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div className={compact ? styles.switcherCompact : styles.switcher} role="group">
+    <div className={switcherClass} role="group">
       <label htmlFor="admin-role-select" className={styles.switcherLabel}>
         Test as role:
       </label>

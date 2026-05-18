@@ -27,8 +27,12 @@ export function getEffectiveRole(user: User | null | undefined): UserRole | unde
 
 export function isAdminUser(user: User | null | undefined): boolean {
   if (!user) return false;
-  if (user.is_superuser) return true;
-  return getActualRole(user) === 'ADMIN';
+  if (user.is_superuser === true) return true;
+  const actual = getActualRole(user);
+  if (actual === 'ADMIN') return true;
+  // Fallback when /me has not yet populated actual_role
+  if (user.role === 'ADMIN' && !user.viewing_as_role) return true;
+  return false;
 }
 
 export function isViewingAsRole(user: User | null | undefined): boolean {

@@ -22,6 +22,7 @@ import Logo from '../components/common/Logo';
 import { useDefaultKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { formatDoctorDisplayName } from '../utils/doctorDisplay';
 import { formatRoleLabel } from '../utils/roleContext';
+import AdminRoleSwitcher from '../components/admin/AdminRoleSwitcher';
 import styles from '../styles/Dashboard.module.css';
 
 // Visit Search Component for Nurse Dashboard
@@ -216,7 +217,7 @@ const VisitSearchSection = memo(function VisitSearchSection({ onVisitSelect, loa
 });
 
 export default function DashboardPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin, isViewingAsRole } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { showError } = useToast();
@@ -1179,6 +1180,11 @@ export default function DashboardPage() {
           <Logo size="medium" showText={false} />
           <h1>Lifeway Medical Centre Ltd</h1>
           <div className={styles.userInfo}>
+            {isAdmin && !isViewingAsRole && (
+              <div className={styles.headerRoleSwitcher}>
+                <AdminRoleSwitcher compact variant="light" />
+              </div>
+            )}
             <ThemeToggle />
             <NotificationBell />
             <span>
