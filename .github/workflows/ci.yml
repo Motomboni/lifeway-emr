@@ -15,26 +15,8 @@ jobs:
       DEBUG: 'True'
       SECRET_KEY: ci-backend-test-secret-key-not-for-production
       ENABLE_ORG_SIGNUP: 'true'
-      DB_ENGINE: django.db.backends.postgresql
-      DB_NAME: test_db
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_HOST: localhost
-      DB_PORT: 5432
-    
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
+      DB_ENGINE: django.db.backends.sqlite3
+      DB_NAME: ci_pytest.sqlite3
     
     steps:
     - uses: actions/checkout@v3
