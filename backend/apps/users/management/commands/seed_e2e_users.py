@@ -153,6 +153,7 @@ class Command(BaseCommand):
                 "workflow_type": "LAB_ORDER",
                 "auto_bill": True,
                 "bill_timing": "AFTER",
+                "requires_consultation": True,
                 "restricted_service_flag": False,
                 "allowed_roles": ["DOCTOR", "NURSE", "ADMIN"],
             },

@@ -31,6 +31,12 @@ async function globalSetup(_config: FullConfig) {
       execSync('python manage.py seed_e2e_users', {
         cwd: backendDir,
         stdio: 'inherit',
+        env: {
+          ...process.env,
+          DEBUG: process.env.DEBUG || 'True',
+          SECRET_KEY:
+            process.env.SECRET_KEY || 'ci-e2e-secret-key-not-for-production',
+        },
       });
       return;
     } catch (err) {

@@ -31,8 +31,8 @@ class TestPatientSelfRegistration:
         registration_data = {
             "username": "newpatient",
             "email": "newpatient@test.com",
-            "password": "testpass123",
-            "password_confirm": "testpass123",
+            "password": "Testpass123!",
+            "password_confirm": "Testpass123!",
             "first_name": "New",
             "last_name": "Patient",
             "role": "PATIENT",
@@ -62,8 +62,8 @@ class TestPatientSelfRegistration:
         registration_data = {
             "username": "unverified",
             "email": "unverified@test.com",
-            "password": "testpass123",
-            "password_confirm": "testpass123",
+            "password": "Testpass123!",
+            "password_confirm": "Testpass123!",
             "first_name": "Unverified",
             "last_name": "Patient",
             "role": "PATIENT",
@@ -88,8 +88,8 @@ class TestPatientSelfRegistration:
         registration_data = {
             "username": "blocked",
             "email": "blocked@test.com",
-            "password": "testpass123",
-            "password_confirm": "testpass123",
+            "password": "Testpass123!",
+            "password_confirm": "Testpass123!",
             "first_name": "Blocked",
             "last_name": "Patient",
             "role": "PATIENT",
@@ -115,8 +115,8 @@ class TestPatientSelfRegistration:
         registration_data = {
             "username": "verified",
             "email": "verified@test.com",
-            "password": "testpass123",
-            "password_confirm": "testpass123",
+            "password": "Testpass123!",
+            "password_confirm": "Testpass123!",
             "first_name": "Verified",
             "last_name": "Patient",
             "role": "PATIENT",
