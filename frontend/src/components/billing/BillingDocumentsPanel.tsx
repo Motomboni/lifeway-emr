@@ -68,7 +68,7 @@ export default function BillingDocumentsPanel({
       setLoading(true);
       
       // GET receipt endpoint - use fetch directly for blob response
-      const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+      const API_BASE_URL = import.meta.env.VITE_API_URL || '';
       const token = localStorage.getItem('auth_token') || localStorage.getItem('auth_tokens');
       const authToken = token ? (token.startsWith('{') ? JSON.parse(token).access : token) : '';
       
@@ -138,7 +138,7 @@ export default function BillingDocumentsPanel({
       setLoading(true);
       
       // GET invoice endpoint - use fetch directly for blob response
-      const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+      const API_BASE_URL = import.meta.env.VITE_API_URL || '';
       const token = localStorage.getItem('auth_token') || localStorage.getItem('auth_tokens');
       const authToken = token ? (token.startsWith('{') ? JSON.parse(token).access : token) : '';
       

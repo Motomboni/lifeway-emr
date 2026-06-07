@@ -1,18 +1,20 @@
 """
 Script to create a superuser for the EMR system
 """
+
 import os
+
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 django.setup()
 
 from apps.users.models import User
 
 # Create superuser
-username = 'Damiano'
-email = 'damiano@emr.local'
-password = 'Von@@@&&&1968'
+username = "Damiano"
+email = "damiano@emr.local"
+password = "Von@@@&&&1968"
 
 if User.objects.filter(username=username).exists():
     print(f"User '{username}' already exists. Updating password...")
@@ -21,9 +23,9 @@ if User.objects.filter(username=username).exists():
     user.is_superuser = True
     user.is_staff = True
     user.is_active = True
-    user.role = 'DOCTOR'
-    user.first_name = 'Damiano'
-    user.last_name = 'Admin'
+    user.role = "DOCTOR"
+    user.first_name = "Damiano"
+    user.last_name = "Admin"
     user.save()
     print(f"User '{username}' updated successfully!")
 else:
@@ -31,13 +33,13 @@ else:
         username=username,
         email=email,
         password=password,
-        first_name='Damiano',
-        last_name='Admin',
-        role='DOCTOR'
+        first_name="Damiano",
+        last_name="Admin",
+        role="DOCTOR",
     )
     print(f"Superuser '{username}' created successfully!")
 
-print(f"\nLogin credentials:")
+print("\nLogin credentials:")
 print(f"  Username: {username}")
 print(f"  Password: {password}")
 print(f"  Role: {user.role}")

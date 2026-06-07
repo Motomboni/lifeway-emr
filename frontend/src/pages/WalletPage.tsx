@@ -1,17 +1,17 @@
 /**
  * Wallet Page
- * 
- * View wallet balance, transactions, and top up wallet.
+ *
+ * Patients: view own wallet and top up.
+ * Receptionists/Admin: search and view patient wallets (read-only).
  */
-import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useRolePermissions } from '../hooks/useRolePermissions';
 import { useToast } from '../hooks/useToast';
 import {
   getMyWallet,
+  listWallets,
   getWalletTransactions,
   topUpWallet,
-  verifyPayment,
   getPaymentChannels,
 } from '../api/wallet';
 import {
@@ -25,11 +25,12 @@ import BackToDashboard from '../components/common/BackToDashboard';
 import styles from '../styles/Wallet.module.css';
 
 export default function WalletPage() {
-  const { user } = useAuth();
-  const location = useLocation();
+  const { isReceptionist, isAdmin } = useRolePermissions();
   const { showSuccess, showError } = useToast();
 
   const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [allWallets, setAllWallets] = useState<Wallet[]>([]);
+  const [walletSearch, setWalletSearch] = useState('');
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [paymentChannels, setPaymentChannels] = useState<PaymentChannel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,23 +39,42 @@ export default function WalletPage() {
   const [selectedChannel, setSelectedChannel] = useState<number | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const isStaffWalletView = isReceptionist || isAdmin;
+
   useEffect(() => {
     loadWalletData();
   }, []);
 
+  const loadWalletForId = async (selected: Wallet) => {
+    setWallet(selected);
+    try {
+      const txns = await getWalletTransactions(selected.id);
+      setTransactions(txns);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load transactions';
+      showError(errorMessage);
+      setTransactions([]);
+    }
+  };
+
   const loadWalletData = async () => {
     try {
       setLoading(true);
-      const [walletData, channels] = await Promise.all([
-        getMyWallet(),
-        getPaymentChannels(),
-      ]);
-      setWallet(walletData);
-      setPaymentChannels(channels);
-      
-      if (walletData) {
-        const txns = await getWalletTransactions(walletData.id);
-        setTransactions(txns);
+      if (isStaffWalletView) {
+        const wallets = await listWallets();
+        setAllWallets(wallets);
+        setPaymentChannels([]);
+      } else {
+        const [walletData, channels] = await Promise.all([
+          getMyWallet(),
+          getPaymentChannels(),
+        ]);
+        setWallet(walletData);
+        setPaymentChannels(channels);
+        if (walletData) {
+          const txns = await getWalletTransactions(walletData.id);
+          setTransactions(txns);
+        }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load wallet';
@@ -63,6 +83,16 @@ export default function WalletPage() {
       setLoading(false);
     }
   };
+
+  const filteredWallets = useMemo(() => {
+    const q = walletSearch.trim().toLowerCase();
+    if (!q) return allWallets;
+    return allWallets.filter(
+      (w) =>
+        w.patient_name?.toLowerCase().includes(q) ||
+        String(w.patient_id ?? '').toLowerCase().includes(q)
+    );
+  }, [allWallets, walletSearch]);
 
   const handleTopUp = async () => {
     if (!wallet || !selectedChannel || !topUpAmount) {
@@ -85,8 +115,7 @@ export default function WalletPage() {
       };
 
       const response = await topUpWallet(wallet.id, request);
-      
-      // Redirect to Paystack payment page
+
       if (response.authorization_url) {
         window.location.href = response.authorization_url;
       } else {
@@ -116,6 +145,105 @@ export default function WalletPage() {
       <div className={styles.walletContainer}>
         <BackToDashboard />
         <LoadingSkeleton count={5} />
+      </div>
+    );
+  }
+
+  if (isStaffWalletView) {
+    return (
+      <div className={styles.walletContainer}>
+        <BackToDashboard />
+        <div className={styles.walletCard}>
+          <div className={styles.walletHeader}>
+            <h1>Patient Wallets</h1>
+            <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+              Look up a patient wallet to check balance and transaction history.
+            </p>
+          </div>
+
+          <div className={styles.formGroup} style={{ marginBottom: '1.5rem' }}>
+            <label>Search by patient name or ID</label>
+            <input
+              type="text"
+              value={walletSearch}
+              onChange={(e) => setWalletSearch(e.target.value)}
+              placeholder="e.g. John Doe or P-00123"
+            />
+          </div>
+
+          {!wallet ? (
+            <div className={styles.transactionsList}>
+              {filteredWallets.length === 0 ? (
+                <p className={styles.emptyMessage}>No wallets found</p>
+              ) : (
+                filteredWallets.map((w) => (
+                  <button
+                    key={w.id}
+                    type="button"
+                    className={styles.transactionItem}
+                    onClick={() => loadWalletForId(w)}
+                    style={{ width: '100%', textAlign: 'left', cursor: 'pointer' }}
+                  >
+                    <div className={styles.transactionInfo}>
+                      <strong>{w.patient_name || 'Unknown patient'}</strong>
+                      <p className={styles.transactionMeta}>
+                        ID: {w.patient_id || '—'} · Balance: {formatCurrency(w.balance)}
+                      </p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                className={styles.topUpButton}
+                onClick={() => {
+                  setWallet(null);
+                  setTransactions([]);
+                }}
+                style={{ marginBottom: '1rem' }}
+              >
+                ← Back to wallet list
+              </button>
+              <div className={styles.balanceCard}>
+                <div className={styles.balanceLabel}>{wallet.patient_name}</div>
+                <div className={styles.balanceAmount}>{formatCurrency(wallet.balance)}</div>
+              </div>
+              <div className={styles.transactionsSection}>
+                <h2>Transaction History</h2>
+                {transactions.length === 0 ? (
+                  <p className={styles.emptyMessage}>No transactions yet</p>
+                ) : (
+                  <div className={styles.transactionsList}>
+                    {transactions.map((txn) => (
+                      <div key={txn.id} className={styles.transactionItem}>
+                        <div className={styles.transactionInfo}>
+                          <div className={styles.transactionType}>
+                            <span className={txn.transaction_type === 'CREDIT' ? styles.credit : styles.debit}>
+                              {txn.transaction_type}
+                            </span>
+                            <span className={styles.amount}>
+                              {txn.transaction_type === 'CREDIT' ? '+' : '-'}
+                              {formatCurrency(txn.amount)}
+                            </span>
+                          </div>
+                          <div className={styles.transactionDetails}>
+                            <p>{txn.description || 'No description'}</p>
+                            <p className={styles.transactionMeta}>
+                              {formatDate(txn.created_at)} · Balance: {formatCurrency(txn.balance_after)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
     );
   }
@@ -179,8 +307,6 @@ export default function WalletPage() {
                 <option value="">Select payment method</option>
                 {paymentChannels
                   .filter((channel) => {
-                    // Only show online payment channels for wallet top-up
-                    // CASH, BANK_TRANSFER, etc. cannot be used for online top-ups
                     const onlineChannels = ['PAYSTACK', 'CARD'];
                     return onlineChannels.includes(channel.channel_type);
                   })
@@ -222,7 +348,7 @@ export default function WalletPage() {
                     <div className={styles.transactionDetails}>
                       <p>{txn.description || 'No description'}</p>
                       <p className={styles.transactionMeta}>
-                        {formatDate(txn.created_at)} • Balance: {formatCurrency(txn.balance_after)}
+                        {formatDate(txn.created_at)} · Balance: {formatCurrency(txn.balance_after)}
                       </p>
                     </div>
                   </div>

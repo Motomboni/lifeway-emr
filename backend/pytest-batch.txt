@@ -1,0 +1,15 @@
+
+ERROR: file or directory not found: apps/billing/tests_*.py
+============================== warnings summary ===============================
+..\..\..\AppData\Roaming\Python\Python313\site-packages\rest_framework_simplejwt\__init__.py:1
+  C:\Users\Damian Motomboni\AppData\Roaming\Python\Python313\site-packages\rest_framework_simplejwt\__init__.py:1: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    from pkg_resources import DistributionNotFound, get_distribution
+
+..\..\..\AppData\Roaming\Python\Python313\site-packages\pkg_resources\__init__.py:3146
+  C:\Users\Damian Motomboni\AppData\Roaming\Python\Python313\site-packages\pkg_resources\__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+2 warnings in 0.01s

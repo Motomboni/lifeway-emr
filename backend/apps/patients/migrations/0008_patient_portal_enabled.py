@@ -4,15 +4,17 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('patients', '0007_add_retainership_fields'),
+        ("patients", "0007_add_retainership_fields"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='patient',
-            name='portal_enabled',
-            field=models.BooleanField(default=False, help_text='Whether patient portal access is enabled for this patient'),
+            model_name="patient",
+            name="portal_enabled",
+            field=models.BooleanField(
+                default=False,
+                help_text="Whether patient portal access is enabled for this patient",
+            ),
         ),
     ]

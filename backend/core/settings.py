@@ -6,14 +6,17 @@ EMR Rule Compliance:
 - Payment enforcement via PaymentClearedGuard
 - Role-based access control enforced
 """
+
 import os
 from pathlib import Path
 
 # Load environment variables from .env file
 try:
     import sys
+
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from load_env import load_env_file
+
     load_env_file()
 except ImportError:
     # If load_env.py doesn't exist, continue without it
@@ -23,94 +26,103 @@ except ImportError:
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-in-production')
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-change-in-production")
+DEBUG = os.environ.get("DEBUG", "False") == "True"
+
+# Rate limiting (off by default in DEBUG so local/Playwright E2E is not blocked at 5 logins/min)
+RATE_LIMIT_ENABLED = os.environ.get(
+    "RATE_LIMIT_ENABLED", "False" if DEBUG else "True"
+) == "True"
 
 # Clinic-grade: refuse to run in production with default/insecure SECRET_KEY
-_INSECURE_DEFAULT_KEY = 'django-insecure-change-in-production'
-if not DEBUG and (not SECRET_KEY or SECRET_KEY == _INSECURE_DEFAULT_KEY or len(SECRET_KEY) < 32):
+_INSECURE_DEFAULT_KEY = "django-insecure-change-in-production"
+if not DEBUG and (
+    not SECRET_KEY or SECRET_KEY == _INSECURE_DEFAULT_KEY or len(SECRET_KEY) < 32
+):
     raise ValueError(
         "Production requires a strong SECRET_KEY (e.g. openssl rand -hex 32). "
         "Do not use the default or a short key."
     )
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = (
+    os.environ.get("ALLOWED_HOSTS", "").split(",")
+    if os.environ.get("ALLOWED_HOSTS")
+    else ["localhost", "127.0.0.1"]
+)
 
 # Application definition
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',  # For token blacklisting on logout
-    'corsheaders',  # CORS support for frontend
-    'drf_spectacular',  # OpenAPI 3.0 schema generation
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",  # For token blacklisting on logout
+    "corsheaders",  # CORS support for frontend
+    "drf_spectacular",  # OpenAPI 3.0 schema generation
     # EMR Apps
-    'apps.users',
-    'apps.auth_otp',
-    'apps.patients',
-    'apps.visits',
-    'apps.consultations',
-    'apps.laboratory',
-    'apps.pharmacy.apps.PharmacyConfig',
-    'apps.radiology',
-    'apps.billing.apps.BillingConfig',
-    'apps.offline',
-    'apps.appointments',
-    'apps.reports',
-    'apps.backup',
-    'apps.notifications',
-    'apps.telemedicine',
-    'apps.clinical',
-    'apps.nursing',
-    'apps.documents',
-    'apps.referrals',
-    'apps.discharges',
-    'apps.ai_integration',
-    'apps.wallet',
-    'apps.ivf',
-    'apps.antenatal',
-    'core',
+    "apps.organizations",
+    "apps.users",
+    "apps.auth_otp",
+    "apps.patients",
+    "apps.visits",
+    "apps.consultations",
+    "apps.laboratory",
+    "apps.pharmacy.apps.PharmacyConfig",
+    "apps.radiology",
+    "apps.billing.apps.BillingConfig",
+    "apps.offline",
+    "apps.appointments",
+    "apps.reports",
+    "apps.backup",
+    "apps.notifications",
+    "apps.telemedicine",
+    "apps.clinical",
+    "apps.nursing",
+    "apps.documents",
+    "apps.referrals",
+    "apps.discharges",
+    "apps.ai_integration",
+    "apps.wallet",
+    "apps.ivf",
+    "apps.antenatal",
+    "core",
 ]
 
 # Custom User Model
-AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = "users.User"
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'core.middleware.request_sanitizer.RequestSanitizerMiddleware',  # Reject path traversal / null bytes early
-    'corsheaders.middleware.CorsMiddleware',  # CORS middleware (must be early, before CommonMiddleware)
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    
+    "django.middleware.security.SecurityMiddleware",
+    "core.middleware.request_sanitizer.RequestSanitizerMiddleware",  # Reject path traversal / null bytes early
+    "corsheaders.middleware.CorsMiddleware",  # CORS middleware (must be early, before CommonMiddleware)
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "core.middleware.organization_middleware.OrganizationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Security headers middleware
-    'core.middleware.security_headers.SecurityHeadersMiddleware',
-    
+    "core.middleware.security_headers.SecurityHeadersMiddleware",
     # EMR-specific middleware (order is critical)
     # 1. VisitLookupMiddleware: Extracts visit_id from URL and attaches Visit to request
     #    Must run AFTER authentication to access request.user if needed
     #    Must run BEFORE PaymentClearedGuard
-    'core.middleware.visit_lookup.VisitLookupMiddleware',
-    
+    "core.middleware.visit_lookup.VisitLookupMiddleware",
     # 2. PaymentClearedGuard: Enforces payment must be cleared for clinical actions
     #    Requires VisitLookupMiddleware to set request.visit
-    'core.middleware.payment_guard.PaymentClearedGuard',
-    
+    "core.middleware.payment_guard.PaymentClearedGuard",
     # Add other EMR middleware here if needed (e.g., RoleGuard, AuditMiddleware)
 ]
 
 # Security Headers
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'DENY'
+X_FRAME_OPTIONS = "DENY"
 SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0  # 1 year in production
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
@@ -118,23 +130,23 @@ SECURE_HSTS_PRELOAD = True
 # Session Security
 SESSION_COOKIE_SECURE = not DEBUG  # HTTPS only in production
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SAMESITE = "Lax"
 
 # CSRF Security
 CSRF_COOKIE_SECURE = not DEBUG  # HTTPS only in production
 CSRF_COOKIE_HTTPONLY = True
-CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = "Lax"
 
 # SSL/HTTPS (when behind nginx reverse proxy)
-SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'false').lower() == 'true'
-if os.environ.get('SECURE_PROXY_SSL_HEADER') == 'X-Forwarded-Proto':
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "false").lower() == "true"
+if os.environ.get("SECURE_PROXY_SSL_HEADER") == "X-Forwarded-Proto":
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Cache Configuration
 CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "unique-snowflake",
     }
 }
 
@@ -146,135 +158,148 @@ CACHES = {
 #     }
 # }
 
-ROOT_URLCONF = 'core.urls'
+ROOT_URLCONF = "core.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'core.wsgi.application'
+WSGI_APPLICATION = "core.wsgi.application"
 
 # Database
-_db_engine = os.environ.get('DB_ENGINE', 'django.db.backends.sqlite3')
+_db_engine = os.environ.get("DB_ENGINE", "django.db.backends.sqlite3")
 _db_options = {}
-if 'postgresql' in _db_engine:
+if "postgresql" in _db_engine:
     _db_options = {
-        'connect_timeout': 60,
-        'options': '-c statement_timeout=60000',  # 60s query timeout
+        "connect_timeout": 60,
+        "options": "-c statement_timeout=60000",  # 60s query timeout
     }
-    if os.environ.get('DB_SSLMODE'):
-        _db_options['sslmode'] = os.environ.get('DB_SSLMODE')  # e.g. require, verify-full
+    if os.environ.get("DB_SSLMODE"):
+        _db_options["sslmode"] = os.environ.get(
+            "DB_SSLMODE"
+        )  # e.g. require, verify-full
 else:
-    _db_options = {
-        'timeout': 60,
-        'init_command': 'PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;',
-    }
+    # timeout = SQLite busy wait (seconds); WAL pragmas applied in core/__init__.py
+    _db_options = {"timeout": 60}
 
 DATABASES = {
-    'default': {
-        'ENGINE': _db_engine,
-        'NAME': os.environ.get('DB_NAME', BASE_DIR / 'db.sqlite3'),
-        'USER': os.environ.get('DB_USER', ''),
-        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-        'HOST': os.environ.get('DB_HOST', ''),
-        'PORT': os.environ.get('DB_PORT', ''),
-        'OPTIONS': _db_options,
+    "default": {
+        "ENGINE": _db_engine,
+        "NAME": os.environ.get("DB_NAME", BASE_DIR / "db.sqlite3"),
+        "USER": os.environ.get("DB_USER", ""),
+        "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+        "HOST": os.environ.get("DB_HOST", ""),
+        "PORT": os.environ.get("DB_PORT", ""),
+        "OPTIONS": _db_options,
     }
 }
 
 # Password validation (clinic-grade: length 12, complexity)
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'core.password_validators.MinimumLengthValidator', 'OPTIONS': {'min_length': 12}},
-    {'NAME': 'core.password_validators.ComplexityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
+    {
+        "NAME": "core.password_validators.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 12},
+    },
+    {"NAME": "core.password_validators.ComplexityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
 # Internationalization
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Media files (for file uploads)
-MEDIA_ROOT = BASE_DIR / 'media'
-MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = "/media/"
 
 # Default primary key field type
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # REST Framework configuration
+# Production SaaS: require tenant context on authenticated API calls (disable via env for local dev)
+REQUIRE_ORGANIZATION_CONTEXT = os.environ.get(
+    "REQUIRE_ORGANIZATION_CONTEXT", "true"
+).lower() in ("true", "1", "yes")
+
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
         # Session auth kept for admin panel
-        'rest_framework.authentication.SessionAuthentication',
+        "rest_framework.authentication.SessionAuthentication",
     ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 20,
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ]
+    + (
+        ["core.permissions.RequiresOrganization"]
+        if REQUIRE_ORGANIZATION_CONTEXT
+        else []
+    ),
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 20,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 # JWT Configuration (per EMR rules: short-lived access tokens, refresh tokens)
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # Short-lived (15 minutes)
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # 7 days for refresh
-    'ROTATE_REFRESH_TOKENS': True,  # Rotate refresh tokens on use
-    'BLACKLIST_AFTER_ROTATION': True,  # Blacklist old refresh tokens
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
-    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
-    'TOKEN_TYPE_CLAIM': 'token_type',
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),  # Short-lived (15 minutes)
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),  # 7 days for refresh
+    "ROTATE_REFRESH_TOKENS": True,  # Rotate refresh tokens on use
+    "BLACKLIST_AFTER_ROTATION": True,  # Blacklist old refresh tokens
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "TOKEN_TYPE_CLAIM": "token_type",
 }
 
 # EMR-specific settings
 EMR_SETTINGS = {
     # Payment enforcement
-    'REQUIRE_PAYMENT_FOR_CONSULTATION': True,
-    'REQUIRE_PAYMENT_FOR_LAB': True,
-    'REQUIRE_PAYMENT_FOR_RADIOLOGY': True,
-    'REQUIRE_PAYMENT_FOR_PRESCRIPTION': True,
-    
+    "REQUIRE_PAYMENT_FOR_CONSULTATION": True,
+    "REQUIRE_PAYMENT_FOR_LAB": True,
+    "REQUIRE_PAYMENT_FOR_RADIOLOGY": True,
+    "REQUIRE_PAYMENT_FOR_PRESCRIPTION": True,
     # Visit status enforcement
-    'ALLOW_MUTATIONS_ON_CLOSED_VISITS': False,
-    
+    "ALLOW_MUTATIONS_ON_CLOSED_VISITS": False,
     # Audit logging
-    'ENABLE_AUDIT_LOGGING': True,
-    'AUDIT_LOG_RETENTION_DAYS': 2555,  # 7 years for HIPAA compliance
+    "ENABLE_AUDIT_LOGGING": True,
+    "AUDIT_LOG_RETENTION_DAYS": 2555,  # 7 years for HIPAA compliance
 }
 
 # CORS Configuration
 # Allow environment variable override for production
-if os.environ.get('CORS_ALLOWED_ORIGINS'):
+if os.environ.get("CORS_ALLOWED_ORIGINS"):
     CORS_ALLOWED_ORIGINS = [
-        origin.strip() 
-        for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
+        origin.strip()
+        for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
         if origin.strip()
     ]
 else:
@@ -291,18 +316,18 @@ else:
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
 ]
 
 # drf-spectacular settings for OpenAPI documentation
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Modern EMR API',
-    'DESCRIPTION': '''
+    "TITLE": "Modern EMR API",
+    "DESCRIPTION": """
     Electronic Medical Record (EMR) System API
     
     This API provides endpoints for managing patient records, visits, consultations, 
@@ -328,36 +353,42 @@ SPECTACULAR_SETTINGS = {
     - **LAB_TECH**: View and process lab orders, create lab results
     - **RADIOLOGY_TECH**: View and process radiology orders, create reports
     - **PHARMACIST**: Dispense prescriptions, manage drug catalog, manage inventory
-    ''',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-    'COMPONENT_SPLIT_REQUEST': True,
-    'COMPONENT_NO_READ_ONLY_REQUIRED': True,
-    'SCHEMA_PATH_PREFIX': '/api/v1',
-    'AUTHENTICATION_WHITELIST': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    """,
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "COMPONENT_NO_READ_ONLY_REQUIRED": True,
+    "SCHEMA_PATH_PREFIX": "/api/v1",
+    "AUTHENTICATION_WHITELIST": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
-    'TAGS': [
-        {'name': 'Authentication', 'description': 'User authentication and token management'},
-        {'name': 'Patients', 'description': 'Patient registration and management'},
-        {'name': 'Visits', 'description': 'Visit creation and management'},
-        {'name': 'Consultations', 'description': 'Clinical consultations (Doctor only)'},
-        {'name': 'Laboratory', 'description': 'Lab orders and results'},
-        {'name': 'Radiology', 'description': 'Radiology orders and reports'},
-        {'name': 'Prescriptions', 'description': 'Prescription management'},
-        {'name': 'Pharmacy', 'description': 'Drug catalog and inventory management'},
-        {'name': 'Billing', 'description': 'Payment processing'},
-        {'name': 'Appointments', 'description': 'Appointment scheduling'},
-        {'name': 'Reports', 'description': 'Analytics and reporting'},
-        {'name': 'Audit Logs', 'description': 'System audit logs (read-only)'},
+    "TAGS": [
+        {
+            "name": "Authentication",
+            "description": "User authentication and token management",
+        },
+        {"name": "Patients", "description": "Patient registration and management"},
+        {"name": "Visits", "description": "Visit creation and management"},
+        {
+            "name": "Consultations",
+            "description": "Clinical consultations (Doctor only)",
+        },
+        {"name": "Laboratory", "description": "Lab orders and results"},
+        {"name": "Radiology", "description": "Radiology orders and reports"},
+        {"name": "Prescriptions", "description": "Prescription management"},
+        {"name": "Pharmacy", "description": "Drug catalog and inventory management"},
+        {"name": "Billing", "description": "Payment processing"},
+        {"name": "Appointments", "description": "Appointment scheduling"},
+        {"name": "Reports", "description": "Analytics and reporting"},
+        {"name": "Audit Logs", "description": "System audit logs (read-only)"},
     ],
-    'SERVERS': [
-        {'url': 'http://localhost:8000', 'description': 'Development server'},
+    "SERVERS": [
+        {"url": "http://localhost:8000", "description": "Development server"},
     ],
 }
 
 # Backup settings
-BACKUP_DIR = os.path.join(BASE_DIR, 'backups')
+BACKUP_DIR = os.path.join(BASE_DIR, "backups")
 os.makedirs(BACKUP_DIR, exist_ok=True)
 
 # Default backup retention (days)
@@ -365,8 +396,8 @@ BACKUP_RETENTION_DAYS = 30
 
 # Email Configuration
 EMAIL_BACKEND = os.environ.get(
-    'EMAIL_BACKEND',
-    'django.core.mail.backends.console.EmailBackend'  # Console backend for development
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend",  # Console backend for development
 )
 
 # For production, use SMTP:
@@ -378,133 +409,180 @@ EMAIL_BACKEND = os.environ.get(
 # EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 # DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@emr.example.com')
 
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@emr.local')
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@emr.local")
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 # SMS Configuration
-SMS_ENABLED = os.environ.get('SMS_ENABLED', 'False') == 'True'
-SMS_PROVIDER = os.environ.get('SMS_PROVIDER', 'console')  # 'console' | 'twilio' | 'termii'
+SMS_ENABLED = os.environ.get("SMS_ENABLED", "False") == "True"
+SMS_PROVIDER = os.environ.get(
+    "SMS_PROVIDER", "console"
+)  # 'console' | 'twilio' | 'termii'
 
 # Twilio Configuration (if using Twilio)
-TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
-TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
-TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '')
+TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
+TWILIO_PHONE_NUMBER = os.environ.get("TWILIO_PHONE_NUMBER", "")
 
 # Termii Configuration (if using Termii - Nigeria-focused SMS)
 # Base URL is per-account; find yours at https://accounts.termii.com
-TERMII_API_KEY = os.environ.get('TERMII_API_KEY', '')
-TERMII_SENDER_ID = os.environ.get('TERMII_SENDER_ID', '')  # Alphanumeric 3-11 chars (e.g. ClinicName)
-TERMII_BASE_URL = os.environ.get('TERMII_BASE_URL', 'https://api.termii.com')
+TERMII_API_KEY = os.environ.get("TERMII_API_KEY", "")
+TERMII_SENDER_ID = os.environ.get(
+    "TERMII_SENDER_ID", ""
+)  # Alphanumeric 3-11 chars (e.g. ClinicName)
+TERMII_BASE_URL = os.environ.get("TERMII_BASE_URL", "https://api.termii.com")
 
 # Twilio Video Configuration (for Telemedicine)
-TWILIO_API_KEY = os.environ.get('TWILIO_API_KEY', '')
-TWILIO_API_SECRET = os.environ.get('TWILIO_API_SECRET', '')
-TWILIO_RECORDING_ENABLED = os.environ.get('TWILIO_RECORDING_ENABLED', 'False') == 'True'
+TWILIO_API_KEY = os.environ.get("TWILIO_API_KEY", "")
+TWILIO_API_SECRET = os.environ.get("TWILIO_API_SECRET", "")
+TWILIO_RECORDING_ENABLED = os.environ.get("TWILIO_RECORDING_ENABLED", "False") == "True"
 
-# Paystack Configuration
-PAYSTACK_SECRET_KEY = os.environ.get('PAYSTACK_SECRET_KEY', '')
-PAYSTACK_PUBLIC_KEY = os.environ.get('PAYSTACK_PUBLIC_KEY', '')
-PAYSTACK_CALLBACK_URL = os.environ.get('PAYSTACK_CALLBACK_URL', 'http://localhost:3001/wallet/callback')
+# Paystack Configuration (visit billing + SaaS subscriptions — Nigeria)
+PAYSTACK_SECRET_KEY = os.environ.get("PAYSTACK_SECRET_KEY", "")
+PAYSTACK_PUBLIC_KEY = os.environ.get("PAYSTACK_PUBLIC_KEY", "")
+PAYSTACK_CALLBACK_URL = os.environ.get(
+    "PAYSTACK_CALLBACK_URL", "http://localhost:3001/wallet/callback"
+)
+
+# Flutterwave Configuration (optional SaaS / payments — Nigeria)
+FLUTTERWAVE_SECRET_KEY = os.environ.get("FLUTTERWAVE_SECRET_KEY", "")
+FLUTTERWAVE_PUBLIC_KEY = os.environ.get("FLUTTERWAVE_PUBLIC_KEY", "")
+
+# SaaS subscription billing provider: paystack | flutterwave | manual | stripe (legacy)
+SAAS_PAYMENT_PROVIDER = os.environ.get("SAAS_PAYMENT_PROVIDER", "paystack").lower()
+
+# Frontend base URL (emails, redirects)
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+
+# Stripe (legacy — only if SAAS_PAYMENT_PROVIDER=stripe)
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+# Self-serve organization signup (POST /api/v1/organizations/signup/)
+# SaaS default: enabled. Set ENABLE_ORG_SIGNUP=false in production to disable public clinic creation.
+ENABLE_ORG_SIGNUP = os.environ.get("ENABLE_ORG_SIGNUP", "true").lower() in (
+    "true",
+    "1",
+    "yes",
+)
+
+# Subdomain tenant routing (e.g. clinic1.emr.localhost → slug clinic1)
+TENANT_SUBDOMAIN_ENABLED = os.environ.get(
+    "TENANT_SUBDOMAIN_ENABLED", "false"
+).lower() in ("true", "1", "yes")
+TENANT_BASE_DOMAIN = os.environ.get("TENANT_BASE_DOMAIN", "localhost")
 
 CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+    "x-organization-id",
+    "x-organization-slug",
 ]
 
 # Clinic Information for Invoices and Receipts
-CLINIC_NAME = os.environ.get('CLINIC_NAME', 'Lifeway Medical Centre Ltd')
-CLINIC_ADDRESS = os.environ.get('CLINIC_ADDRESS', 'Plot 1593, ZONE E, APO RESETTLEMENT, ABUJA')
-CLINIC_PHONE = os.environ.get('CLINIC_PHONE', '07058893439, 08033145080, 08033114417')
-CLINIC_EMAIL = os.environ.get('CLINIC_EMAIL', 'info@clinic.com')
+CLINIC_NAME = os.environ.get("CLINIC_NAME", "Lifeway Medical Centre Ltd")
+CLINIC_ADDRESS = os.environ.get(
+    "CLINIC_ADDRESS", "Plot 1593, ZONE E, APO RESETTLEMENT, ABUJA"
+)
+CLINIC_PHONE = os.environ.get("CLINIC_PHONE", "07058893439, 08033145080, 08033114417")
+CLINIC_EMAIL = os.environ.get("CLINIC_EMAIL", "info@clinic.com")
 
 # Clinic Logo Path (absolute or relative to BASE_DIR)
 # Place your logo file in: frontend/public/LMC logo1.png
 # Then set this to the absolute path or relative path from BASE_DIR
 # Example: CLINIC_LOGO_PATH = os.path.join(BASE_DIR, 'frontend', 'public', 'LMC logo1.png')
 # BASE_DIR is the project root (3 levels up from this file: backend/core/settings.py)
-CLINIC_LOGO_PATH = os.environ.get('CLINIC_LOGO_PATH', str(BASE_DIR / 'frontend' / 'public' / 'LMC logo1.png'))
+CLINIC_LOGO_PATH = os.environ.get(
+    "CLINIC_LOGO_PATH", str(BASE_DIR / "frontend" / "public" / "LMC logo1.png")
+)
 
 # PACS-lite Configuration
 # OHIF Viewer URL (recommended) or None for lightweight viewer
-OHIF_VIEWER_URL = os.environ.get('OHIF_VIEWER_URL', None)
+OHIF_VIEWER_URL = os.environ.get("OHIF_VIEWER_URL", None)
 # Enable signed URLs for access control
-RADIOLOGY_SIGNED_URLS = os.environ.get('RADIOLOGY_SIGNED_URLS', 'True') == 'True'
+RADIOLOGY_SIGNED_URLS = os.environ.get("RADIOLOGY_SIGNED_URLS", "True") == "True"
 # Custom storage backend for radiology images (optional)
 # Options: 'storages.backends.s3boto3.S3Boto3Storage' for S3/MinIO
 #          None for default filesystem storage
-RADIOLOGY_STORAGE = os.environ.get('RADIOLOGY_STORAGE', None)
+RADIOLOGY_STORAGE = os.environ.get("RADIOLOGY_STORAGE", None)
 
 # Logging Configuration
-LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+LOGS_DIR = os.path.join(BASE_DIR, "logs")
 os.makedirs(LOGS_DIR, exist_ok=True)
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
         },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-    },
-    'filters': {
-        'require_debug_false': {
-            '()': 'django.utils.log.RequireDebugFalse',
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
         },
     },
-    'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(LOGS_DIR, 'django.log'),
-            'maxBytes': 1024 * 1024 * 15,  # 15MB
-            'backupCount': 10,
-            'formatter': 'verbose',
-        },
-        'error_file': {
-            'level': 'ERROR',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(LOGS_DIR, 'django_errors.log'),
-            'maxBytes': 1024 * 1024 * 15,  # 15MB
-            'backupCount': 10,
-            'formatter': 'verbose',
-        },
-        'console': {
-            'level': 'DEBUG' if DEBUG else 'INFO',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
+    "filters": {
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
         },
     },
-    'root': {
-        'handlers': ['console', 'file'],
-        'level': 'INFO',
+    "handlers": {
+        "file": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": os.path.join(LOGS_DIR, "django.log"),
+            "maxBytes": 1024 * 1024 * 15,  # 15MB
+            "backupCount": 10,
+            "formatter": "verbose",
+        },
+        "error_file": {
+            "level": "ERROR",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": os.path.join(LOGS_DIR, "django_errors.log"),
+            "maxBytes": 1024 * 1024 * 15,  # 15MB
+            "backupCount": 10,
+            "formatter": "verbose",
+        },
+        "console": {
+            "level": "DEBUG" if DEBUG else "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
     },
-    'loggers': {
-        'django': {
-            'handlers': ['file', 'error_file'],
-            'level': 'INFO',
-            'propagate': False,
+    "root": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["file", "error_file"],
+            "level": "INFO",
+            "propagate": False,
         },
-        'django.request': {
-            'handlers': ['error_file'],
-            'level': 'ERROR',
-            'propagate': False,
+        "django.request": {
+            "handlers": ["error_file"],
+            "level": "ERROR",
+            "propagate": False,
         },
-        'apps': {
-            'handlers': ['file', 'error_file'],
-            'level': 'INFO',
-            'propagate': False,
+        "apps": {
+            "handlers": ["file", "error_file"],
+            "level": "INFO",
+            "propagate": False,
         },
     },
 }
+
+# Celery Configuration (Asynchronous Task Queue)
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://127.0.0.1:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://127.0.0.1:6379/0")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE

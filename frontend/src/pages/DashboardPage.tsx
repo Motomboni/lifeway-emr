@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useRolePermissions } from '../hooks/useRolePermissions';
 import { fetchVisits, PaginatedResponse } from '../api/visits';
 import { Visit } from '../types/visit';
 import { getPendingVerificationPatients } from '../api/patient';
@@ -14,7 +15,9 @@ import { useToast } from '../hooks/useToast';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import NotificationBell from '../components/common/NotificationBell';
 import ThemeToggle from '../components/common/ThemeToggle';
-import Logo from '../components/common/Logo';
+import ClinicBranding from '../components/common/ClinicBranding';
+import SaaSAlertsBanner from '../components/common/SaaSAlertsBanner';
+import TenantSwitcher from '../components/common/TenantSwitcher';
 import { useDefaultKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import styles from '../styles/Dashboard.module.css';
 
@@ -83,7 +86,7 @@ const VisitSearchSection = memo(function VisitSearchSection({ onVisitSelect, loa
     }
 
     setIsSearching(true);
-    
+
     // Use setTimeout to allow UI to update
     setTimeout(() => {
       const filtered = filterVisits(query, allVisits);
@@ -211,6 +214,7 @@ const VisitSearchSection = memo(function VisitSearchSection({ onVisitSelect, loa
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
+  const { isAdmin, isSuperuser } = useRolePermissions();
   const navigate = useNavigate();
   const location = useLocation();
   const { showError } = useToast();
@@ -282,7 +286,7 @@ export default function DashboardPage() {
     const now = Date.now();
     const lastLoadTime = lastLoadTimeRef.current;
     const timeSinceLastLoad = lastLoadTime === 0 ? Infinity : now - lastLoadTime;
-    
+
     // Reload if it's been more than 500ms since last load (prevents rapid duplicate calls)
     // This ensures fresh data on every navigation to dashboard
     if (timeSinceLastLoad > 500) {
@@ -296,7 +300,7 @@ export default function DashboardPage() {
         pendingVerifications: 0,
       });
       setRecentVisits([]);
-      
+
       // Load data
       loadDashboardData();
       lastLoadTimeRef.current = now;
@@ -340,93 +344,125 @@ export default function DashboardPage() {
                 <h3>Quick Actions</h3>
               </div>
               <div className={styles.actionCards}>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/visits')}
                 >
                   <h3>View All Visits</h3>
                   <p>View and manage patient visits</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/inpatients')}
                 >
                   <h3>Inpatients</h3>
                   <p>View all currently admitted patients</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/appointments')}
                 >
                   <h3>My Appointments</h3>
                   <p>View and manage your appointments</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/telemedicine')}
                 >
                   <h3>📹 Telemedicine</h3>
                   <p>Video consultations with patients</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
-                  onClick={() => navigate('/visits/new')}
+                  onClick={() => navigate('/antenatal')}
                 >
-                  <h3>New Visit</h3>
-                  <p>Create a new patient visit</p>
+                  <h3>🤰 Antenatal Clinic</h3>
+                  <p>Manage antenatal records and visits</p>
                 </div>
-                {user?.is_superuser && (
-                  <div 
-                    className={styles.actionCard}
-                    onClick={() => navigate('/staff-approval')}
-                  >
-                    <h3>Staff Approval</h3>
-                    <p>Approve registered staff before they can log in</p>
-                  </div>
-                )}
-                {user?.is_superuser && (
+                {isAdmin && (
                   <>
-                    <div 
+                    {isSuperuser && (
+                      <div
+                        className={styles.actionCard}
+                        onClick={() => navigate('/staff-approval')}
+                      >
+                        <h3>Staff Approval</h3>
+                        <p>Approve registered staff before they can log in</p>
+                      </div>
+                    )}
+                    <div
                       className={styles.actionCard}
                       onClick={() => navigate('/audit-logs')}
                     >
                       <h3>Audit Logs</h3>
                       <p>View system activity logs</p>
                     </div>
-                    <div 
+                    <div
                       className={styles.actionCard}
                       onClick={() => navigate('/health')}
                     >
                       <h3>System Health</h3>
                       <p>Monitor system status and health</p>
                     </div>
-                    <div 
+                    <div
                       className={styles.actionCard}
                       onClick={() => navigate('/reports')}
                     >
                       <h3>Reports & Analytics</h3>
                       <p>View comprehensive reports and analytics</p>
                     </div>
-                    <div 
+                    {isSuperuser && (
+                      <div
+                        className={styles.actionCard}
+                        onClick={() => navigate('/platform')}
+                      >
+                        <h3>Platform Dashboard</h3>
+                        <p>Cross-tenant SaaS metrics — all clinics, MRR, usage</p>
+                      </div>
+                    )}
+                    {isSuperuser && (
+                      <div
+                        className={styles.actionCard}
+                        onClick={() => navigate('/backups')}
+                      >
+                        <h3>Backup & Restore</h3>
+                        <p>Manage data backups and restores</p>
+                      </div>
+                    )}
+                    <div
                       className={styles.actionCard}
-                      onClick={() => navigate('/backups')}
+                      onClick={() => navigate('/organization/settings')}
                     >
-                      <h3>Backup & Restore</h3>
-                      <p>Manage data backups and restores</p>
+                      <h3>Clinic Settings</h3>
+                      <p>Logo, name, and receipt branding</p>
                     </div>
-                    <div 
+                    <div
                       className={styles.actionCard}
                       onClick={() => navigate('/service-catalog')}
                     >
                       <h3>Service Catalog</h3>
                       <p>Add and manage billable services (e.g. Telemedicine)</p>
                     </div>
-                    <div 
+                    <div
                       className={styles.actionCard}
                       onClick={() => navigate('/reconciliation')}
                     >
                       <h3>End-of-Day Reconciliation</h3>
                       <p>Daily revenue reconciliation and closure</p>
+                    </div>
+                    <div
+                      className={styles.actionCard}
+                      onClick={() => navigate('/plans')}
+                    >
+                      <h3>SaaS Subscription</h3>
+                      <p>Manage subscription plans and billing</p>
+                    </div>
+                    <div
+                      className={styles.actionCard}
+                      onClick={() => navigate('/billing/revenue-leaks')}
+                    >
+                      <h3>Revenue Leak Detection</h3>
+                      <p>Find unbilled completed services</p>
                     </div>
                   </>
                 )}
@@ -436,7 +472,7 @@ export default function DashboardPage() {
             <div className={styles.section}>
               <div className={styles.sectionHeader}>
                 <h3>Recent Visits</h3>
-                <button 
+                <button
                   className={styles.viewAllButton}
                   onClick={() => navigate('/visits')}
                 >
@@ -504,19 +540,33 @@ export default function DashboardPage() {
                 <h3>Quick Actions</h3>
               </div>
               <div className={styles.actionCards}>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/visits')}
                 >
                   <h3>📋 View All Visits</h3>
                   <p>Browse and access all patient visits</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/visits?status=OPEN&payment_status=CLEARED')}
                 >
                   <h3>🏥 Active Visits</h3>
                   <p>View open visits ready for nursing care</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/appointments')}
+                >
+                  <h3>📅 Appointments</h3>
+                  <p>View scheduled appointments</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/antenatal')}
+                >
+                  <h3>🤰 Antenatal Clinic</h3>
+                  <p>View antenatal records and visits</p>
                 </div>
               </div>
             </div>
@@ -535,7 +585,7 @@ export default function DashboardPage() {
                   <li>📚 Provide patient education</li>
                 </ul>
                 <p className={styles.helpText}>
-                  <strong>Note:</strong> You can only perform actions on visits that are <strong>OPEN</strong> and have <strong>payment CLEARED</strong>. 
+                  <strong>Note:</strong> You can only perform actions on visits that are <strong>OPEN</strong> and have <strong>payment CLEARED</strong>.
                   Click on any open visit to access the nursing care interface.
                 </p>
               </div>
@@ -545,7 +595,7 @@ export default function DashboardPage() {
               <div className={styles.sectionHeader}>
                 <h3>Search Visits</h3>
               </div>
-              <VisitSearchSection 
+              <VisitSearchSection
                 onVisitSelect={(visitId) => navigate(`/visits/${visitId}/nursing`)}
                 loading={loading}
               />
@@ -591,49 +641,56 @@ export default function DashboardPage() {
                 <h3>Quick Actions</h3>
               </div>
               <div className={styles.actionCards}>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/patients/register')}
                 >
                   <h3>Patient Registration</h3>
                   <p>Register new patients</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/patients')}
                 >
                   <h3>Patient Management</h3>
                   <p>Search and manage patients</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/appointments')}
                 >
                   <h3>Appointments</h3>
                   <p>Schedule and manage appointments</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/visits/new')}
                 >
                   <h3>Create Visit</h3>
                   <p>Create a new visit for a patient</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/visits')}
                 >
                   <h3>Billing & Payments</h3>
                   <p>Access visit-scoped billing from visit details</p>
                 </div>
-                <div 
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/wallet')}
+                >
+                  <h3>💳 Patient Wallets</h3>
+                  <p>Look up patient wallet balances and transactions</p>
+                </div>
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/billing/pending-queue')}
                 >
                   <h3>Pending Queue</h3>
                   <p>Central billing queue – collect post-consultation payments</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/patients/verification')}
                 >
@@ -645,7 +702,7 @@ export default function DashboardPage() {
                   </h3>
                   <p>Verify patient portal accounts</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/reconciliation')}
                 >
@@ -699,7 +756,7 @@ export default function DashboardPage() {
                 <h3>Quick Actions</h3>
               </div>
               <div className={styles.actionCards}>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/lab-orders')}
                 >
@@ -723,7 +780,7 @@ export default function DashboardPage() {
                 <h3>Quick Actions</h3>
               </div>
               <div className={styles.actionCards}>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/radiology-orders')}
                 >
@@ -747,14 +804,14 @@ export default function DashboardPage() {
                 <h3>Quick Actions</h3>
               </div>
               <div className={styles.actionCards}>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/prescriptions')}
                 >
                   <h3>Prescriptions</h3>
                   <p>View and dispense prescriptions</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/drugs')}
                 >
@@ -778,42 +835,42 @@ export default function DashboardPage() {
                 <h3>Quick Actions</h3>
               </div>
               <div className={styles.actionCards}>
-                <div 
+                <div
                   className={styles.actionCard}
-                  onClick={() => navigate('/patient-portal')}
+                  onClick={() => navigate('/patient-portal/dashboard')}
                 >
                   <h3>My Health Records</h3>
                   <p>View your medical history and records</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/patient-portal/appointments')}
                 >
                   <h3>My Appointments</h3>
                   <p>View and manage your appointments</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/patient-portal/prescriptions')}
                 >
                   <h3>My Prescriptions</h3>
                   <p>View your prescriptions</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/patient-portal/lab-results')}
                 >
                   <h3>Lab Results</h3>
                   <p>View your lab test results</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/wallet')}
                 >
                   <h3>💰 My Wallet</h3>
                   <p>View balance and top up wallet</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/patient-portal/telemedicine')}
                 >
@@ -867,72 +924,86 @@ export default function DashboardPage() {
               <div className={styles.sectionHeader}>
                 <h3>Quick Actions</h3>
               </div>
-                <div className={styles.actionCards}>
-                  <div 
-                    className={styles.actionCard}
-                    onClick={() => navigate('/patients/register')}
-                  >
-                    <h3>Patient Registration</h3>
-                    <p>Register new patients</p>
-                  </div>
-                  <div 
-                    className={styles.actionCard}
-                    onClick={() => navigate('/patients')}
-                  >
-                    <h3>Patient Management</h3>
-                    <p>View and manage all patients</p>
-                  </div>
-                  <div 
-                    className={styles.actionCard}
-                    onClick={() => navigate('/visits')}
-                  >
-                    <h3>Visit Management</h3>
-                    <p>View and manage all visits</p>
-                  </div>
-                <div 
+              <div className={styles.actionCards}>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/patients/register')}
+                >
+                  <h3>Patient Registration</h3>
+                  <p>Register new patients</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/patients')}
+                >
+                  <h3>Patient Management</h3>
+                  <p>View and manage all patients</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/visits')}
+                >
+                  <h3>Visit Management</h3>
+                  <p>View and manage all visits</p>
+                </div>
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/reports')}
                 >
                   <h3>Reports & Analytics</h3>
                   <p>View comprehensive reports and analytics</p>
                 </div>
-                <div 
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/organizations')}
+                >
+                  <h3>Organizations</h3>
+                  <p>Manage clinics and members (SaaS)</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/plans')}
+                >
+                  <h3>💳 SaaS Subscription</h3>
+                  <p>Manage subscription plans and billing</p>
+                </div>
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/billing/revenue-leaks')}
                 >
                   <h3>Revenue Leak Detection</h3>
                   <p>Monitor and resolve revenue leaks</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/reconciliation')}
                 >
                   <h3>End-of-Day Reconciliation</h3>
                   <p>Daily revenue reconciliation and closure</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/service-catalog')}
                 >
                   <h3>Service Catalog</h3>
                   <p>Add and manage billable services (e.g. Telemedicine)</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/radiology/upload-status')}
                 >
                   <h3>Radiology Upload Status</h3>
                   <p>Monitor radiology image uploads</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/appointments')}
                 >
                   <h3>Appointments</h3>
                   <p>Schedule and manage appointments</p>
                 </div>
-                {(user?.is_superuser || user?.role === 'ADMIN') && (
-                  <div 
+                {isAdmin && (
+                  <div
                     className={styles.actionCard}
                     onClick={() => navigate('/staff-approval')}
                   >
@@ -940,23 +1011,30 @@ export default function DashboardPage() {
                     <p>Approve registered staff before they can log in</p>
                   </div>
                 )}
-                {user?.is_superuser && (
+                {isSuperuser && (
                   <>
-                    <div 
+                    <div
+                      className={styles.actionCard}
+                      onClick={() => navigate('/platform')}
+                    >
+                      <h3>Platform Dashboard</h3>
+                      <p>Cross-tenant SaaS metrics — all clinics, MRR, usage</p>
+                    </div>
+                    <div
                       className={styles.actionCard}
                       onClick={() => navigate('/audit-logs')}
                     >
                       <h3>Audit Logs</h3>
                       <p>View system activity logs</p>
                     </div>
-                    <div 
+                    <div
                       className={styles.actionCard}
                       onClick={() => navigate('/backups')}
                     >
                       <h3>Backup & Restore</h3>
                       <p>Manage data backups and restores</p>
                     </div>
-                    <div 
+                    <div
                       className={styles.actionCard}
                       onClick={() => navigate('/health')}
                     >
@@ -1026,35 +1104,35 @@ export default function DashboardPage() {
                 <h3>Quick Actions</h3>
               </div>
               <div className={styles.actionCards}>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/ivf')}
                 >
                   <h3>🔬 IVF Dashboard</h3>
                   <p>View IVF cycles and statistics</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/ivf/cycles')}
                 >
                   <h3>📋 All IVF Cycles</h3>
                   <p>Manage patient IVF cycles</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/ivf/cycles/new')}
                 >
                   <h3>➕ New IVF Cycle</h3>
                   <p>Start a new IVF treatment cycle</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/ivf/visits')}
                 >
                   <h3>📅 IVF Patient Visits</h3>
                   <p>View visits for IVF patients only</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/ivf/patients')}
                 >
@@ -1089,33 +1167,40 @@ export default function DashboardPage() {
                 <h3>Quick Actions</h3>
               </div>
               <div className={styles.actionCards}>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/ivf')}
                 >
                   <h3>🔬 IVF Dashboard</h3>
                   <p>View IVF cycles and statistics</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/ivf/cycles')}
                 >
                   <h3>🧬 Active Cycles</h3>
                   <p>View cycles requiring lab work</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/patients')}
                 >
                   <h3>👥 Patient Management</h3>
                   <p>View and manage patients</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
-                  onClick={() => navigate('/lab-orders')}
+                  onClick={() => navigate('/ivf/sperm-analyses')}
                 >
-                  <h3>🧪 Lab Orders</h3>
-                  <p>View laboratory orders</p>
+                  <h3>🧪 Sperm Analyses</h3>
+                  <p>Record and review andrology lab work</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/ivf/embryo-inventory')}
+                >
+                  <h3>🧫 Embryo Inventory</h3>
+                  <p>Track stored embryos and specimens</p>
                 </div>
               </div>
             </div>
@@ -1125,8 +1210,54 @@ export default function DashboardPage() {
       default:
         return (
           <div className={styles.dashboardContent}>
-            <h2>Dashboard</h2>
-            <p>Welcome to Lifeway Medical Centre Ltd</p>
+            <div className={styles.dashboardHeader}>
+              <h2>Organization Dashboard</h2>
+              <p>Welcome back, {user?.first_name} {user?.last_name}</p>
+            </div>
+            {isAdmin && (
+              <div className={styles.section}>
+                <div className={styles.sectionHeader}>
+                  <h3>Admin Actions</h3>
+                </div>
+                <div className={styles.actionCards}>
+                    <div
+                      className={styles.actionCard}
+                      onClick={() => navigate('/organization/settings')}
+                    >
+                      <h3>🎨 Clinic Settings</h3>
+                      <p>Logo, name, receipts branding</p>
+                    </div>
+                    <div
+                      className={styles.actionCard}
+                      onClick={() => navigate('/organizations')}
+                    >
+                      <h3>🏢 Organizations</h3>
+                      <p>Manage clinics, members, and properties</p>
+                    </div>
+                  <div
+                    className={styles.actionCard}
+                    onClick={() => navigate('/plans')}
+                  >
+                    <h3>💳 SaaS Subscription</h3>
+                    <p>Manage subscription plans and billing</p>
+                  </div>
+                  <div
+                    className={styles.actionCard}
+                    onClick={() => navigate('/staff-approval')}
+                  >
+                    <h3>🤝 Staff Approval</h3>
+                    <p>Approve incoming staff registrations</p>
+                  </div>
+                  <div
+                    className={styles.actionCard}
+                    onClick={() => navigate('/audit-logs')}
+                  >
+                    <h3>🛡️ Audit Logs</h3>
+                    <p>System security and access logs</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
     }
@@ -1136,9 +1267,9 @@ export default function DashboardPage() {
     <div className={styles.dashboard}>
       <header className={styles.dashboardHeader}>
         <div className={styles.headerContent}>
-          <Logo size="medium" showText={false} />
-          <h1>Lifeway Medical Centre Ltd</h1>
+          <ClinicBranding size="medium" />
           <div className={styles.userInfo}>
+            <TenantSwitcher />
             <ThemeToggle />
             <NotificationBell />
             <span>{user?.first_name} {user?.last_name} ({user?.role})</span>
@@ -1149,6 +1280,7 @@ export default function DashboardPage() {
         </div>
       </header>
       <main className={styles.dashboardMain}>
+        <SaaSAlertsBanner />
         {getRoleDashboard()}
       </main>
     </div>

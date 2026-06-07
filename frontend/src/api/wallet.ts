@@ -29,6 +29,20 @@ export async function getWallet(walletId: number): Promise<Wallet> {
 }
 
 /**
+ * List all wallets (receptionist/admin) or parse wallet list response.
+ */
+export async function listWallets(): Promise<Wallet[]> {
+  const response = await apiRequest<any>('/wallet/wallets/');
+  if (Array.isArray(response)) {
+    return response;
+  }
+  if (response?.results && Array.isArray(response.results)) {
+    return response.results;
+  }
+  return [];
+}
+
+/**
  * Get current user's wallet (for patients)
  * Auto-creates wallet if it doesn't exist (handled by backend)
  */

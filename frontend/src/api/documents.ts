@@ -32,7 +32,8 @@ export async function uploadDocument(
   }
   formData.append('file', data.file);
 
-  const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/v1/visits/${visitId}/documents/`, {
+  const base = import.meta.env.VITE_API_URL || '';
+  const response = await fetch(`${base}/api/v1/visits/${visitId}/documents/`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${localStorage.getItem('auth_tokens') ? JSON.parse(localStorage.getItem('auth_tokens')!).access : ''}`,
@@ -69,7 +70,8 @@ export async function downloadDocument(
 ): Promise<Blob> {
   const token = localStorage.getItem('auth_tokens') ? JSON.parse(localStorage.getItem('auth_tokens')!).access : '';
   
-  const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/v1/visits/${visitId}/documents/${documentId}/download/`, {
+  const base = import.meta.env.VITE_API_URL || '';
+  const response = await fetch(`${base}/api/v1/visits/${visitId}/documents/${documentId}/download/`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,

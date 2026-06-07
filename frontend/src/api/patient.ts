@@ -22,16 +22,16 @@ export interface PaginatedResponse<T> {
  * Returns paginated response - extracts results array
  */
 export async function fetchPatients(searchQuery?: string): Promise<Patient[]> {
-  const endpoint = searchQuery 
+  const endpoint = searchQuery
     ? `/patients/?search=${encodeURIComponent(searchQuery)}`
     : '/patients/';
   const response = await apiRequest<PaginatedResponse<Patient> | Patient[]>(endpoint);
-  
+
   // Handle both paginated and non-paginated responses
   if (Array.isArray(response)) {
     return response;
   }
-  
+
   // Paginated response
   return response.results || [];
 }
@@ -44,7 +44,7 @@ export async function searchPatients(query: string): Promise<Patient[]> {
   const response = await apiRequest<Patient[]>(
     `/patients/search/?q=${encodeURIComponent(query)}`
   );
-  
+
   // Search endpoint returns plain array
   return Array.isArray(response) ? response : [];
 }
@@ -158,4 +158,43 @@ export async function togglePortalAccess(
     method: 'POST',
     body: JSON.stringify({ enabled }),
   });
+}
+
+/**
+ * Export patient medical history as PDF
+ */
+export async function exportMedicalHistoryPdf(patientId: number): Promise<Blob> {
+  const token = localStorage.getItem('auth_token') || (() => {
+    try {
+      return JSON.parse(localStorage.getItem('auth_tokens') || '{}').access;
+    } catch { return null; }
+  })();
+
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
+  const response = await fetch(`${API_BASE_URL}/patients/${patientId}/export-pdf/`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    let errorMessage = `HTTP Error ${response.status}`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.detail || errorMessage;
+      const error = new Error(errorMessage) as any;
+      error.status = response.status;
+      throw error;
+    } catch (e: any) {
+      if (e.status === response.status) throw e; // Already parsed
+      throw new Error(`Failed to export PDF: ${errorMessage}`);
+    }
+  }
+
+  return await response.blob();
 }

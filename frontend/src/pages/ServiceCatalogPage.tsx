@@ -464,14 +464,14 @@ export default function ServiceCatalogPage() {
                 <strong>Result:</strong> Created {importResult.stats.created}, Updated {importResult.stats.updated},
                 Skipped {importResult.stats.skipped}
                 {importResult.stats.errors.length > 0 && (
-                  <details className={styles.importErrors}>
+                  <details className={styles.importErrors} open>
                     <summary>Errors ({importResult.stats.errors.length})</summary>
                     <ul>
-                      {importResult.stats.errors.slice(0, 10).map((err, i) => (
+                      {importResult.stats.errors.slice(0, 25).map((err, i) => (
                         <li key={i}>{err}</li>
                       ))}
-                      {importResult.stats.errors.length > 10 && (
-                        <li>... and {importResult.stats.errors.length - 10} more</li>
+                      {importResult.stats.errors.length > 25 && (
+                        <li>... and {importResult.stats.errors.length - 25} more</li>
                       )}
                     </ul>
                   </details>

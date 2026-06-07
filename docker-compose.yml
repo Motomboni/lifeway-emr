@@ -43,6 +43,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/"]
       interval: 30s
@@ -53,11 +55,40 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
-    image: emr-frontend:latest
     ports:
       - "80:80"
     depends_on:
       - backend
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: emr-celery-worker:latest
+    command: ["celery", "-A", "core", "worker", "-l", "info"]
+    volumes:
+      - ./backend:/app
+    env_file: .env
+    environment:
+      DEBUG: "true"
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: ${DB_NAME:-emr_db}
+      DB_USER: ${DB_USER:-emr_user}
+      DB_PASSWORD: ${DB_PASSWORD:-emr_password}
+      DB_HOST: db
+      DB_PORT: "5432"
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
 volumes:
   postgres_data:

@@ -6,6 +6,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, AuthTokens } from '../types/auth';
 import { loginUser, logoutUser, refreshAccessToken as refreshTokenAPI, getCurrentUser, isAccessTokenExpired } from '../api/auth';
+import { setOrganizationId } from '../utils/apiClient';
 
 interface AuthContextType {
   user: User | null;
@@ -45,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             localStorage.removeItem('auth_tokens');
             localStorage.removeItem('auth_user');
             localStorage.removeItem('auth_token');
+            setOrganizationId(null);
           } else {
             try {
               const currentUser = await getCurrentUser();
@@ -55,13 +57,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               localStorage.removeItem('auth_tokens');
               localStorage.removeItem('auth_user');
               localStorage.removeItem('auth_token');
+              setOrganizationId(null);
             }
           }
         } catch (error) {
           // Invalid stored data, clear it
           localStorage.removeItem('auth_tokens');
           localStorage.removeItem('auth_user');
-          localStorage.removeItem('auth_token'); // Legacy
+          localStorage.removeItem('auth_token');
+          setOrganizationId(null);
         }
       }
       
@@ -105,6 +109,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }));
       localStorage.setItem('auth_user', JSON.stringify(response.user));
       localStorage.setItem('auth_token', response.access); // Legacy support
+      
+      // Multi-tenant: set organization from first/default membership
+      const orgs = response.organizations || [];
+      const defaultOrg = orgs.find((m: { is_default: boolean }) => m.is_default);
+      const firstOrg = orgs[0];
+      const membership = defaultOrg || firstOrg;
+      if (membership?.organization?.id) {
+        setOrganizationId(membership.organization.id);
+      } else {
+        setOrganizationId(null);
+      }
     } catch (error) {
       throw error;
     }
@@ -124,6 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('auth_tokens');
       localStorage.removeItem('auth_user');
       localStorage.removeItem('auth_token');
+      setOrganizationId(null);
     }
   }, [tokens]);
 
@@ -150,6 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('auth_tokens');
       localStorage.removeItem('auth_user');
       localStorage.removeItem('auth_token');
+      setOrganizationId(null);
       throw error;
     }
   }, [tokens]);

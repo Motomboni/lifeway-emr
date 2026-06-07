@@ -4,15 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('billing', '0017_endofdayreconciliation'),
+        ("billing", "0017_endofdayreconciliation"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='servicecatalog',
-            name='restricted_service_flag',
-            field=models.BooleanField(db_index=True, default=False, help_text='If True, payment must be collected before access (Registration & Consultation only). All other services are post-consultation, reception-only payment.'),
+            model_name="servicecatalog",
+            name="restricted_service_flag",
+            field=models.BooleanField(
+                db_index=True,
+                default=False,
+                help_text="If True, payment must be collected before access (Registration & Consultation only). All other services are post-consultation, reception-only payment.",
+            ),
         ),
     ]

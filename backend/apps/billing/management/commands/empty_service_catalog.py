@@ -11,6 +11,7 @@ Usage:
     python manage.py empty_service_catalog
     python manage.py empty_service_catalog --dry-run
 """
+
 from django.core.management.base import BaseCommand
 
 from apps.billing.service_catalog_models import ServiceCatalog
@@ -37,7 +38,9 @@ class Command(BaseCommand):
 
         if active_count == 0:
             self.stdout.write(
-                self.style.SUCCESS("Service catalog is already empty (no active services).")
+                self.style.SUCCESS(
+                    "Service catalog is already empty (no active services)."
+                )
             )
             return
 
@@ -49,7 +52,9 @@ class Command(BaseCommand):
 
         updated = ServiceCatalog.objects.filter(is_active=True).update(is_active=False)
         self.stdout.write(
-            self.style.SUCCESS(f"Deactivated {updated} service(s). Catalog is now empty.")
+            self.style.SUCCESS(
+                f"Deactivated {updated} service(s). Catalog is now empty."
+            )
         )
         self.stdout.write(
             "New drugs added via Drug Catalog & Inventory will automatically appear. "

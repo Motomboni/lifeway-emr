@@ -4,7 +4,9 @@ Clinic-grade password validators for EMR (HIPAA-aligned).
 - Minimum length 12
 - Complexity: upper, lower, digit, special character
 """
+
 import re
+
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 
@@ -24,7 +26,9 @@ class MinimumLengthValidator:
             )
 
     def get_help_text(self):
-        return _("At least %(min_length)d characters.") % {"min_length": self.min_length}
+        return _("At least %(min_length)d characters.") % {
+            "min_length": self.min_length
+        }
 
 
 class ComplexityValidator:
@@ -51,7 +55,9 @@ class ComplexityValidator:
             )
         if not re.search(r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>/?`~]", password):
             raise ValidationError(
-                _("Password must contain at least one special character (!@#$%^&* etc.)."),
+                _(
+                    "Password must contain at least one special character (!@#$%^&* etc.)."
+                ),
                 code="password_no_special",
             )
 

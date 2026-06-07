@@ -9,6 +9,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useRolePermissions } from '../hooks/useRolePermissions';
 import { useToast } from '../hooks/useToast';
 import { searchPatients, getPatient } from '../api/patient';
 import { createVisit } from '../api/visits';
@@ -22,6 +23,7 @@ import styles from '../styles/CreateVisit.module.css';
 
 export default function CreateVisitPage() {
   const { user } = useAuth();
+  const { canCreateVisit } = useRolePermissions();
   const { showSuccess, showError } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -47,6 +49,17 @@ export default function CreateVisitPage() {
       loadPatient(parseInt(patientId));
     }
   }, [searchParams]);
+
+  if (user && !canCreateVisit) {
+    return (
+      <div className={styles.createVisitPage}>
+        <BackToDashboard />
+        <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          Only receptionists and administrators can create visits.
+        </p>
+      </div>
+    );
+  }
 
   const loadPatient = async (patientId: number) => {
     try {

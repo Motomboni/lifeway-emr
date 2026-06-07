@@ -38,10 +38,18 @@ export interface RegisterData {
   role: UserRole;
 }
 
+export interface OrganizationMembership {
+  id: number;
+  organization: { id: number; name: string; slug: string };
+  role: string;
+  is_default: boolean;
+}
+
 export interface LoginResponse {
   access: string;
   refresh: string;
   user: User;
+  organizations?: OrganizationMembership[];
 }
 
 /**

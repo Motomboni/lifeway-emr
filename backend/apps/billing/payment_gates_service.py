@@ -11,33 +11,55 @@ Insurance exception:
 - Visits with approved insurance and payment_status in (SETTLED, INSURANCE_CLAIMED) are
   treated as having satisfied registration and consultation gates.
 """
-from django.db.models import Q
+
+from decimal import Decimal
+
+from django.db.models import Q, Sum
 
 from apps.visits.models import Visit
+
 from .billing_line_item_models import BillingLineItem
+from .models import Payment, VisitCharge
 from .service_catalog_models import ServiceCatalog
+
+
+def _outstanding_balance_without_gates(visit: Visit) -> Decimal:
+    """Lightweight outstanding balance — must NOT call compute_billing_summary (avoids recursion)."""
+    visit_charge_total = VisitCharge.objects.filter(visit=visit).aggregate(
+        total=Sum("amount")
+    )["total"] or Decimal("0.00")
+    line_item_total = BillingLineItem.objects.filter(visit=visit).aggregate(
+        total=Sum("amount")
+    )["total"] or Decimal("0.00")
+    total_paid = Payment.objects.filter(visit=visit, status="CLEARED").aggregate(
+        total=Sum("amount")
+    )["total"] or Decimal("0.00")
+    return visit_charge_total + line_item_total - total_paid
 
 
 def _registration_line_items(queryset):
     """Filter queryset to Registration services only."""
     return queryset.filter(
-        Q(service_catalog__service_code__istartswith='REG-') |
-        Q(source_service_name__icontains='REGISTRATION') |
-        Q(service_catalog__name__icontains='REGISTRATION')
+        Q(service_catalog__service_code__istartswith="REG-")
+        | Q(source_service_name__icontains="REGISTRATION")
+        | Q(service_catalog__name__icontains="REGISTRATION")
     )
 
 
 def _consultation_line_items(queryset):
     """Filter queryset to Consultation services only (exclude Registration)."""
     return queryset.filter(
-        Q(service_catalog__service_code__istartswith='CONS-') |
-        Q(service_catalog__department='CONSULTATION', service_catalog__workflow_type='GOPD_CONSULT') |
-        Q(source_service_name__icontains='CONSULTATION') |
-        Q(service_catalog__name__icontains='CONSULTATION')
+        Q(service_catalog__service_code__istartswith="CONS-")
+        | Q(
+            service_catalog__department="CONSULTATION",
+            service_catalog__workflow_type="GOPD_CONSULT",
+        )
+        | Q(source_service_name__icontains="CONSULTATION")
+        | Q(service_catalog__name__icontains="CONSULTATION")
     ).exclude(
-        Q(service_catalog__service_code__istartswith='REG-') |
-        Q(source_service_name__icontains='REGISTRATION') |
-        Q(service_catalog__name__icontains='REGISTRATION')
+        Q(service_catalog__service_code__istartswith="REG-")
+        | Q(source_service_name__icontains="REGISTRATION")
+        | Q(service_catalog__name__icontains="REGISTRATION")
     )
 
 
@@ -46,13 +68,16 @@ def _is_insurance_cleared(visit: Visit) -> bool:
     Return True if visit has approved insurance and is settled/claimed.
     In this case, registration and consultation gates are satisfied by insurance.
     """
-    if visit.payment_status in ('SETTLED', 'INSURANCE_CLAIMED'):
+    if visit.payment_status in ("SETTLED", "INSURANCE_CLAIMED"):
         return True
     # Fallback: check if insurance is approved even if visit status not yet synced
-    if visit.payment_status == 'INSURANCE_PENDING':
+    if visit.payment_status == "INSURANCE_PENDING":
         try:
             from .insurance_models import VisitInsurance
-            if VisitInsurance.objects.filter(visit_id=visit.pk, approval_status='APPROVED').exists():
+
+            if VisitInsurance.objects.filter(
+                visit_id=visit.pk, approval_status="APPROVED"
+            ).exists():
                 return True
         except Exception:
             pass
@@ -73,13 +98,18 @@ def is_registration_paid(visit: Visit) -> bool:
         return True
 
     # Fallback: visit already shows payment received - gates are satisfied
-    if visit.payment_status in ('PAID', 'SETTLED', 'PARTIALLY_PAID', 'INSURANCE_CLAIMED'):
+    if visit.payment_status in (
+        "PAID",
+        "SETTLED",
+        "PARTIALLY_PAID",
+        "INSURANCE_CLAIMED",
+    ):
         return True
 
-    base = BillingLineItem.objects.filter(visit=visit).select_related('service_catalog')
+    base = BillingLineItem.objects.filter(visit=visit).select_related("service_catalog")
     reg_items = _registration_line_items(base)
     # Check bill_status='PAID' first
-    if reg_items.filter(bill_status='PAID').exists():
+    if reg_items.filter(bill_status="PAID").exists():
         return True
     # Fallback: amount_paid >= amount indicates fully paid (handles allocation edge cases)
     for item in reg_items:
@@ -89,9 +119,7 @@ def is_registration_paid(visit: Visit) -> bool:
 
     # Fallback: outstanding_balance <= 0 (payment collected but allocation incomplete)
     try:
-        from .billing_service import BillingService
-        summary = BillingService.compute_billing_summary(visit)
-        if summary.outstanding_balance <= 0:
+        if _outstanding_balance_without_gates(visit) <= 0:
             return True
     except Exception:
         pass
@@ -110,13 +138,18 @@ def is_consultation_paid(visit: Visit) -> bool:
         return True
 
     # Fallback: visit already shows payment received - gates are satisfied
-    if visit.payment_status in ('PAID', 'SETTLED', 'PARTIALLY_PAID', 'INSURANCE_CLAIMED'):
+    if visit.payment_status in (
+        "PAID",
+        "SETTLED",
+        "PARTIALLY_PAID",
+        "INSURANCE_CLAIMED",
+    ):
         return True
 
-    base = BillingLineItem.objects.filter(visit=visit).select_related('service_catalog')
+    base = BillingLineItem.objects.filter(visit=visit).select_related("service_catalog")
     cons_items = _consultation_line_items(base)
     # Check bill_status='PAID' first
-    if cons_items.filter(bill_status='PAID').exists():
+    if cons_items.filter(bill_status="PAID").exists():
         return True
     # Fallback: amount_paid >= amount indicates fully paid
     for item in cons_items:
@@ -126,9 +159,7 @@ def is_consultation_paid(visit: Visit) -> bool:
 
     # Fallback: outstanding_balance <= 0 (payment collected but allocation incomplete)
     try:
-        from .billing_service import BillingService
-        summary = BillingService.compute_billing_summary(visit)
-        if summary.outstanding_balance <= 0:
+        if _outstanding_balance_without_gates(visit) <= 0:
             return True
     except Exception:
         pass
@@ -138,7 +169,7 @@ def is_consultation_paid(visit: Visit) -> bool:
 def get_payment_gates_status(visit: Visit) -> dict:
     """
     Return payment gates status for a visit (for API and UI).
-    
+
     Returns:
         dict with:
         - registration_paid: bool
@@ -149,10 +180,10 @@ def get_payment_gates_status(visit: Visit) -> dict:
     reg_paid = is_registration_paid(visit)
     cons_paid = is_consultation_paid(visit)
     return {
-        'registration_paid': reg_paid,
-        'consultation_paid': cons_paid,
-        'can_access_consultation': reg_paid,
-        'can_doctor_start_encounter': cons_paid,
+        "registration_paid": reg_paid,
+        "consultation_paid": cons_paid,
+        "can_access_consultation": reg_paid,
+        "can_doctor_start_encounter": cons_paid,
     }
 
 
@@ -163,15 +194,14 @@ def set_restricted_flags_on_catalog() -> None:
     """
     # Registration: REG-* or name contains REGISTRATION
     ServiceCatalog.objects.filter(
-        Q(service_code__istartswith='REG-') |
-        Q(name__icontains='REGISTRATION')
+        Q(service_code__istartswith="REG-") | Q(name__icontains="REGISTRATION")
     ).update(restricted_service_flag=True)
-    
+
     # Consultation: CONS-* or department=CONSULTATION or name contains CONSULTATION (not registration)
     ServiceCatalog.objects.filter(
-        Q(service_code__istartswith='CONS-') |
-        Q(department='CONSULTATION', workflow_type='GOPD_CONSULT') |
-        Q(name__icontains='CONSULTATION')
+        Q(service_code__istartswith="CONS-")
+        | Q(department="CONSULTATION", workflow_type="GOPD_CONSULT")
+        | Q(name__icontains="CONSULTATION")
     ).exclude(
-        Q(service_code__istartswith='REG-') | Q(name__icontains='REGISTRATION')
+        Q(service_code__istartswith="REG-") | Q(name__icontains="REGISTRATION")
     ).update(restricted_service_flag=True)

@@ -4,9 +4,9 @@ National Health ID verification (Nigeria-ready stub).
 verify_national_health_id(id_number, name, dob) -> valid: bool, message: str
 Stub: simulate NIN/NHIA validation; in production integrate with official API.
 """
+
 import logging
 from typing import Tuple
-from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -37,5 +37,10 @@ def verify_national_health_id(
     if len(id_number) < 8:
         return False, "Invalid ID format."
     # Simulate success for stub (production: call NIN/NHIA API)
-    logger.info("NHID verify stub: id=%s name=%s dob=%s", id_number[:4] + "***", name[:3] + "***", dob)
+    logger.info(
+        "NHID verify stub: id=%s name=%s dob=%s",
+        id_number[:4] + "***",
+        name[:3] + "***",
+        dob,
+    )
     return True, "Verification successful (stub)."

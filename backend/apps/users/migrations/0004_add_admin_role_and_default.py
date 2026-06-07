@@ -5,21 +5,34 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0003_add_nurse_role'),
+        ("users", "0003_add_nurse_role"),
     ]
 
     operations = [
         migrations.AlterModelManagers(
-            name='user',
+            name="user",
             managers=[
-                ('objects', apps.users.models.CustomUserManager()),
+                ("objects", apps.users.models.CustomUserManager()),
             ],
         ),
         migrations.AlterField(
-            model_name='user',
-            name='role',
-            field=models.CharField(choices=[('ADMIN', 'Administrator'), ('DOCTOR', 'Doctor'), ('NURSE', 'Nurse'), ('LAB_TECH', 'Lab Technician'), ('RADIOLOGY_TECH', 'Radiology Technician'), ('PHARMACIST', 'Pharmacist'), ('RECEPTIONIST', 'Receptionist'), ('PATIENT', 'Patient')], default='DOCTOR', help_text='User role for RBAC enforcement', max_length=50),
+            model_name="user",
+            name="role",
+            field=models.CharField(
+                choices=[
+                    ("ADMIN", "Administrator"),
+                    ("DOCTOR", "Doctor"),
+                    ("NURSE", "Nurse"),
+                    ("LAB_TECH", "Lab Technician"),
+                    ("RADIOLOGY_TECH", "Radiology Technician"),
+                    ("PHARMACIST", "Pharmacist"),
+                    ("RECEPTIONIST", "Receptionist"),
+                    ("PATIENT", "Patient"),
+                ],
+                default="DOCTOR",
+                help_text="User role for RBAC enforcement",
+                max_length=50,
+            ),
         ),
     ]

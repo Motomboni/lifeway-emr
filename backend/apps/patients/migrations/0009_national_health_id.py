@@ -4,24 +4,33 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('patients', '0008_patient_portal_enabled'),
+        ("patients", "0008_patient_portal_enabled"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='patient',
-            name='national_health_id',
-            field=models.CharField(blank=True, help_text='National Health ID (Nigeria NHIA/NIN)', max_length=50, null=True, unique=True),
+            model_name="patient",
+            name="national_health_id",
+            field=models.CharField(
+                blank=True,
+                help_text="National Health ID (Nigeria NHIA/NIN)",
+                max_length=50,
+                null=True,
+                unique=True,
+            ),
         ),
         migrations.AddField(
-            model_name='patient',
-            name='id_verified',
-            field=models.BooleanField(default=False, help_text='Whether National Health ID was verified'),
+            model_name="patient",
+            name="id_verified",
+            field=models.BooleanField(
+                default=False, help_text="Whether National Health ID was verified"
+            ),
         ),
         migrations.AddIndex(
-            model_name='patient',
-            index=models.Index(fields=['national_health_id'], name='patients_nationa_health_idx'),
+            model_name="patient",
+            index=models.Index(
+                fields=["national_health_id"], name="patients_nationa_health_idx"
+            ),
         ),
     ]

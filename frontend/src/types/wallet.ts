@@ -6,7 +6,7 @@ export interface Wallet {
   id: number;
   patient: number;
   patient_name: string;
-  patient_id: number;
+  patient_id: string;
   balance: string;
   currency: string;
   is_active: boolean;

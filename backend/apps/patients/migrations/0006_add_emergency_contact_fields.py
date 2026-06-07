@@ -4,25 +4,39 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('patients', '0005_add_patient_verification'),
+        ("patients", "0005_add_patient_verification"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='patient',
-            name='emergency_contact_name',
-            field=models.CharField(blank=True, help_text='Emergency contact name (PHI)', max_length=255, null=True),
+            model_name="patient",
+            name="emergency_contact_name",
+            field=models.CharField(
+                blank=True,
+                help_text="Emergency contact name (PHI)",
+                max_length=255,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='patient',
-            name='emergency_contact_phone',
-            field=models.CharField(blank=True, help_text='Emergency contact phone number (PHI)', max_length=20, null=True),
+            model_name="patient",
+            name="emergency_contact_phone",
+            field=models.CharField(
+                blank=True,
+                help_text="Emergency contact phone number (PHI)",
+                max_length=20,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='patient',
-            name='emergency_contact_relationship',
-            field=models.CharField(blank=True, help_text='Relationship to patient (e.g., Spouse, Parent, Sibling, Friend)', max_length=100, null=True),
+            model_name="patient",
+            name="emergency_contact_relationship",
+            field=models.CharField(
+                blank=True,
+                help_text="Relationship to patient (e.g., Spouse, Parent, Sibling, Friend)",
+                max_length=100,
+                null=True,
+            ),
         ),
     ]

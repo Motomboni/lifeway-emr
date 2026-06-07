@@ -6,6 +6,7 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { OrganizationProvider } from './contexts/OrganizationContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import ProtectedRoute from './components/routing/ProtectedRoute';
@@ -45,6 +46,10 @@ import HealthStatusPage from './pages/HealthStatusPage';
 import ReportsPage from './pages/ReportsPage';
 import BackupPage from './pages/BackupPage';
 import StaffApprovalPage from './pages/StaffApprovalPage';
+import OrganizationsPage from './pages/OrganizationsPage';
+import OrganizationSettingsPage from './pages/OrganizationSettingsPage';
+import SubscriptionPlansPage from './pages/SubscriptionPlansPage';
+import PlatformDashboardPage from './pages/PlatformDashboardPage';
 import ServiceCatalogPage from './pages/ServiceCatalogPage';
 import TelemedicinePage from './pages/TelemedicinePage';
 import EndOfDayReconciliationPage from './pages/EndOfDayReconciliationPage';
@@ -84,7 +89,7 @@ import AntenatalRecordDetailPage from './pages/AntenatalRecordDetailPage';
  */
 function ConsultationPageWrapper() {
   const { visitId } = useParams<{ visitId: string }>();
-  
+
   if (!visitId) {
     return <div>Visit ID is required</div>;
   }
@@ -97,7 +102,7 @@ function ConsultationPageWrapper() {
  */
 function NurseVisitPageWrapper() {
   const { visitId } = useParams<{ visitId: string }>();
-  
+
   if (!visitId) {
     return <div>Visit ID is required</div>;
   }
@@ -119,593 +124,645 @@ function AppRoutes() {
       {isOffline && <OfflineIndicator />}
       <Suspense fallback={<LoadingSpinner message="Loading..." size="large" />}>
         <Routes>
-      {/* Public routes */}
-      <Route 
-        path="/" 
-        element={
-          isAuthenticated ? (
-            <Navigate 
-              to={user?.role === 'PATIENT' ? '/patient-portal/dashboard' : '/dashboard'} 
-              replace 
-            />
-          ) : (
-            <LandingPage />
-          )
-        } 
-      />
-      <Route 
-        path="/login" 
-        element={
-          isAuthenticated ? (
-            <Navigate 
-              to={user?.role === 'PATIENT' ? '/patient-portal/dashboard' : '/dashboard'} 
-              replace 
-            />
-          ) : (
-            <LoginPage />
-          )
-        } 
-      />
-      <Route 
-        path="/register" 
-        element={
-          isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />
-        } 
-      />
-      <Route path="/biometric-login" element={<BiometricLoginPage />} />
-      <Route path="/otp-login" element={<OTPLogin />} />
+          {/* Public routes */}
+          <Route
+            path="/"
+            element={
+              isAuthenticated ? (
+                <Navigate
+                  to={user?.role === 'PATIENT' ? '/patient-portal/dashboard' : '/dashboard'}
+                  replace
+                />
+              ) : (
+                <LandingPage />
+              )
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              isAuthenticated ? (
+                <Navigate
+                  to={user?.role === 'PATIENT' ? '/patient-portal/dashboard' : '/dashboard'}
+                  replace
+                />
+              ) : (
+                <LoginPage />
+              )
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              isAuthenticated ? (
+                <Navigate
+                  to={user?.role === 'PATIENT' ? '/patient-portal/dashboard' : '/dashboard'}
+                  replace
+                />
+              ) : (
+                <RegisterPage />
+              )
+            }
+          />
+          <Route path="/biometric-login" element={<BiometricLoginPage />} />
+          <Route path="/otp-login" element={<OTPLogin />} />
 
-      {/* Protected routes */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Protected routes — staff only (patients use patient portal) */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute staffOnly>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Patient Registration - Receptionist only */}
-        <Route
-          path="/patients/register"
-          element={
-            <ProtectedRoute requiredRole={['RECEPTIONIST', 'ADMIN'] as any}>
-              <PatientRegistrationPage />
-            </ProtectedRoute>
-          }
-        />
+          {/* Patient Registration - Receptionist only */}
+          <Route
+            path="/patients/register"
+            element={
+              <ProtectedRoute requiredRole={['RECEPTIONIST', 'ADMIN'] as any}>
+                <PatientRegistrationPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Visits List - All authenticated users */}
-      <Route
-        path="/visits"
-        element={
-          <ProtectedRoute>
-            <VisitsListPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Visits List - Staff only */}
+          <Route
+            path="/visits"
+            element={
+              <ProtectedRoute staffOnly>
+                <VisitsListPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Create Visit - Receptionist */}
-      <Route
-        path="/visits/new"
-        element={
-          <ProtectedRoute>
-            <CreateVisitPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Create Visit - Receptionist and Admin */}
+          <Route
+            path="/visits/new"
+            element={
+              <ProtectedRoute staffOnly requiredRole={['RECEPTIONIST', 'ADMIN']}>
+                <CreateVisitPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Consultation route - Doctor only */}
-      <Route
-        path="/visits/:visitId/consultation"
-        element={
-          <ProtectedRoute requiredRole="DOCTOR">
-            <ConsultationPageWrapper />
-          </ProtectedRoute>
-        }
-      />
+          {/* Consultation route - Doctor only */}
+          <Route
+            path="/visits/:visitId/consultation"
+            element={
+              <ProtectedRoute requiredRole="DOCTOR">
+                <ConsultationPageWrapper />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Nurse Visit route - Nurse only */}
-      <Route
-        path="/visits/:visitId/nursing"
-        element={
-          <ProtectedRoute requiredRole="NURSE">
-            <NurseVisitPageWrapper />
-          </ProtectedRoute>
-        }
-      />
+          {/* Nurse Visit route - Nurse only */}
+          <Route
+            path="/visits/:visitId/nursing"
+            element={
+              <ProtectedRoute requiredRole="NURSE">
+                <NurseVisitPageWrapper />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Telemedicine - Doctor only */}
-      <Route
-        path="/visits/:visitId/telemedicine"
-        element={
-          <ProtectedRoute requiredRole="DOCTOR">
-            <TelemedicinePage />
-          </ProtectedRoute>
-        }
-      />
-      
-      {/* Telemedicine (without visit) - Doctor only */}
-      <Route
-        path="/telemedicine"
-        element={
-          <ProtectedRoute requiredRole="DOCTOR">
-            <TelemedicinePage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Telemedicine - Doctor only */}
+          <Route
+            path="/visits/:visitId/telemedicine"
+            element={
+              <ProtectedRoute requiredRole="DOCTOR">
+                <TelemedicinePage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Lab Orders - Lab Tech only */}
-      <Route
-        path="/lab-orders"
-        element={
-          <ProtectedRoute requiredRole="LAB_TECH">
-            <LabOrdersPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Telemedicine (without visit) - Doctor only */}
+          <Route
+            path="/telemedicine"
+            element={
+              <ProtectedRoute requiredRole="DOCTOR">
+                <TelemedicinePage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Radiology Orders - Radiology Tech only */}
-      <Route
-        path="/radiology-orders"
-        element={
-          <ProtectedRoute requiredRole="RADIOLOGY_TECH">
-            <RadiologyOrdersPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Lab Orders - Lab Tech and Admin */}
+          <Route
+            path="/lab-orders"
+            element={
+              <ProtectedRoute staffOnly requiredRole={['LAB_TECH', 'ADMIN']}>
+                <LabOrdersPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Radiology Upload Status - Radiology Tech and Admin */}
-      <Route
-        path="/radiology/upload-status"
-        element={
-          <ProtectedRoute>
-            <RadiologyUploadStatusPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Radiology Orders - Radiology Tech only */}
+          <Route
+            path="/radiology-orders"
+            element={
+              <ProtectedRoute requiredRole="RADIOLOGY_TECH">
+                <RadiologyOrdersPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Prescriptions - Pharmacist only */}
-      <Route
-        path="/prescriptions"
-        element={
-          <ProtectedRoute requiredRole="PHARMACIST">
-            <PrescriptionsPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Radiology Upload Status - Radiology Tech and Admin */}
+          <Route
+            path="/radiology/upload-status"
+            element={
+              <ProtectedRoute>
+                <RadiologyUploadStatusPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Drug Catalog & Inventory - Pharmacist only (merged) */}
-      <Route
-        path="/drugs"
-        element={
-          <ProtectedRoute requiredRole="PHARMACIST">
-            <DrugCatalogInventoryPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Prescriptions - Pharmacist only */}
+          <Route
+            path="/prescriptions"
+            element={
+              <ProtectedRoute requiredRole="PHARMACIST">
+                <PrescriptionsPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Redirect /inventory → /drugs (merged single page) */}
-      <Route path="/inventory" element={<Navigate to="/drugs" replace />} />
+          {/* Drug Catalog & Inventory - Pharmacist only (merged) */}
+          <Route
+            path="/drugs"
+            element={
+              <ProtectedRoute requiredRole="PHARMACIST">
+                <DrugCatalogInventoryPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Lab Test Catalog - Doctor and Lab Tech */}
-      <Route
-        path="/lab-test-catalog"
-        element={
-          <ProtectedRoute>
-            <LabTestCatalogPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Redirect /inventory → /drugs (merged single page) */}
+          <Route path="/inventory" element={<Navigate to="/drugs" replace />} />
 
-      {/* Radiology Study Types Catalog - Doctor and Radiology Tech */}
-      <Route
-        path="/radiology-study-types"
-        element={
-          <ProtectedRoute>
-            <RadiologyStudyTypesPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Lab Test Catalog - Doctor, Lab Tech, Admin */}
+          <Route
+            path="/lab-test-catalog"
+            element={
+              <ProtectedRoute staffOnly requiredRole={['DOCTOR', 'LAB_TECH', 'ADMIN'] as any}>
+                <LabTestCatalogPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Payment Processing - Receptionist only */}
-      <Route
-        path="/payments"
-        element={
-          <ProtectedRoute requiredRole="RECEPTIONIST">
-            <PaymentProcessingPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Radiology Study Types Catalog - Doctor, Radiology Tech, Admin */}
+          <Route
+            path="/radiology-study-types"
+            element={
+              <ProtectedRoute staffOnly requiredRole={['DOCTOR', 'RADIOLOGY_TECH', 'ADMIN'] as any}>
+                <RadiologyStudyTypesPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Central Billing Queue (Pending Payments) - Receptionist only */}
-      <Route
-        path="/billing/pending-queue"
-        element={
-          <ProtectedRoute requiredRole="RECEPTIONIST">
-            <BillingPendingQueuePage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Payment Processing - Receptionist only */}
+          <Route
+            path="/payments"
+            element={
+              <ProtectedRoute requiredRole="RECEPTIONIST">
+                <PaymentProcessingPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Insurance Claims (create, submit, track) - Billing staff only */}
-      <Route
-        path="/billing/claims"
-        element={
-          <ProtectedRoute requiredRole={['RECEPTIONIST', 'ADMIN']}>
-            <InsuranceClaimsDashboard />
-          </ProtectedRoute>
-        }
-      />
+          {/* Central Billing Queue (Pending Payments) - Receptionist only */}
+          <Route
+            path="/billing/pending-queue"
+            element={
+              <ProtectedRoute requiredRole="RECEPTIONIST">
+                <BillingPendingQueuePage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Appointments - Receptionist and Doctor */}
-      <Route
-        path="/appointments"
-        element={
-          <ProtectedRoute>
-            <AppointmentsPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Insurance Claims (create, submit, track) - Billing staff only */}
+          <Route
+            path="/billing/claims"
+            element={
+              <ProtectedRoute requiredRole={['RECEPTIONIST', 'ADMIN']}>
+                <InsuranceClaimsDashboard />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Patient Management - All authenticated users */}
-      <Route
-        path="/patients"
-        element={
-          <ProtectedRoute>
-            <PatientManagementPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Appointments - Clinical staff */}
+          <Route
+            path="/appointments"
+            element={
+              <ProtectedRoute staffOnly>
+                <AppointmentsPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Patient Verification - Receptionist only */}
-      <Route
-        path="/patients/verification"
-        element={
-          <ProtectedRoute requiredRole="RECEPTIONIST">
-            <PatientVerificationPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Patient Management - Staff only */}
+          <Route
+            path="/patients"
+            element={
+              <ProtectedRoute staffOnly>
+                <PatientManagementPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Visit Details - All authenticated users */}
-      <Route
-        path="/visits/:visitId"
-        element={
-          <ProtectedRoute>
-            <VisitDetailsPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Patient Verification - Receptionist only */}
+          <Route
+            path="/patients/verification"
+            element={
+              <ProtectedRoute requiredRole="RECEPTIONIST">
+                <PatientVerificationPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Inpatients List - All authenticated users */}
-      <Route
-        path="/inpatients"
-        element={
-          <ProtectedRoute>
-            <InpatientsPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Visit Details - Staff only */}
+          <Route
+            path="/visits/:visitId"
+            element={
+              <ProtectedRoute staffOnly>
+                <VisitDetailsPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Audit Logs - Admin only */}
-      <Route
-        path="/audit-logs"
-        element={
-          <ProtectedRoute requireAdmin>
-            <AuditLogPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Inpatients List - Staff only */}
+          <Route
+            path="/inpatients"
+            element={
+              <ProtectedRoute staffOnly>
+                <InpatientsPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Health Status - Admin only */}
-      <Route
-        path="/health"
-        element={
-          <ProtectedRoute requireAdmin>
-            <HealthStatusPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Audit Logs - Admin only */}
+          <Route
+            path="/audit-logs"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AuditLogPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Staff Approval - Admin only */}
-      <Route
-        path="/staff-approval"
-        element={
-          <ProtectedRoute requireAdmin>
-            <StaffApprovalPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Health Status - Admin only */}
+          <Route
+            path="/health"
+            element={
+              <ProtectedRoute requireAdmin>
+                <HealthStatusPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Backup & Restore - Admin only */}
-      <Route
-        path="/backups"
-        element={
-          <ProtectedRoute requireAdmin>
-            <BackupPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Staff Approval - Admin only */}
+          <Route
+            path="/staff-approval"
+            element={
+              <ProtectedRoute requireAdmin>
+                <StaffApprovalPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Service Catalog - Admin only */}
-      <Route
-        path="/service-catalog"
-        element={
-          <ProtectedRoute requireAdmin>
-            <ServiceCatalogPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Organizations - Admin only (SaaS multi-tenancy) */}
+          <Route
+            path="/organizations"
+            element={
+              <ProtectedRoute requireAdmin>
+                <OrganizationsPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Reports & Analytics - Admin only */}
-      <Route
-        path="/reports"
-        element={
-          <ProtectedRoute requireAdmin>
-            <ReportsPage />
-          </ProtectedRoute>
-        }
-      />
-      {/* End-of-Day Reconciliation - Admin and Receptionist */}
-        <Route
-          path="/reconciliation"
-          element={
-            <ProtectedRoute>
-              <EndOfDayReconciliationPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/organization/settings"
+            element={
+              <ProtectedRoute requireAdmin>
+                <OrganizationSettingsPage />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Revenue Leak Detection - Admin and Management only */}
-        <Route
-          path="/billing/revenue-leaks"
-          element={
-            <ProtectedRoute>
-              <RevenueLeakDashboardPage />
-            </ProtectedRoute>
-          }
-        />
+          {/* Subscription Plans - Admin only (SaaS multi-tenancy) */}
+          <Route
+            path="/plans"
+            element={
+              <ProtectedRoute requireAdmin>
+                <SubscriptionPlansPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Medical History - All authenticated users */}
-      <Route
-        path="/patients/:patientId/history"
-        element={
-          <ProtectedRoute>
-            <MedicalHistoryPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Platform super-admin dashboard (Django superuser) */}
+          <Route
+            path="/platform"
+            element={
+              <ProtectedRoute staffOnly>
+                <PlatformDashboardPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Patient Portal Routes - Patients only */}
-      <Route
-        path="/patient-portal/dashboard"
-        element={
-          <ProtectedRoute requiredRole="PATIENT">
-            <PatientPortalDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/patient-portal/visits"
-        element={
-          <ProtectedRoute requiredRole="PATIENT">
-            <PatientPortalVisitsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/patient-portal/visits/:visitId"
-        element={
-          <ProtectedRoute requiredRole="PATIENT">
-            <PatientPortalVisitDetailPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/patient-portal/appointments"
-        element={
-          <ProtectedRoute requiredRole="PATIENT">
-            <PatientPortalAppointmentsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/patient-portal/lab-results"
-        element={
-          <ProtectedRoute requiredRole="PATIENT">
-            <PatientPortalLabResultsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/patient-portal/radiology-results"
-        element={
-          <ProtectedRoute requiredRole="PATIENT">
-            <PatientPortalRadiologyResultsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/patient-portal/prescriptions"
-        element={
-          <ProtectedRoute requiredRole="PATIENT">
-            <PatientPortalPrescriptionsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/patient-portal/medical-history"
-        element={
-          <ProtectedRoute requiredRole="PATIENT">
-            <PatientPortalMedicalHistoryPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/patient-portal/telemedicine"
-        element={
-          <ProtectedRoute requiredRole="PATIENT">
-            <PatientPortalTelemedicinePage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Backup & Restore - Admin only */}
+          <Route
+            path="/backups"
+            element={
+              <ProtectedRoute requireAdmin>
+                <BackupPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Wallet - Patients and Receptionists */}
-      <Route
-        path="/wallet"
-        element={
-          <ProtectedRoute requiredRole="PATIENT">
-            <WalletPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/wallet/callback"
-        element={
-          <ProtectedRoute requiredRole="PATIENT">
-            <WalletCallbackPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Service Catalog - Admin only */}
+          <Route
+            path="/service-catalog"
+            element={
+              <ProtectedRoute requireAdmin>
+                <ServiceCatalogPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* IVF Module Routes - IVF_SPECIALIST, EMBRYOLOGIST, NURSE, and DOCTOR */}
-      <Route
-        path="/ivf"
-        element={
-          <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'EMBRYOLOGIST', 'NURSE', 'ADMIN', 'DOCTOR'] as any}>
-            <IVFDashboardPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/ivf/cycles"
-        element={
-          <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'EMBRYOLOGIST', 'NURSE', 'ADMIN', 'DOCTOR'] as any}>
-            <IVFCyclesListPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/ivf/cycles/new"
-        element={
-          <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'ADMIN'] as any}>
-            <IVFCycleNewPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/ivf/cycles/:cycleId"
-        element={
-          <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'EMBRYOLOGIST', 'NURSE', 'ADMIN', 'DOCTOR'] as any}>
-            <IVFCycleDetailPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/ivf/patients"
-        element={
-          <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'EMBRYOLOGIST', 'NURSE', 'ADMIN', 'DOCTOR'] as any}>
-            <IVFPatientsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/ivf/visits"
-        element={
-          <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'EMBRYOLOGIST', 'NURSE', 'ADMIN', 'DOCTOR'] as any}>
-            <IVFVisitsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/ivf/sperm-analyses"
-        element={
-          <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'EMBRYOLOGIST', 'ADMIN', 'DOCTOR'] as any}>
-            <SpermAnalysesPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/ivf/sperm-analyses/:id"
-        element={
-          <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'EMBRYOLOGIST', 'ADMIN', 'DOCTOR'] as any}>
-            <SpermAnalysisDetailPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/ivf/embryo-inventory"
-        element={
-          <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'EMBRYOLOGIST', 'ADMIN'] as any}>
-            <EmbryoInventoryPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/ivf/reports"
-        element={
-          <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'ADMIN'] as any}>
-            <IVFReportsPage />
-          </ProtectedRoute>
-        }
-      />
-      {/* Nurse-focused IVF routes */}
-      <Route
-        path="/ivf/cycles/:cycleId/stimulation"
-        element={
-          <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'NURSE', 'ADMIN'] as any}>
-            <IVFStimulationMonitoringPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/ivf/cycles/:cycleId/medications"
-        element={
-          <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'NURSE', 'ADMIN'] as any}>
-            <IVFMedicationAdminPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Reports & Analytics - Admin only */}
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute requireAdmin>
+                <ReportsPage />
+              </ProtectedRoute>
+            }
+          />
+          {/* End-of-Day Reconciliation - Admin and Receptionist */}
+          <Route
+            path="/reconciliation"
+            element={
+              <ProtectedRoute staffOnly>
+                <EndOfDayReconciliationPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Antenatal Clinic Management Routes - DOCTOR, NURSE, and ADMIN */}
-      <Route
-        path="/antenatal"
-        element={
-          <ProtectedRoute requiredRole={['DOCTOR', 'NURSE', 'ADMIN'] as any}>
-            <AntenatalDashboardPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/antenatal/records"
-        element={
-          <ProtectedRoute requiredRole={['DOCTOR', 'NURSE', 'ADMIN'] as any}>
-            <AntenatalDashboardPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/antenatal/records/new"
-        element={
-          <ProtectedRoute requiredRole={['DOCTOR', 'ADMIN'] as any}>
-            <AntenatalRecordNewPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/antenatal/records/:recordId"
-        element={
-          <ProtectedRoute requiredRole={['DOCTOR', 'NURSE', 'ADMIN'] as any}>
-            <AntenatalRecordDetailPage />
-          </ProtectedRoute>
-        }
-      />
+          {/* Revenue Leak Detection - Admin only */}
+          <Route
+            path="/billing/revenue-leaks"
+            element={
+              <ProtectedRoute staffOnly requireAdmin>
+                <RevenueLeakDashboardPage />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* 404 Not Found */}
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
-    </Suspense>
+          {/* Medical History - Staff only */}
+          <Route
+            path="/patients/:patientId/history"
+            element={
+              <ProtectedRoute staffOnly>
+                <MedicalHistoryPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Patient portal index redirect */}
+          <Route
+            path="/patient-portal"
+            element={<Navigate to="/patient-portal/dashboard" replace />}
+          />
+
+          {/* Patient Portal Routes - Patients only */}
+          <Route
+            path="/patient-portal/dashboard"
+            element={
+              <ProtectedRoute requiredRole="PATIENT">
+                <PatientPortalDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/patient-portal/visits"
+            element={
+              <ProtectedRoute requiredRole="PATIENT">
+                <PatientPortalVisitsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/patient-portal/visits/:visitId"
+            element={
+              <ProtectedRoute requiredRole="PATIENT">
+                <PatientPortalVisitDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/patient-portal/appointments"
+            element={
+              <ProtectedRoute requiredRole="PATIENT">
+                <PatientPortalAppointmentsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/patient-portal/lab-results"
+            element={
+              <ProtectedRoute requiredRole="PATIENT">
+                <PatientPortalLabResultsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/patient-portal/radiology-results"
+            element={
+              <ProtectedRoute requiredRole="PATIENT">
+                <PatientPortalRadiologyResultsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/patient-portal/prescriptions"
+            element={
+              <ProtectedRoute requiredRole="PATIENT">
+                <PatientPortalPrescriptionsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/patient-portal/medical-history"
+            element={
+              <ProtectedRoute requiredRole="PATIENT">
+                <PatientPortalMedicalHistoryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/patient-portal/telemedicine"
+            element={
+              <ProtectedRoute requiredRole="PATIENT">
+                <PatientPortalTelemedicinePage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Wallet - Patients (own wallet) and Receptionists (lookup) */}
+          <Route
+            path="/wallet"
+            element={
+              <ProtectedRoute requiredRole={['PATIENT', 'RECEPTIONIST', 'ADMIN'] as any}>
+                <WalletPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/wallet/callback"
+            element={
+              <ProtectedRoute requiredRole="PATIENT">
+                <WalletCallbackPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* IVF Module Routes - IVF_SPECIALIST, EMBRYOLOGIST, NURSE, and DOCTOR */}
+          <Route
+            path="/ivf"
+            element={
+              <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'EMBRYOLOGIST', 'NURSE', 'ADMIN', 'DOCTOR'] as any}>
+                <IVFDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ivf/cycles"
+            element={
+              <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'EMBRYOLOGIST', 'NURSE', 'ADMIN', 'DOCTOR'] as any}>
+                <IVFCyclesListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ivf/cycles/new"
+            element={
+              <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'ADMIN'] as any}>
+                <IVFCycleNewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ivf/cycles/:cycleId"
+            element={
+              <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'EMBRYOLOGIST', 'NURSE', 'ADMIN', 'DOCTOR'] as any}>
+                <IVFCycleDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ivf/patients"
+            element={
+              <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'EMBRYOLOGIST', 'NURSE', 'ADMIN', 'DOCTOR'] as any}>
+                <IVFPatientsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ivf/visits"
+            element={
+              <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'EMBRYOLOGIST', 'NURSE', 'ADMIN', 'DOCTOR'] as any}>
+                <IVFVisitsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ivf/sperm-analyses"
+            element={
+              <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'EMBRYOLOGIST', 'ADMIN', 'DOCTOR'] as any}>
+                <SpermAnalysesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ivf/sperm-analyses/:id"
+            element={
+              <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'EMBRYOLOGIST', 'ADMIN', 'DOCTOR'] as any}>
+                <SpermAnalysisDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ivf/embryo-inventory"
+            element={
+              <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'EMBRYOLOGIST', 'ADMIN'] as any}>
+                <EmbryoInventoryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ivf/reports"
+            element={
+              <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'ADMIN'] as any}>
+                <IVFReportsPage />
+              </ProtectedRoute>
+            }
+          />
+          {/* Nurse-focused IVF routes */}
+          <Route
+            path="/ivf/cycles/:cycleId/stimulation"
+            element={
+              <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'NURSE', 'ADMIN'] as any}>
+                <IVFStimulationMonitoringPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ivf/cycles/:cycleId/medications"
+            element={
+              <ProtectedRoute requiredRole={['IVF_SPECIALIST', 'NURSE', 'ADMIN'] as any}>
+                <IVFMedicationAdminPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Antenatal Clinic Management Routes - DOCTOR, NURSE, and ADMIN */}
+          <Route
+            path="/antenatal"
+            element={
+              <ProtectedRoute requiredRole={['DOCTOR', 'NURSE', 'ADMIN'] as any}>
+                <AntenatalDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/antenatal/records"
+            element={
+              <ProtectedRoute requiredRole={['DOCTOR', 'NURSE', 'ADMIN'] as any}>
+                <AntenatalDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/antenatal/records/new"
+            element={
+              <ProtectedRoute requiredRole={['DOCTOR', 'ADMIN'] as any}>
+                <AntenatalRecordNewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/antenatal/records/:recordId"
+            element={
+              <ProtectedRoute requiredRole={['DOCTOR', 'NURSE', 'ADMIN'] as any}>
+                <AntenatalRecordDetailPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* 404 Not Found */}
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
     </>
   );
 }
@@ -721,9 +778,11 @@ function App() {
       >
         <ThemeProvider>
           <AuthProvider>
-            <NotificationProvider>
-              <AppRoutes />
-            </NotificationProvider>
+            <OrganizationProvider>
+              <NotificationProvider>
+                <AppRoutes />
+              </NotificationProvider>
+            </OrganizationProvider>
           </AuthProvider>
         </ThemeProvider>
       </BrowserRouter>

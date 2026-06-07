@@ -281,7 +281,7 @@
 
 .badge {
   padding: 0.25rem 0.6rem;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 0.8rem;
   font-weight: 500;
 }
@@ -510,7 +510,7 @@
 
 .movementBadge {
   padding: 0.2rem 0.6rem;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 0.8rem;
   font-weight: 500;
   margin-right: 0.5rem;

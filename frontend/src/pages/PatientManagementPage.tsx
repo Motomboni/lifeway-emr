@@ -6,7 +6,7 @@
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useRolePermissions } from '../hooks/useRolePermissions';
 import { fetchPatients, searchPatients, getPatient, updatePatient, archivePatient } from '../api/patient';
 import { Patient, PatientCreateData } from '../types/patient';
 import { useToast } from '../hooks/useToast';
@@ -15,7 +15,7 @@ import BackToDashboard from '../components/common/BackToDashboard';
 import styles from '../styles/PatientManagement.module.css';
 
 export default function PatientManagementPage() {
-  const { user } = useAuth();
+  const { canManagePatients, canArchivePatients } = useRolePermissions();
   const navigate = useNavigate();
   const { showError, showSuccess } = useToast();
 
@@ -139,8 +139,8 @@ export default function PatientManagementPage() {
     }
   };
 
-  const canEdit = user?.role === 'RECEPTIONIST' || user?.role === 'ADMIN';
-  const canArchive = user?.role === 'RECEPTIONIST' || user?.role === 'ADMIN' || user?.is_superuser;
+  const canEdit = canManagePatients;
+  const canArchive = canArchivePatients;
 
   return (
     <div className={styles.patientManagementPage}>

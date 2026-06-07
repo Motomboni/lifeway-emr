@@ -5,19 +5,16 @@ Endpoint pattern: /api/v1/visits/{visit_id}/payment-intents/
 
 This ensures PaymentIntents are ALWAYS visit-scoped.
 """
-from django.urls import path, include
+
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+
 from .paystack_views import PaymentIntentViewSet
 
 # Create router for payment intent viewset
 router = DefaultRouter()
-router.register(
-    r'',
-    PaymentIntentViewSet,
-    basename='payment-intent'
-)
+router.register(r"", PaymentIntentViewSet, basename="payment-intent")
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path("", include(router.urls)),
 ]
-

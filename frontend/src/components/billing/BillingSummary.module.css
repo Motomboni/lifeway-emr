@@ -24,37 +24,48 @@
 }
 
 .metricCard {
-  border-radius: 8px;
-  padding: 1rem;
-  border: 1px solid;
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.4);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.metricCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
 }
 
 .metricCardBlue {
-  background: #eff6ff;
-  border-color: #dbeafe;
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.8) 0%, rgba(219, 234, 254, 0.5) 100%);
+  border-color: rgba(191, 219, 254, 0.5);
 }
 
 .metricCardGreen {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.8) 0%, rgba(187, 247, 208, 0.5) 100%);
+  border-color: rgba(134, 239, 172, 0.5);
 }
 
 .metricCardPurple {
-  background: #faf5ff;
-  border-color: #e9d5ff;
+  background: linear-gradient(135deg, rgba(250, 245, 255, 0.8) 0%, rgba(233, 213, 255, 0.5) 100%);
+  border-color: rgba(216, 180, 254, 0.5);
 }
 
 .metricCardEmerald {
-  background: #ecfdf5;
-  border-color: #a7f3d0;
+  background: linear-gradient(135deg, rgba(236, 253, 245, 0.8) 0%, rgba(167, 243, 208, 0.5) 100%);
+  border-color: rgba(110, 231, 183, 0.5);
 }
 
 .metricCardOrange {
-  background: #fff7ed;
-  border-color: #fed7aa;
+  background: linear-gradient(135deg, rgba(255, 247, 237, 0.8) 0%, rgba(254, 215, 170, 0.5) 100%);
+  border-color: rgba(253, 186, 116, 0.5);
 }
 
 .metricContent {
@@ -131,24 +142,33 @@
 }
 
 .outstandingCard {
-  border-radius: 8px;
-  padding: 1.5rem;
-  border: 2px solid;
+  border-radius: var(--radius-md);
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.outstandingCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
 }
 
 .outstandingCardCleared {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.8) 0%, rgba(187, 247, 208, 0.5) 100%);
+  border-color: rgba(134, 239, 172, 0.5);
 }
 
 .outstandingCardPending {
-  background: #fef2f2;
-  border-color: #fecaca;
+  background: linear-gradient(135deg, rgba(254, 242, 242, 0.8) 0%, rgba(254, 202, 202, 0.5) 100%);
+  border-color: rgba(252, 165, 165, 0.5);
 }
 
 .outstandingCardInsurance {
-  background: #eff6ff;
-  border-color: #bfdbfe;
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.8) 0%, rgba(191, 219, 254, 0.5) 100%);
+  border-color: rgba(147, 197, 253, 0.5);
 }
 
 .outstandingHeader {
@@ -273,10 +293,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem;
-  background: #f9fafb;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  padding: 1rem 1.25rem;
+  background: var(--bg-primary, #ffffff);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(128, 128, 128, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.paymentStatusItem:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .paymentStatusLabel {
@@ -290,4 +317,3 @@
   font-weight: 600;
   color: #111827;
 }
-

@@ -9,7 +9,7 @@
 
 .walletCard {
   background: var(--bg-primary);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 32px;
   box-shadow: 0 2px 8px var(--shadow);
   border: 1px solid var(--border-color);
@@ -27,7 +27,7 @@
 
 .balanceCard {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 32px;
   color: white;
   text-align: center;
@@ -282,7 +282,7 @@
 .callbackContent {
   text-align: center;
   background: var(--bg-primary);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 48px;
   box-shadow: 0 2px 8px var(--shadow);
   border: 1px solid var(--border-color);

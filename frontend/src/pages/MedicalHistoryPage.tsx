@@ -11,7 +11,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getPatient } from '../api/patient';
+import { getPatient, exportMedicalHistoryPdf } from '../api/patient';
 import { fetchVisits, PaginatedResponse } from '../api/visits';
 import { fetchConsultation } from '../api/consultation';
 import { fetchPrescriptions } from '../api/prescription';
@@ -42,12 +42,13 @@ export default function MedicalHistoryPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { showError } = useToast();
+  const { showError, showSuccess } = useToast();
 
   const [patient, setPatient] = useState<Patient | null>(null);
   const [visitHistory, setVisitHistory] = useState<VisitHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedVisits, setExpandedVisits] = useState<Set<number>>(new Set());
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     if (patientId) {
@@ -147,6 +148,29 @@ export default function MedicalHistoryPage() {
     }
   };
 
+  const handleExportPdf = async () => {
+    if (!patient) return;
+    try {
+      setIsExporting(true);
+      const blob = await exportMedicalHistoryPdf(patient.id);
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `medical_history_${patient.first_name}_${patient.last_name}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+
+      showSuccess('PDF downloaded successfully');
+    } catch (error: any) {
+      showError(error.message || 'Failed to export PDF');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const toggleVisit = (visitId: number) => {
     setExpandedVisits((prev) => {
       const newSet = new Set(prev);
@@ -201,12 +225,35 @@ export default function MedicalHistoryPage() {
     <div className={styles.medicalHistoryPage}>
       <BackToDashboard />
       <header className={styles.header}>
-        <h1>Medical History</h1>
-        <div className={styles.patientInfo}>
-          <h2>{patient.full_name}</h2>
-          <p>Patient ID: {patient.patient_id}</p>
-          {patient.age && <p>Age: {patient.age} years</p>}
-          {patient.gender && <p>Gender: {patient.gender}</p>}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1>Medical History</h1>
+            <div className={styles.patientInfo}>
+              <h2>{patient.full_name}</h2>
+              <p>Patient ID: {patient.patient_id}</p>
+              {patient.age && <p>Age: {patient.age} years</p>}
+              {patient.gender && <p>Gender: {patient.gender}</p>}
+            </div>
+          </div>
+          <div>
+            <button
+              className={styles.consultButton}
+              onClick={handleExportPdf}
+              disabled={isExporting}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              {isExporting ? (
+                <>
+                  <span className={styles.spinner} style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: 'white', width: '16px', height: '16px', borderWidth: '2px' }}></span>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  📑 Export PDF
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -235,18 +282,16 @@ export default function MedicalHistoryPage() {
                   </div>
                   <div className={styles.timelineBadges}>
                     <span
-                      className={`${styles.badge} ${
-                        history.visit.status === 'OPEN' ? styles.badgeOpen : styles.badgeClosed
-                      }`}
+                      className={`${styles.badge} ${history.visit.status === 'OPEN' ? styles.badgeOpen : styles.badgeClosed
+                        }`}
                     >
                       {history.visit.status}
                     </span>
                     <span
-                      className={`${styles.badge} ${
-                        history.visit.payment_status === 'PAID' || history.visit.payment_status === 'SETTLED'
+                      className={`${styles.badge} ${history.visit.payment_status === 'PAID' || history.visit.payment_status === 'SETTLED'
                           ? styles.badgeCleared
                           : styles.badgePending
-                      }`}
+                        }`}
                     >
                       {history.visit.payment_status}
                     </span>

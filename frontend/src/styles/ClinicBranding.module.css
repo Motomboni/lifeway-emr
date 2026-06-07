@@ -1,0 +1,50 @@
+.branding {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logoImg {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: var(--surface-secondary, #f3f4f6);
+}
+
+.logoMark {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--primary-color, #2563eb);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.clinicName {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary, #111);
+}
+
+.poweredBy {
+  font-size: 0.7rem;
+  color: var(--text-secondary, #6b7280);
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 640px) {
+  .text {
+    display: none;
+  }
+}

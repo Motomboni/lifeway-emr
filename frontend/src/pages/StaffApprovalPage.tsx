@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useRolePermissions } from '../hooks/useRolePermissions';
 import { fetchPendingStaff, approveStaffUser, fetchAllStaff, deactivateStaffUser } from '../api/auth';
 import { User } from '../types/auth';
 import { useToast } from '../hooks/useToast';
@@ -29,6 +30,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 export default function StaffApprovalPage() {
   const { user } = useAuth();
+  const { isAdmin, isSuperuser } = useRolePermissions();
   const navigate = useNavigate();
   const { showError, showSuccess } = useToast();
 
@@ -38,9 +40,6 @@ export default function StaffApprovalPage() {
   const [loading, setLoading] = useState(true);
   const [approvingId, setApprovingId] = useState<number | null>(null);
   const [deactivatingId, setDeactivatingId] = useState<number | null>(null);
-
-  const isAdmin = user?.is_superuser === true || user?.role === 'ADMIN';
-  const isSuperuser = user?.is_superuser === true;
 
   const loadPendingStaff = useCallback(async () => {
     try {

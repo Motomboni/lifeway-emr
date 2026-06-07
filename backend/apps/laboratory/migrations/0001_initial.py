@@ -5,44 +5,116 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('consultations', '0001_initial'),
+        ("consultations", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='LabResult',
+            name="LabResult",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('result_data', models.TextField(help_text='Raw lab findings. No diagnosis or interpretation.')),
-                ('abnormal_flag', models.CharField(choices=[('NORMAL', 'Normal'), ('ABNORMAL', 'Abnormal'), ('CRITICAL', 'Critical')], default='NORMAL', help_text='Abnormality flag for the result', max_length=10)),
-                ('recorded_at', models.DateTimeField(auto_now_add=True, help_text='When the result was recorded')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "result_data",
+                    models.TextField(
+                        help_text="Raw lab findings. No diagnosis or interpretation."
+                    ),
+                ),
+                (
+                    "abnormal_flag",
+                    models.CharField(
+                        choices=[
+                            ("NORMAL", "Normal"),
+                            ("ABNORMAL", "Abnormal"),
+                            ("CRITICAL", "Critical"),
+                        ],
+                        default="NORMAL",
+                        help_text="Abnormality flag for the result",
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "recorded_at",
+                    models.DateTimeField(
+                        auto_now_add=True, help_text="When the result was recorded"
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Lab Result',
-                'verbose_name_plural': 'Lab Results',
-                'db_table': 'lab_results',
-                'ordering': ['-recorded_at'],
+                "verbose_name": "Lab Result",
+                "verbose_name_plural": "Lab Results",
+                "db_table": "lab_results",
+                "ordering": ["-recorded_at"],
             },
         ),
         migrations.CreateModel(
-            name='LabOrder',
+            name="LabOrder",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('tests_requested', models.JSONField(help_text='List of tests requested (JSON array of test names/codes)')),
-                ('clinical_indication', models.TextField(blank=True, help_text='Clinical reason for ordering tests')),
-                ('status', models.CharField(choices=[('ORDERED', 'Ordered'), ('SAMPLE_COLLECTED', 'Sample Collected'), ('RESULT_READY', 'Result Ready')], default='ORDERED', help_text='Status of the lab order', max_length=20)),
-                ('created_at', models.DateTimeField(auto_now_add=True, help_text='When the lab order was created')),
-                ('consultation', models.ForeignKey(help_text='Consultation this lab order belongs to. Lab orders require consultation context.', on_delete=django.db.models.deletion.PROTECT, related_name='lab_orders', to='consultations.consultation')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "tests_requested",
+                    models.JSONField(
+                        help_text="List of tests requested (JSON array of test names/codes)"
+                    ),
+                ),
+                (
+                    "clinical_indication",
+                    models.TextField(
+                        blank=True, help_text="Clinical reason for ordering tests"
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("ORDERED", "Ordered"),
+                            ("SAMPLE_COLLECTED", "Sample Collected"),
+                            ("RESULT_READY", "Result Ready"),
+                        ],
+                        default="ORDERED",
+                        help_text="Status of the lab order",
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True, help_text="When the lab order was created"
+                    ),
+                ),
+                (
+                    "consultation",
+                    models.ForeignKey(
+                        help_text="Consultation this lab order belongs to. Lab orders require consultation context.",
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="lab_orders",
+                        to="consultations.consultation",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Lab Order',
-                'verbose_name_plural': 'Lab Orders',
-                'db_table': 'lab_orders',
-                'ordering': ['-created_at'],
+                "verbose_name": "Lab Order",
+                "verbose_name_plural": "Lab Orders",
+                "db_table": "lab_orders",
+                "ordering": ["-created_at"],
             },
         ),
     ]

@@ -4,7 +4,7 @@
  * For Doctors and Lab Techs to create and manage lab tests in the catalog.
  */
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useRolePermissions } from '../hooks/useRolePermissions';
 import {
   fetchLabTestCatalog,
   fetchActiveLabTests,
@@ -26,7 +26,7 @@ import BackToDashboard from '../components/common/BackToDashboard';
 import styles from '../styles/LabTestCatalog.module.css';
 
 export default function LabTestCatalogPage() {
-  const { user } = useAuth();
+  const { canManageLabCatalog, canViewLabCatalog } = useRolePermissions();
   const { showError, showSuccess } = useToast();
   
   const [tests, setTests] = useState<LabTestCatalog[]>([]);
@@ -202,12 +202,10 @@ export default function LabTestCatalogPage() {
     setShowCreateForm(false);
   };
 
-  const canManage = user?.role === 'DOCTOR' || user?.role === 'LAB_TECH';
-
-  if (!canManage) {
+  if (!canViewLabCatalog) {
     return (
       <div className={styles.errorContainer}>
-        <p>Access denied. This page is for Doctors and Lab Technicians only.</p>
+        <p>Access denied. This page is for Doctors and Lab Technicians.</p>
       </div>
     );
   }
@@ -217,7 +215,7 @@ export default function LabTestCatalogPage() {
       <BackToDashboard />
       <header className={styles.header}>
         <h1>Lab Test Catalog</h1>
-        <p>Create and manage available lab tests and reference ranges</p>
+        <p>{canManageLabCatalog ? 'Create and manage available lab tests and reference ranges' : 'View available lab tests and reference ranges'}</p>
       </header>
 
       <div className={styles.content}>
@@ -269,6 +267,7 @@ export default function LabTestCatalogPage() {
           </div>
         </div>
 
+        {canManageLabCatalog && (
         <div className={styles.actions}>
           {!showCreateForm && (
             <button
@@ -282,9 +281,10 @@ export default function LabTestCatalogPage() {
             </button>
           )}
         </div>
+        )}
 
         {/* Create/Edit Form */}
-        {showCreateForm && (
+        {canManageLabCatalog && showCreateForm && (
           <div className={styles.formContainer}>
             <h2>{editingTest ? 'Edit Lab Test' : 'Create New Lab Test'}</h2>
             <div className={styles.form}>
@@ -508,6 +508,7 @@ export default function LabTestCatalogPage() {
                       <p><strong>Turnaround:</strong> {test.turnaround_time_hours} hours</p>
                     )}
                   </div>
+                  {canManageLabCatalog && (
                   <div className={styles.testActions}>
                     <button
                       className={styles.editButton}
@@ -522,6 +523,7 @@ export default function LabTestCatalogPage() {
                       Delete
                     </button>
                   </div>
+                  )}
                   <div className={styles.testMeta}>
                     <p>Created by: {test.created_by_name || 'Unknown'}</p>
                     <p>Created: {new Date(test.created_at).toLocaleDateString()}</p>

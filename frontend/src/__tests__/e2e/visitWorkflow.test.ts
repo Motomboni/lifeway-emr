@@ -11,6 +11,8 @@
  * 4. Implement the test cases below
  */
 
+export {};
+
 describe('Visit Workflow E2E', () => {
   /**
    * Full visit workflow test

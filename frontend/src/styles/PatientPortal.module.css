@@ -64,6 +64,55 @@
   color: #2c3e50;
 }
 
+.hintText {
+  margin: -0.75rem 0 1rem;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.billsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.billCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.billActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.billAmount {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #0f766e;
+}
+
+.payBtn {
+  padding: 0.5rem 1rem;
+  background: #0f766e;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.payBtn:disabled {
+  opacity: 0.6;
+}
+
 .sectionHeader {
   display: flex;
   justify-content: space-between;

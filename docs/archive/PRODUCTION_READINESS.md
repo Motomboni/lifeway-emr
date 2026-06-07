@@ -39,7 +39,7 @@ This document summarizes the production readiness of the Modern EMR (Django + Re
 
 ### 3. Frontend
 
-- [ ] Build with production API URL (e.g. `REACT_APP_*` env at build time) pointing to your production backend.
+- [ ] Build with production API URL: When using same-origin (nginx proxy), leave `REACT_APP_API_URL` unset—relative `/api/v1` works. For cross-origin API, pass `REACT_APP_API_URL` as build arg: `docker build --build-arg REACT_APP_API_URL=https://api.example.com`.
 - [ ] Run `npm run build` and serve the built assets (e.g. via nginx). The PWA service worker (`sw.js`) and `manifest.json` are copied from `public/` and enable install + offline app shell.
 - [ ] Serve over HTTPS so the service worker and install prompt work (required for PWA).
 

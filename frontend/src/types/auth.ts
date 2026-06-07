@@ -2,7 +2,7 @@
  * TypeScript types for Authentication
  */
 
-export type UserRole = 'ADMIN' | 'DOCTOR' | 'NURSE' | 'LAB_TECH' | 'RADIOLOGY_TECH' | 'PHARMACIST' | 'RECEPTIONIST' | 'PATIENT' | 'MANAGEMENT' | 'IVF_SPECIALIST' | 'EMBRYOLOGIST';
+export type UserRole = 'ADMIN' | 'DOCTOR' | 'NURSE' | 'LAB_TECH' | 'RADIOLOGY_TECH' | 'PHARMACIST' | 'RECEPTIONIST' | 'PATIENT' | 'IVF_SPECIALIST' | 'EMBRYOLOGIST';
 
 export interface User {
   id: number;

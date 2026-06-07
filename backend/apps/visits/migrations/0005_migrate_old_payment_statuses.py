@@ -9,13 +9,13 @@ def migrate_payment_statuses_forward(apps, schema_editor):
     - PENDING -> UNPAID
     - CLEARED -> PAID
     """
-    Visit = apps.get_model('visits', 'Visit')
-    
+    Visit = apps.get_model("visits", "Visit")
+
     # Update PENDING to UNPAID
-    Visit.objects.filter(payment_status='PENDING').update(payment_status='UNPAID')
-    
+    Visit.objects.filter(payment_status="PENDING").update(payment_status="UNPAID")
+
     # Update CLEARED to PAID
-    Visit.objects.filter(payment_status='CLEARED').update(payment_status='PAID')
+    Visit.objects.filter(payment_status="CLEARED").update(payment_status="PAID")
 
 
 def migrate_payment_statuses_backward(apps, schema_editor):
@@ -24,25 +24,22 @@ def migrate_payment_statuses_backward(apps, schema_editor):
     - UNPAID -> PENDING
     - PAID -> CLEARED
     """
-    Visit = apps.get_model('visits', 'Visit')
-    
+    Visit = apps.get_model("visits", "Visit")
+
     # Update UNPAID to PENDING
-    Visit.objects.filter(payment_status='UNPAID').update(payment_status='PENDING')
-    
+    Visit.objects.filter(payment_status="UNPAID").update(payment_status="PENDING")
+
     # Update PAID to CLEARED
-    Visit.objects.filter(payment_status='PAID').update(payment_status='CLEARED')
+    Visit.objects.filter(payment_status="PAID").update(payment_status="CLEARED")
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('visits', '0004_add_payment_type_and_insurance_claim'),
+        ("visits", "0004_add_payment_type_and_insurance_claim"),
     ]
 
     operations = [
         migrations.RunPython(
-            migrate_payment_statuses_forward,
-            migrate_payment_statuses_backward
+            migrate_payment_statuses_forward, migrate_payment_statuses_backward
         ),
     ]
-

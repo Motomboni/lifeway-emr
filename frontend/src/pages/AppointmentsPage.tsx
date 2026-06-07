@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useRolePermissions } from '../hooks/useRolePermissions';
 import {
   fetchAppointments,
   fetchUpcomingAppointments,
@@ -31,6 +32,7 @@ import styles from '../styles/Appointments.module.css';
 
 export default function AppointmentsPage() {
   const { user } = useAuth();
+  const { isAdmin, canManageAppointments, canViewAppointments } = useRolePermissions();
   const navigate = useNavigate();
   const { showError, showSuccess } = useToast();
 
@@ -74,16 +76,21 @@ export default function AppointmentsPage() {
 
   // Load doctors when form is shown
   useEffect(() => {
-    if (showCreateForm && canManage && doctors.length === 0) {
+    if (showCreateForm && canManageAppointments && doctors.length === 0) {
       loadDoctors();
     }
   }, [showCreateForm]);
 
-  // Auto-select current doctor when doctor opens create form
+  // Auto-select current clinician when doctor/IVF specialist opens create form
   useEffect(() => {
-    if (showCreateForm && user?.role === 'DOCTOR' && !editingAppointment && doctors.length > 0 && formData.doctor === 0) {
-      // Find current user in doctors list and auto-select
-      const currentDoctor = doctors.find(d => d.id === user.id);
+    if (
+      showCreateForm &&
+      (user?.role === 'DOCTOR' || user?.role === 'IVF_SPECIALIST') &&
+      !editingAppointment &&
+      doctors.length > 0 &&
+      formData.doctor === 0
+    ) {
+      const currentDoctor = doctors.find((d) => d.id === user.id);
       if (currentDoctor) {
         setFormData({ ...formData, doctor: currentDoctor.id });
       }
@@ -93,7 +100,7 @@ export default function AppointmentsPage() {
 
   // Load initial patients when form is shown
   useEffect(() => {
-    if (showCreateForm && (user?.role === 'RECEPTIONIST' || user?.role === 'DOCTOR')) {
+    if (showCreateForm && canManageAppointments) {
       loadInitialPatients();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -339,24 +346,9 @@ export default function AppointmentsPage() {
     }
   };
 
-  const isAdmin = user?.is_superuser === true || user?.role === 'ADMIN';
-  const canManage = isAdmin || user?.role === 'RECEPTIONIST' || user?.role === 'DOCTOR';
-  const canViewOwn = user?.role === 'DOCTOR';
+  const canViewOwn = user?.role === 'DOCTOR' || user?.role === 'IVF_SPECIALIST';
 
-  // Load doctors when form is shown (only once, avoid infinite loops)
-  useEffect(() => {
-    if (
-      showCreateForm &&
-      (isAdmin || user?.role === 'RECEPTIONIST' || user?.role === 'DOCTOR') &&
-      doctors.length === 0 &&
-      !loadingDoctors
-    ) {
-      loadDoctors();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showCreateForm, isAdmin, user?.role, doctors.length, loadingDoctors]);
-
-  if (!canManage && !canViewOwn) {
+  if (!canViewAppointments) {
     return (
       <div className={styles.appointmentsPage}>
         <BackToDashboard />
@@ -373,7 +365,7 @@ export default function AppointmentsPage() {
       <BackToDashboard />
       <header className={styles.header}>
         <h1>Appointments</h1>
-        {canManage && !showCreateForm && (
+        {canManageAppointments && !showCreateForm && (
           <button
             className={styles.createButton}
             onClick={() => setShowCreateForm(true)}
@@ -540,18 +532,18 @@ export default function AppointmentsPage() {
                 value={formData.doctor}
                 onChange={(e) => setFormData({ ...formData, doctor: parseInt(e.target.value) })}
                 required
-                disabled={!!editingAppointment || (user?.role === 'DOCTOR' && !editingAppointment)}
+                disabled={!!editingAppointment || ((user?.role === 'DOCTOR' || user?.role === 'IVF_SPECIALIST') && !editingAppointment)}
               >
                 <option value={0}>Select a doctor...</option>
                 {doctors.map((doctor) => (
                   <option key={doctor.id} value={doctor.id}>
                     Dr. {doctor.first_name} {doctor.last_name}
-                    {user?.role === 'DOCTOR' && doctor.id === user.id ? ' (You)' : ''}
+                    {(user?.role === 'DOCTOR' || user?.role === 'IVF_SPECIALIST') && doctor.id === user.id ? ' (You)' : ''}
                   </option>
                 ))}
               </select>
             )}
-            {user?.role === 'DOCTOR' && !editingAppointment && (
+            {(user?.role === 'DOCTOR' || user?.role === 'IVF_SPECIALIST') && !editingAppointment && (
               <p className={styles.helpText}>You are automatically selected as the doctor for this appointment.</p>
             )}
           </div>
@@ -670,7 +662,7 @@ export default function AppointmentsPage() {
                 </div>
 
                 <div className={styles.appointmentActions}>
-                  {canManage && (
+                  {canManageAppointments && (
                     <>
                       {appointment.status === 'SCHEDULED' && (
                         <button
@@ -707,7 +699,7 @@ export default function AppointmentsPage() {
                     </>
                   )}
                   {/* Show action buttons for doctors viewing their own appointments if they don't have manage permissions */}
-                  {canViewOwn && !canManage && (
+                  {canViewOwn && !canManageAppointments && (
                     <>
                       {appointment.status === 'SCHEDULED' && (
                         <button

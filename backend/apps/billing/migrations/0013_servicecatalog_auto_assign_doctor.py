@@ -6,16 +6,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('billing', '0012_servicecatalog'),
+        ("billing", "0012_servicecatalog"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='servicecatalog',
-            name='auto_assign_doctor',
-            field=models.ForeignKey(blank=True, help_text='Doctor to auto-assign when this service is selected (optional). Only applies to consultation workflows.', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='auto_assigned_services', to=settings.AUTH_USER_MODEL),
+            model_name="servicecatalog",
+            name="auto_assign_doctor",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Doctor to auto-assign when this service is selected (optional). Only applies to consultation workflows.",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="auto_assigned_services",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]

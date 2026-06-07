@@ -1,18 +1,27 @@
 /* Outstanding Balance Styles */
 .container {
-  border-radius: 8px;
-  padding: 1rem;
-  border: 2px solid;
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
 }
 
 .containerCleared {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.8) 0%, rgba(187, 247, 208, 0.5) 100%);
+  border-color: rgba(134, 239, 172, 0.5);
 }
 
 .containerPending {
-  background: #fef2f2;
-  border-color: #fecaca;
+  background: linear-gradient(135deg, rgba(254, 242, 242, 0.8) 0%, rgba(254, 202, 202, 0.5) 100%);
+  border-color: rgba(252, 165, 165, 0.5);
 }
 
 .content {
@@ -97,4 +106,3 @@
   font-size: 0.875rem;
   color: #991b1b;
 }
-

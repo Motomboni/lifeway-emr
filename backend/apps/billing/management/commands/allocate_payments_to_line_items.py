@@ -10,15 +10,16 @@ Usage:
     python manage.py allocate_payments_to_line_items
     python manage.py allocate_payments_to_line_items --visit 244
 """
+
 from decimal import Decimal
 
 from django.core.management.base import BaseCommand
 from django.db.models import Sum
 
-from apps.visits.models import Visit
 from apps.billing.billing_line_item_models import BillingLineItem
-from apps.billing.billing_service import BillingService
 from apps.billing.billing_line_item_service import allocate_payment_to_line_items
+from apps.billing.billing_service import BillingService
+from apps.visits.models import Visit
 
 
 class Command(BaseCommand):
@@ -52,25 +53,23 @@ class Command(BaseCommand):
                 return
         else:
             # Visits that have at least one BillingLineItem
-            visits = Visit.objects.filter(
-                billing_line_items__isnull=False
-            ).distinct().order_by("id")
+            visits = (
+                Visit.objects.filter(billing_line_items__isnull=False)
+                .distinct()
+                .order_by("id")
+            )
 
         total_visits = 0
         updated_visits = 0
 
         for visit in visits:
             total_visits += 1
-            total_cleared = (
-                BillingService._compute_total_payments(visit)
-                + BillingService._compute_total_wallet_debits(visit)
-            )
-            total_allocated = (
-                BillingLineItem.objects.filter(visit=visit).aggregate(
-                    s=Sum("amount_paid")
-                )["s"]
-                or Decimal("0.00")
-            )
+            total_cleared = BillingService._compute_total_payments(
+                visit
+            ) + BillingService._compute_total_wallet_debits(visit)
+            total_allocated = BillingLineItem.objects.filter(visit=visit).aggregate(
+                s=Sum("amount_paid")
+            )["s"] or Decimal("0.00")
             unallocated = total_cleared - total_allocated
             if unallocated <= 0:
                 continue
@@ -82,7 +81,9 @@ class Command(BaseCommand):
             if not dry_run:
                 try:
                     allocate_payment_to_line_items(visit, unallocated, "CASH")
-                    self.stdout.write(self.style.SUCCESS(f"  Allocated for visit {visit.id}"))
+                    self.stdout.write(
+                        self.style.SUCCESS(f"  Allocated for visit {visit.id}")
+                    )
                 except Exception as e:
                     self.stdout.write(
                         self.style.ERROR(f"  Failed visit {visit.id}: {e}")

@@ -1,9 +1,11 @@
 """
 Script to convert clinic services data and import into billing system.
 """
-import pandas as pd
-from decimal import Decimal, InvalidOperation
+
 import re
+from decimal import Decimal, InvalidOperation
+
+import pandas as pd
 
 # Raw data from user
 raw_data = """
@@ -109,44 +111,47 @@ VACCINES:
 PROCEDURES: (long list - will be processed)
 """
 
+
 def parse_amount(amount_str):
     """Parse amount string, removing commas and converting to Decimal."""
     if isinstance(amount_str, (int, float)):
         return Decimal(str(amount_str))
-    
+
     # Remove commas and spaces
-    amount_str = str(amount_str).replace(',', '').replace(' ', '').strip()
-    
+    amount_str = str(amount_str).replace(",", "").replace(" ", "").strip()
+
     # Handle empty or zero
-    if not amount_str or amount_str == '0' or amount_str == '':
-        return Decimal('0')
-    
+    if not amount_str or amount_str == "0" or amount_str == "":
+        return Decimal("0")
+
     try:
         return Decimal(amount_str)
     except (ValueError, TypeError, InvalidOperation):
-        return Decimal('0')
+        return Decimal("0")
+
 
 def generate_service_code(name, department, index):
     """Generate a unique service code."""
     # Clean name for code generation
-    name_clean = name.upper().replace(' ', '_').replace('-', '_')
-    name_clean = re.sub(r'[^A-Z0-9_]', '', name_clean)
-    
+    name_clean = name.upper().replace(" ", "_").replace("-", "_")
+    name_clean = re.sub(r"[^A-Z0-9_]", "", name_clean)
+
     # Take first 3-4 words, max 20 chars
-    words = name_clean.split('_')[:4]
-    code_base = '_'.join(words)[:20]
-    
+    words = name_clean.split("_")[:4]
+    code_base = "_".join(words)[:20]
+
     # Department prefix
     dept_prefix = {
-        'PROCEDURE': 'PROC',
-        'PHARMACY': 'PHARM',
-        'RADIOLOGY': 'RAD',
-        'LAB': 'LAB'
-    }.get(department, 'SVC')
-    
+        "PROCEDURE": "PROC",
+        "PHARMACY": "PHARM",
+        "RADIOLOGY": "RAD",
+        "LAB": "LAB",
+    }.get(department, "SVC")
+
     # Generate code
     code = f"{dept_prefix}-{code_base}-{index:03d}"
     return code[:50]  # Max length
+
 
 # Define all services with their categories
 services_data = []
@@ -228,7 +233,10 @@ clinical_consultation = [
 # ANC -> PROCEDURE
 anc_services = [
     ("ANC REGISTRATION (1ST 3 MONTHS)", 250000),
-    ("ANTENATAL REGISTRATION (Including Antenatal Tests, 2 sections of Scan, Tetanus Immunization, Routine Antenatal Drugs)", 300000),
+    (
+        "ANTENATAL REGISTRATION (Including Antenatal Tests, 2 sections of Scan, Tetanus Immunization, Routine Antenatal Drugs)",
+        300000,
+    ),
     ("NORMAL VAGINAL DELIVERY", 200000),
     ("ASSISTED VAGINAL DELIVERY", 270000),
     ("NORMAL VAGINAL DELIVERY", 300000),
@@ -457,7 +465,10 @@ procedures = [
     ("whole upper limb", 35000),
     ("perioepical xray", 3000),
     ("INDUCTION OF LABOUR", 400000),
-    ("CEASERAN SECTION: Includes Surgery, Admission (For not more than 5 days, Post-OP Drugs)", 1200000),
+    (
+        "CEASERAN SECTION: Includes Surgery, Admission (For not more than 5 days, Post-OP Drugs)",
+        1200000,
+    ),
     ("REPEAT CS", 850000),
     ("MANUAL VACUUM ASPIRATION (With Anaesthesia)", 350000),
     ("MANUAL VACUUM ASPIRATION (Without Anaesthesia)", 200000),
@@ -663,16 +674,25 @@ all_services = []
 
 # Add PROCEDURE services
 index = 1
-for name, amount in clinical_consultation + anc_services + registration_services + procedures + dental_services + fertility_services:
+for name, amount in (
+    clinical_consultation
+    + anc_services
+    + registration_services
+    + procedures
+    + dental_services
+    + fertility_services
+):
     if amount > 0:  # Skip zero amounts
         code = generate_service_code(name, "PROCEDURE", index)
-        all_services.append({
-            "Department": "PROCEDURE",
-            "Service Code": code,
-            "Service Name": name,
-            "Amount": amount,
-            "Description": ""
-        })
+        all_services.append(
+            {
+                "Department": "PROCEDURE",
+                "Service Code": code,
+                "Service Name": name,
+                "Amount": amount,
+                "Description": "",
+            }
+        )
         index += 1
 
 # Add PHARMACY services
@@ -680,13 +700,15 @@ index = 1
 for name, amount in vaccines + ivf_drugs + consumables:
     if amount > 0:  # Skip zero amounts
         code = generate_service_code(name, "PHARMACY", index)
-        all_services.append({
-            "Department": "PHARMACY",
-            "Service Code": code,
-            "Service Name": name,
-            "Amount": amount,
-            "Description": ""
-        })
+        all_services.append(
+            {
+                "Department": "PHARMACY",
+                "Service Code": code,
+                "Service Name": name,
+                "Amount": amount,
+                "Description": "",
+            }
+        )
         index += 1
 
 # Create DataFrame
@@ -699,4 +721,3 @@ print(f"Created Excel file: {output_file}")
 print(f"Total services: {len(df)}")
 print(f"PROCEDURE services: {len(df[df['Department'] == 'PROCEDURE'])}")
 print(f"PHARMACY services: {len(df[df['Department'] == 'PHARMACY'])}")
-

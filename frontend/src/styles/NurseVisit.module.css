@@ -150,11 +150,12 @@
 
 /* Section styling */
 .section {
-  background: white;
-  border-radius: 8px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
   margin-bottom: 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-color);
 }
 
 .sectionHeader {
@@ -168,7 +169,7 @@
 
 .sectionHeader h3 {
   margin: 0;
-  color: #333;
+  color: var(--text-primary);
   font-size: 1.25rem;
 }
 
@@ -198,10 +199,11 @@
 .medicationForm,
 .labSampleForm,
 .patientEducationForm {
-  background-color: #f9f9f9;
+  background-color: var(--bg-secondary, #f9f9f9);
   padding: 1.5rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
+  color: var(--text-primary);
 }
 
 .formGrid {
@@ -220,17 +222,19 @@
 .formField label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .formField input,
 .formField select,
 .formField textarea {
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color, #ddd);
   border-radius: 4px;
   font-size: 1rem;
   font-family: inherit;
+  background-color: var(--input-bg, #fff);
+  color: var(--text-primary);
 }
 
 .formField input:focus,
@@ -348,10 +352,11 @@
 }
 
 .vitalSignsCard {
-  background-color: #f9f9f9;
-  border: 1px solid #e0e0e0;
+  background-color: var(--bg-secondary, #f9f9f9);
+  border: 1px solid var(--border-color, #e0e0e0);
   border-radius: 8px;
   padding: 1.5rem;
+  color: var(--text-primary);
 }
 
 .vitalSignsHeader {
@@ -365,7 +370,7 @@
 
 .recordedBy {
   font-size: 0.875rem;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .vitalSignsGrid {
@@ -382,13 +387,13 @@
 
 .vitalSignItem label {
   font-size: 0.875rem;
-  color: #999;
+  color: var(--text-muted);
   font-weight: 500;
 }
 
 .vitalSignItem span {
   font-size: 1rem;
-  color: #333;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -400,7 +405,7 @@
 
 .vitalSignsNotes label {
   font-size: 0.875rem;
-  color: #999;
+  color: var(--text-muted);
   font-weight: 500;
   display: block;
   margin-bottom: 0.5rem;
@@ -408,7 +413,7 @@
 
 .vitalSignsNotes p {
   margin: 0;
-  color: #333;
+  color: var(--text-primary);
 }
 
 /* Notes List */

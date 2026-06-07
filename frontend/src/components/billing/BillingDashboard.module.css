@@ -1,14 +1,16 @@
 /* Billing Dashboard Styles */
 .dashboard {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
+  background: var(--bg-primary, white);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(128, 128, 128, 0.1);
+  overflow: hidden;
+  transition: all 0.3s ease;
 }
 
 .header {
-  border-bottom: 1px solid #e5e7eb;
-  padding: 1.5rem;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+  padding: 1.75rem 2rem;
 }
 
 .headerContent {
@@ -18,59 +20,59 @@
 }
 
 .headerTitle {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #111827;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--text-primary, #111827);
   margin: 0;
 }
 
 .headerSubtitle {
-  font-size: 0.875rem;
-  color: #6b7280;
+  font-size: 0.9rem;
+  color: var(--text-secondary, #6b7280);
   margin-top: 0.25rem;
 }
 
 .visitClosedBadge {
-  padding: 0.25rem 0.75rem;
-  background: #f3f4f6;
+  padding: 0.35rem 1rem;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
   color: #374151;
   border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .outstandingBalanceContainer {
-  padding: 1rem 1.5rem 0;
+  padding: 1.5rem 2rem 0;
 }
 
 .tabsContainer {
-  border-bottom: 1px solid #e5e7eb;
-  padding: 0 1.5rem;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+  padding: 0 2rem;
 }
 
 .tabs {
   display: flex;
-  gap: 2rem;
+  gap: 2.5rem;
 }
 
 .tab {
-  padding: 1rem 0.25rem;
-  border-bottom: 2px solid transparent;
-  font-weight: 500;
-  font-size: 0.875rem;
+  padding: 1.25rem 0.25rem;
+  border-bottom: 3px solid transparent;
+  font-weight: 600;
+  font-size: 0.95rem;
   background: none;
-  border: none;
   border-top: none;
   border-left: none;
   border-right: none;
   cursor: pointer;
-  color: #6b7280;
-  transition: all 0.2s;
+  color: #8c98a9;
+  transition: all 0.3s ease;
 }
 
 .tab:hover {
-  color: #374151;
-  border-bottom-color: #d1d5db;
+  color: var(--text-primary, #374151);
 }
 
 .tabActive {
@@ -97,4 +99,3 @@
 .permissionText {
   color: #6b7280;
 }
-

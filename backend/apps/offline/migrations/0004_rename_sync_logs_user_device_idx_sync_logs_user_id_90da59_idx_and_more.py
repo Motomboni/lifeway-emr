@@ -4,20 +4,19 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('offline', '0003_synclog'),
+        ("offline", "0003_synclog"),
     ]
 
     operations = [
         migrations.RenameIndex(
-            model_name='synclog',
-            new_name='sync_logs_user_id_90da59_idx',
-            old_name='sync_logs_user_device_idx',
+            model_name="synclog",
+            new_name="sync_logs_user_id_90da59_idx",
+            old_name="sync_logs_user_device_idx",
         ),
         migrations.RenameIndex(
-            model_name='synclog',
-            new_name='sync_logs_last_sy_849653_idx',
-            old_name='sync_logs_last_sync_idx',
+            model_name="synclog",
+            new_name="sync_logs_last_sy_849653_idx",
+            old_name="sync_logs_last_sync_idx",
         ),
     ]

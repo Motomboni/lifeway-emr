@@ -34,6 +34,14 @@ export function parseApiError(error: any): string {
         return response.data;
       }
       
+      if (response.data.non_field_errors) {
+        const nfe = response.data.non_field_errors;
+        if (Array.isArray(nfe) && nfe.length > 0) {
+          return nfe.map((x: unknown) => (typeof x === 'string' ? x : String(x))).join('; ');
+        }
+        if (typeof nfe === 'string') return nfe;
+      }
+
       if (response.data.detail !== undefined && response.data.detail !== null) {
         const d = response.data.detail;
         if (Array.isArray(d) && d.length > 0) {

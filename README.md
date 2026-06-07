@@ -142,11 +142,16 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+cp .env.example .env   # or copy project root .env.example; set ENABLE_ORG_SIGNUP=true for public clinic signup
 python manage.py makemigrations
 python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
 ```
+
+**SaaS clinic signup:** With `ENABLE_ORG_SIGNUP=true` (default), new clinics can register at `/register` → **Create entirely new Clinic**, which calls `POST /api/v1/organizations/signup/`. Set `ENABLE_ORG_SIGNUP=false` in production if you disable public onboarding.
+
+**SaaS billing (Nigeria):** Plan upgrades use **Paystack** by default (`SAAS_PAYMENT_PROVIDER=paystack`). Set `PAYSTACK_SECRET_KEY` and `PAYSTACK_PUBLIC_KEY`. Optional: `SAAS_PAYMENT_PROVIDER=flutterwave` with `FLUTTERWAVE_SECRET_KEY`. Patient visit payments also use Paystack. Stripe is legacy-only (`SAAS_PAYMENT_PROVIDER=stripe`).
 
 ### Frontend Setup
 

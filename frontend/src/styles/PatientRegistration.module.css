@@ -176,7 +176,7 @@
 
 .successDialog {
   background: white;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 2rem;
   max-width: 500px;
   width: 90%;

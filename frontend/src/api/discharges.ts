@@ -43,8 +43,9 @@ export async function exportDischargeSummaryAsText(
   visitId: number,
   dischargeSummaryId: number
 ): Promise<Blob> {
+  const base = import.meta.env.VITE_API_URL || '';
   const response = await fetch(
-    `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/v1/visits/${visitId}/discharge-summaries/${dischargeSummaryId}/export/text/`,
+    `${base}/api/v1/visits/${visitId}/discharge-summaries/${dischargeSummaryId}/export/text/`,
     {
       method: 'GET',
       headers: {
@@ -67,8 +68,9 @@ export async function exportDischargeSummaryAsHTML(
   visitId: number,
   dischargeSummaryId: number
 ): Promise<Blob> {
+  const base = import.meta.env.VITE_API_URL || '';
   const response = await fetch(
-    `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/v1/visits/${visitId}/discharge-summaries/${dischargeSummaryId}/export/html/`,
+    `${base}/api/v1/visits/${visitId}/discharge-summaries/${dischargeSummaryId}/export/html/`,
     {
       method: 'GET',
       headers: {

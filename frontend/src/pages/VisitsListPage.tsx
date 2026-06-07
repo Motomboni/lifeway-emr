@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useRolePermissions } from '../hooks/useRolePermissions';
 import { fetchVisits } from '../api/visits';
 import { Visit } from '../types/visit';
 import { useToast } from '../hooks/useToast';
@@ -16,6 +17,7 @@ import styles from '../styles/VisitsList.module.css';
 
 export default function VisitsListPage() {
   const { user, isLoading: authLoading } = useAuth();
+  const { isAdmin, isReceptionist, isDoctor, isNurse, canCreateVisit } = useRolePermissions();
   const { showError } = useToast();
   const navigate = useNavigate();
 
@@ -82,12 +84,11 @@ export default function VisitsListPage() {
   };
 
   const handleVisitClick = (visitId: number) => {
-    if (user?.role === 'DOCTOR') {
+    if (isDoctor) {
       navigate(`/visits/${visitId}/consultation`);
-    } else if (user?.role === 'NURSE') {
+    } else if (isNurse) {
       navigate(`/visits/${visitId}/nursing`);
-    } else if (user?.role === 'RECEPTIONIST') {
-      // Receptionists navigate to visit details page for billing access
+    } else {
       navigate(`/visits/${visitId}`);
     }
   };
@@ -123,7 +124,7 @@ export default function VisitsListPage() {
       <header className={styles.header}>
         <h1>Visits</h1>
         <div className={styles.actions}>
-          {user?.role === 'RECEPTIONIST' && (
+          {canCreateVisit && (
             <button
               className={styles.newVisitButton}
               onClick={() => navigate('/visits/new')}
@@ -160,8 +161,11 @@ export default function VisitsListPage() {
             })}
           >
             <option value="">All</option>
-            <option value="PENDING">Pending</option>
-            <option value="CLEARED">Cleared</option>
+            <option value="UNPAID">Unpaid</option>
+            <option value="PARTIALLY_PAID">Partially Paid</option>
+            <option value="PAID">Paid</option>
+            <option value="INSURANCE_PENDING">Insurance Pending</option>
+            <option value="SETTLED">Settled</option>
           </select>
         </div>
 
@@ -178,7 +182,7 @@ export default function VisitsListPage() {
       ) : visits.length === 0 ? (
         <div className={styles.emptyState}>
           <p>No visits found</p>
-          {user?.role === 'RECEPTIONIST' && (
+          {canCreateVisit && (
             <button onClick={() => navigate('/visits/new')}>
               Create First Visit
             </button>
@@ -188,10 +192,11 @@ export default function VisitsListPage() {
         <div className={styles.visitsGrid}>
           {visits.map((visit) => {
             // All roles can click on visits, but navigation differs by role
-            const isClickable = 
-              user?.role === 'RECEPTIONIST' || // Receptionists can access all visits for billing
-              (user?.role === 'DOCTOR' && visit.status === 'OPEN') ||
-              (user?.role === 'NURSE' && visit.status === 'OPEN');
+            const isClickable =
+              isAdmin ||
+              isReceptionist ||
+              (isDoctor && visit.status === 'OPEN') ||
+              (isNurse && visit.status === 'OPEN');
             
             return (
               <div
@@ -217,7 +222,7 @@ export default function VisitsListPage() {
                   <p><strong>Created:</strong> {new Date(visit.created_at).toLocaleDateString()}</p>
                 </div>
 
-                {user?.role === 'DOCTOR' && visit.status === 'OPEN' && (
+                {isDoctor && visit.status === 'OPEN' && (
                   <div className={styles.visitActions}>
                     <button
                       className={styles.consultButton}
@@ -231,7 +236,7 @@ export default function VisitsListPage() {
                   </div>
                 )}
 
-                {user?.role === 'NURSE' && visit.status === 'OPEN' && (
+                {isNurse && visit.status === 'OPEN' && (
                   <div className={styles.visitActions}>
                     <button
                       className={styles.consultButton}
@@ -245,7 +250,7 @@ export default function VisitsListPage() {
                   </div>
                 )}
 
-                {user?.role === 'RECEPTIONIST' && (
+                {canCreateVisit && (
                   <div className={styles.visitActions}>
                     <button
                       className={styles.consultButton}

@@ -3,21 +3,26 @@ URL configuration for Service Catalog API.
 
 Endpoint pattern: /api/v1/billing/service-catalog/
 """
-from django.urls import path, include
+
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from .service_catalog_views import ServiceCatalogViewSet
+
 from .service_catalog_import_views import ServiceCatalogImportView
+from .service_catalog_views import ServiceCatalogViewSet
 
 # Create router for service catalog viewset
 router = DefaultRouter()
 router.register(
-    r'',  # Empty prefix since 'service-catalog' is in the include path
+    r"",  # Empty prefix since 'service-catalog' is in the include path
     ServiceCatalogViewSet,
-    basename='service-catalog'
+    basename="service-catalog",
 )
 
 urlpatterns = [
-    path('service-catalog/import/', ServiceCatalogImportView.as_view(), name='service-catalog-import'),
-    path('service-catalog/', include(router.urls)),
+    path(
+        "service-catalog/import/",
+        ServiceCatalogImportView.as_view(),
+        name="service-catalog-import",
+    ),
+    path("service-catalog/", include(router.urls)),
 ]
-

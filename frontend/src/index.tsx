@@ -6,6 +6,8 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './styles/theme.css';
 import './index.css';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './lib/react-query';
 
 // Fix "Illegal invocation" when Twilio Video SDK calls enumerateDevices() from async callbacks.
 // The method must be invoked with mediaDevices as `this`; binding once avoids the error.
@@ -16,11 +18,11 @@ if (typeof navigator !== 'undefined' && navigator.mediaDevices && typeof navigat
 // Register PWA service worker: caches app shell for offline, API stays network-only.
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register(`${process.env.PUBLIC_URL || ''}/sw.js`, { scope: '/' })
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL || ''}/sw.js`, { scope: '/' })
       .then((reg) => {
         reg.update();
       })
-      .catch(() => {});
+      .catch(() => { });
   });
 }
 
@@ -30,6 +32,8 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <React.StrictMode>
-    <App />
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>
   </React.StrictMode>
 );

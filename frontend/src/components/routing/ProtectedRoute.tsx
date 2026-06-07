@@ -9,6 +9,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { isAdminUser } from '../../utils/roleUtils';
 import { logger } from '../../utils/logger';
 
 // All valid user roles
@@ -18,9 +19,11 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: UserRole | UserRole[];
   requireAdmin?: boolean;
+  /** Block PATIENT role from staff-only pages */
+  staffOnly?: boolean;
 }
 
-export default function ProtectedRoute({ children, requiredRole, requireAdmin }: ProtectedRouteProps) {
+export default function ProtectedRoute({ children, requiredRole, requireAdmin, staffOnly }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
 
@@ -43,8 +46,13 @@ export default function ProtectedRoute({ children, requiredRole, requireAdmin }:
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Redirect patients away from staff-only routes
+  if (staffOnly && user?.role === 'PATIENT') {
+    return <Navigate to="/patient-portal/dashboard" replace />;
+  }
+
   // Check admin access if required (superuser OR role ADMIN)
-  const isAdmin = user?.is_superuser === true || user?.role === 'ADMIN';
+  const isAdmin = isAdminUser(user);
   if (requireAdmin && !isAdmin) {
     return (
       <div style={{ 
@@ -69,8 +77,8 @@ export default function ProtectedRoute({ children, requiredRole, requireAdmin }:
     
     logger.debug('[ProtectedRoute] Checking access:', { userRole, allowedRoles });
     
-    // Admin can access any route
-    if (userRole === 'ADMIN') {
+    // Admin and superuser can access any role-restricted route
+    if (isAdmin) {
       // Allow access
     } else if (!userRole || !allowedRoles.includes(userRole as UserRole)) {
       logger.warn('[ProtectedRoute] Access denied:', userRole, 'not in', allowedRoles);

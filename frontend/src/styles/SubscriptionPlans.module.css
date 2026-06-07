@@ -1,0 +1,563 @@
+/**
+ * Subscription Plans Page Styles (SaaS Pricing / Billing)
+ */
+.page {
+    padding: 2.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.header {
+    margin-bottom: 3rem;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+    padding-bottom: 2rem;
+}
+
+.headerContent h1 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 2.25rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin-top: 0.5rem;
+}
+
+.accessDenied {
+    color: #dc2626;
+    font-weight: 500;
+    background: #fef2f2;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #fecaca;
+    text-align: center;
+    margin-top: 2rem;
+}
+
+/* Current Usage Section */
+.usageSection {
+    margin-bottom: 4rem;
+}
+
+.usageCard {
+    background: var(--bg-primary, white);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(128, 128, 128, 0.1);
+    padding: 2rem;
+}
+
+.usageHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+    padding-bottom: 1rem;
+}
+
+.usageHeader h2 {
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.highlight {
+    color: #2563eb;
+    font-weight: 800;
+}
+
+.statusBadge {
+    padding: 0.35rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.statusActive {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.metricsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.metricItem {
+    background: var(--bg-secondary, #f9fafb);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    border: 1px solid rgba(128, 128, 128, 0.08);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+    cursor: default;
+}
+
+.metricItem:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.05);
+}
+
+.metricLabel {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin: 0 0 0.5rem 0;
+}
+
+.metricValue {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+}
+
+.progressBar {
+    width: 100%;
+    height: 8px;
+    background: rgba(128, 128, 128, 0.15);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progressFill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #9333ea);
+    border-radius: 4px;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.progressFill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: shimmer 2s infinite linear;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Plans Section */
+.plansSection {
+    margin-top: 2rem;
+}
+
+.sectionTitle {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 2rem 0;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.plansGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2.5rem;
+    align-items: stretch;
+}
+
+.planCard {
+    background: var(--bg-primary, white);
+    border-radius: 20px;
+    border: 1px solid rgba(128, 128, 128, 0.15);
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+}
+
+.planCard::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.planCard:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+    border-color: transparent;
+}
+
+.planCard:hover::before {
+    opacity: 1;
+}
+
+.planCardCurrent {
+    border: 2px solid #3b82f6;
+    box-shadow: 0 8px 30px rgba(59, 130, 246, 0.15);
+}
+
+.planCardCurrent::before {
+    opacity: 1;
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    height: 8px;
+}
+
+.currentIndicator {
+    position: absolute;
+    top: 1rem;
+    right: -2rem;
+    background: #3b82f6;
+    color: white;
+    padding: 0.25rem 3rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transform: rotate(45deg);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+/* Typography Inside Cards */
+.planHeader {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.planName {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+}
+
+.planPriceWrapper {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.currencySymbol {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-right: 0.25rem;
+}
+
+.planPrice {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -2px;
+}
+
+.planPeriod {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.planDescription {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Bullet Points */
+.planLimits,
+.planFeatures {
+    margin-bottom: 2rem;
+}
+
+.planLimits ul,
+.planFeatures ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.planLimits li,
+.planFeatures li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.featuresHeading {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+    margin: 0 0 1rem 0;
+}
+
+.checkIcon {
+    color: #10b981;
+    font-weight: 800;
+    font-size: 1.1rem;
+    margin-right: 0.75rem;
+}
+
+/* Buttons */
+.planAction {
+    margin-top: auto;
+}
+
+.upgradeBtn {
+    width: 100%;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, #111827, #374151);
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.upgradeBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+}
+
+.disabledBtn {
+    background: var(--bg-secondary) !important;
+    color: var(--text-secondary) !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    border: 1px solid var(--border-color);
+}
+
+.disabledBtn:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.noPlansMessage {
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: 3rem;
+    grid-column: 1 / -1;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+}
+
+/* Billing & Invoicing UI */
+.billingSection {
+    margin-bottom: 4rem;
+}
+
+.billingGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.billingCard {
+    background: var(--bg-primary, white);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(128, 128, 128, 0.1);
+    padding: 2rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.billingCard:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.billingHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.billingTitle {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.textBtn {
+    background: none;
+    border: none;
+    color: #3b82f6;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+.textBtn:hover {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+.dangerTextBtn {
+    background: none;
+    border: none;
+    color: #ef4444;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+.dangerTextBtn:hover {
+    color: #dc2626;
+    text-decoration: underline;
+}
+
+.paymentMethodInfo {
+    display: flex;
+    align-items: center;
+    background: var(--bg-secondary, #f9fafb);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    border: 1px solid rgba(128, 128, 128, 0.08);
+    margin-bottom: 1rem;
+}
+
+.cardIcon {
+    font-size: 2rem;
+    margin-right: 1.25rem;
+}
+
+.cardName {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.05rem;
+    color: var(--text-primary);
+}
+
+.cardExpiry {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.billingNotice {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.subscriptionSettingsList {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.settingItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.08);
+}
+
+.settingItem:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.settingLabel {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0 0 0.25rem 0;
+}
+
+.settingValue {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.invoiceHistoryCard {
+    background: var(--bg-primary, white);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(128, 128, 128, 0.1);
+    padding: 2rem;
+    overflow-x: auto;
+}
+
+.invoiceTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5rem;
+}
+
+.invoiceTable th {
+    text-align: left;
+    padding: 1rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-bottom: 2px solid rgba(128, 128, 128, 0.08);
+}
+
+.invoiceTable td {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.08);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.invoiceTable tr:last-child td {
+    border-bottom: none;
+}
+
+.badgePaid {
+    background: #dcfce7;
+    color: #166534;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.downloadLink {
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.downloadLink:hover {
+    text-decoration: underline;
+}

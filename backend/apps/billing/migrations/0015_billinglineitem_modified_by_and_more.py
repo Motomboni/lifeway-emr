@@ -6,21 +6,30 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('billing', '0014_billinglineitem'),
+        ("billing", "0014_billinglineitem"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='billinglineitem',
-            name='modified_by',
-            field=models.ForeignKey(blank=True, help_text='User who last modified this billing line item', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='billing_line_items_modified', to=settings.AUTH_USER_MODEL),
+            model_name="billinglineitem",
+            name="modified_by",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="User who last modified this billing line item",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="billing_line_items_modified",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AlterField(
-            model_name='billinglineitem',
-            name='updated_at',
-            field=models.DateTimeField(auto_now=True, help_text='When this billing line item was last updated (modified_at equivalent)'),
+            model_name="billinglineitem",
+            name="updated_at",
+            field=models.DateTimeField(
+                auto_now=True,
+                help_text="When this billing line item was last updated (modified_at equivalent)",
+            ),
         ),
     ]

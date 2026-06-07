@@ -37,12 +37,19 @@ export default function BillingSection({
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(initialSummary);
   const [loading, setLoading] = useState(false);
 
+  // VisitDetailsPage already loads billing — use parent data when available (avoids duplicate fetch + spinner)
   useEffect(() => {
-    // Refresh billing summary when visit changes
-    if (visitId) {
+    if (initialSummary) {
+      setBillingSummary(initialSummary);
+      setLoading(false);
+    }
+  }, [initialSummary]);
+
+  useEffect(() => {
+    if (visitId && !initialSummary) {
       loadBillingSummary();
     }
-  }, [visitId]);
+  }, [visitId, initialSummary]);
 
   const loadBillingSummary = async () => {
     try {
