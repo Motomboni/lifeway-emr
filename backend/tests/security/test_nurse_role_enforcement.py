@@ -340,17 +340,14 @@ class TestNurseVisitStatusEnforcement:
             status.HTTP_409_CONFLICT,
         ]
     
-    def test_nurse_cannot_act_on_unpaid_visit(self, nurse_user, unpaid_visit, api_client):
-        """Nurse should be denied when trying to act on unpaid visit."""
+    def test_nurse_can_record_vitals_on_unpaid_visit(self, nurse_user, unpaid_visit, api_client):
+        """Nurses may record vitals before payment is cleared (triage/intake)."""
         client = api_client(user=nurse_user, organization=unpaid_visit.organization)
         
         url = f'/api/v1/visits/{unpaid_visit.id}/clinical/vital-signs/'
         response = client.post(url, _vital_signs_payload(), format='json')
         
-        assert response.status_code in [
-            status.HTTP_403_FORBIDDEN,
-            status.HTTP_400_BAD_REQUEST,
-        ]
+        assert response.status_code == status.HTTP_201_CREATED
     
     def test_nurse_cannot_create_nursing_note_on_closed_visit(self, nurse_user, closed_visit, api_client):
         """Nurse should receive 409 Conflict when trying to create nursing note on CLOSED visit."""
