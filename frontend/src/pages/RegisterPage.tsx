@@ -9,6 +9,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
 import { validateEmail, validateRequired, validatePassword } from '../utils/validation';
 import { registerUser, UserRole } from '../api/auth';
+import { signupOrganization } from '../api/organizations';
+import Logo from '../components/common/Logo';
 import styles from '../styles/Register.module.css';
 
 interface RoleOption {
@@ -51,7 +53,7 @@ const ROLE_OPTIONS: RoleOption[] = [
   },
   {
     value: 'LAB_TECH',
-    label: 'Lab Scientist',
+    label: 'Lab Technician',
     description: 'Process lab orders and enter results',
     icon: '🧪',
   },
@@ -85,7 +87,12 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
 
+  const [registrationType, setRegistrationType] = useState<'staff' | 'clinic'>('clinic');
+
   const [formData, setFormData] = useState({
+    orgName: '',
+    orgSlug: '',
+    orgEmail: '',
     username: '',
     email: '',
     password: '',
@@ -93,18 +100,26 @@ export default function RegisterPage() {
     first_name: '',
     last_name: '',
     role: '' as UserRole | '',
-    specialization: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole | ''>('');
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
+
+    // Auto-generate slug from clinic name
+    if (name === 'orgName' && registrationType === 'clinic') {
+      const autoSlug = value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+      setFormData(prev => ({ ...prev, [name]: value, orgSlug: autoSlug }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+
     // Clear error for this field
+    if (submissionError) setSubmissionError(null);
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -116,11 +131,8 @@ export default function RegisterPage() {
 
   const handleRoleSelect = (role: UserRole) => {
     setSelectedRole(role);
-    setFormData(prev => ({
-      ...prev,
-      role,
-      specialization: role === 'DOCTOR' ? prev.specialization : '',
-    }));
+    setFormData(prev => ({ ...prev, role }));
+    if (submissionError) setSubmissionError(null);
     if (errors.role) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -132,6 +144,14 @@ export default function RegisterPage() {
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
+
+    if (registrationType === 'clinic') {
+      const orgNameError = validateRequired(formData.orgName, 'Clinic Name');
+      if (orgNameError) newErrors.orgName = orgNameError;
+
+      const orgSlugError = validateRequired(formData.orgSlug, 'Clinic URL Slug');
+      if (orgSlugError) newErrors.orgSlug = orgSlugError;
+    }
 
     // Username validation
     const usernameError = validateRequired(formData.username, 'Username');
@@ -149,7 +169,7 @@ export default function RegisterPage() {
       if (emailFormatError) newErrors.email = emailFormatError;
     }
 
-    // Password validation (must match backend: 8+ chars, upper, lower, digit, special)
+    // Password validation
     const passwordError = validatePassword(formData.password);
     if (passwordError) newErrors.password = passwordError;
 
@@ -166,11 +186,8 @@ export default function RegisterPage() {
     if (lastNameError) newErrors.last_name = lastNameError;
 
     // Role validation
-    if (!formData.role) {
+    if (registrationType === 'staff' && !formData.role) {
       newErrors.role = 'Please select a role';
-    }
-    if (formData.role === 'DOCTOR' && !formData.specialization.trim()) {
-      newErrors.specialization = 'Specialization is required for doctors';
     }
 
     setErrors(newErrors);
@@ -179,7 +196,8 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setSubmissionError(null);
+
     if (!validateForm()) {
       return;
     }
@@ -187,25 +205,38 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      await registerUser({
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-        password_confirm: formData.confirmPassword,
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        role: formData.role as UserRole,
-        specialization: formData.role === 'DOCTOR' ? formData.specialization.trim() : undefined,
-      });
+      if (registrationType === 'clinic') {
+        const res = await signupOrganization({
+          name: formData.orgName,
+          slug: formData.orgSlug,
+          email: formData.orgEmail || formData.email,
+          username: formData.username,
+          password: formData.password,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+        });
+        showSuccess(res.message || 'Clinic created successfully! Please sign in.');
+      } else {
+        await registerUser({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          password_confirm: formData.confirmPassword,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          role: formData.role as UserRole,
+        });
+        showSuccess('Account created! Please provide your Username / ID to your Clinic Admin.');
+      }
 
-      showSuccess('Account created successfully! Please sign in.');
       navigate('/login');
     } catch (error) {
       const err = error as Error & { responseData?: Record<string, string | string[]> };
       const errorMessage = err.message || 'Registration failed';
       showError(errorMessage);
+      setSubmissionError(errorMessage);
 
-      // Parse backend field errors (DRF serializer.errors format)
+      // Parse backend field errors
       const data = err.responseData;
       if (data && typeof data === 'object' && !Array.isArray(data)) {
         const fieldErrors: Record<string, string> = {};
@@ -213,7 +244,10 @@ export default function RegisterPage() {
           if (field === 'detail' || field === 'message' || field === 'error') continue;
           const msg = Array.isArray(value) ? value[0] : value;
           if (typeof msg === 'string') {
-            const formField = field === 'password_confirm' ? 'confirmPassword' : field;
+            let formField = field;
+            if (field === 'password_confirm') formField = 'confirmPassword';
+            if (field === 'slug') formField = 'orgSlug';
+            if (field === 'name') formField = 'orgName';
             fieldErrors[formField] = msg;
           }
         }
@@ -230,37 +264,108 @@ export default function RegisterPage() {
     <div className={styles.registerContainer}>
       <div className={styles.registerCard}>
         <div className={styles.header}>
-          <div className={styles.logo}>
-            <span className={styles.logoIcon}>🏥</span>
-            <h1 className={styles.logoText}>Create Account</h1>
-          </div>
-          <p className={styles.subtitle}>Join Modern EMR System</p>
+          <Logo size="large" className={styles.headerLogo} />
+          <p className={styles.subtitle}>Get started with Damianix EMR</p>
+        </div>
+        {submissionError && (
+          <div className={styles.errorBanner}>{submissionError}</div>
+        )}
+
+        <div className={styles.tabContainer} style={{ display: 'flex', gap: '10px', marginBottom: '20px', padding: '0 20px' }}>
+          <button
+            onClick={() => setRegistrationType('clinic')}
+            style={{ flex: 1, padding: '12px', background: registrationType === 'clinic' ? 'var(--primary-color)' : '#f0f0f0', color: registrationType === 'clinic' ? '#fff' : '#333', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+          >
+            Create entirely new Clinic
+          </button>
+          <button
+            onClick={() => setRegistrationType('staff')}
+            style={{ flex: 1, padding: '12px', background: registrationType === 'staff' ? 'var(--primary-color)' : '#f0f0f0', color: registrationType === 'staff' ? '#fff' : '#333', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+          >
+            Join existing Clinic
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className={styles.registerForm}>
-          {/* Role Selection */}
-          <div className={styles.formSection}>
-            <label className={styles.sectionLabel}>Select Your Role *</label>
-            <div className={styles.roleGrid}>
-              {ROLE_OPTIONS.map((role) => (
-                <button
-                  key={role.value}
-                  type="button"
-                  className={`${styles.roleCard} ${selectedRole === role.value ? styles.roleCardSelected : ''}`}
-                  onClick={() => handleRoleSelect(role.value)}
-                >
-                  <span className={styles.roleIcon}>{role.icon}</span>
-                  <span className={styles.roleLabel}>{role.label}</span>
-                  <span className={styles.roleDescription}>{role.description}</span>
-                </button>
-              ))}
+
+          {/* Clinic Information (SaaS) */}
+          {registrationType === 'clinic' && (
+            <div className={styles.formSection}>
+              <label className={styles.sectionLabel}>Clinic Details</label>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="orgName">Clinic Name *</label>
+                <input
+                  id="orgName"
+                  name="orgName"
+                  type="text"
+                  value={formData.orgName}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="E.g., Abuja General Hospital"
+                  disabled={isLoading}
+                  className={errors.orgName ? styles.inputError : ''}
+                />
+                {errors.orgName && <span className={styles.errorText}>{errors.orgName}</span>}
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="orgSlug">Clinic URL Slug *</label>
+                <input
+                  id="orgSlug"
+                  name="orgSlug"
+                  type="text"
+                  value={formData.orgSlug}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="abuja-general"
+                  disabled={isLoading}
+                  className={errors.orgSlug ? styles.inputError : ''}
+                />
+                <span className={styles.helpText}>This will be your dedicated SaaS login URL path.</span>
+                {errors.orgSlug && <span className={styles.errorText}>{errors.orgSlug}</span>}
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="orgEmail">Clinic Billing Email</label>
+                <input
+                  id="orgEmail"
+                  name="orgEmail"
+                  type="email"
+                  value={formData.orgEmail}
+                  onChange={handleInputChange}
+                  placeholder="(Optional) Auto-fills from Admin Email below"
+                  disabled={isLoading}
+                />
+              </div>
             </div>
-            {errors.role && <span className={styles.errorText}>{errors.role}</span>}
-          </div>
+          )}
+
+          {/* Role Selection (Staff Only) */}
+          {registrationType === 'staff' && (
+            <div className={styles.formSection}>
+              <label className={styles.sectionLabel}>Select Your Role *</label>
+              <div className={styles.roleGrid}>
+                {ROLE_OPTIONS.map((role) => (
+                  <button
+                    key={role.value}
+                    type="button"
+                    className={`${styles.roleCard} ${selectedRole === role.value ? styles.roleCardSelected : ''}`}
+                    onClick={() => handleRoleSelect(role.value)}
+                  >
+                    <span className={styles.roleIcon}>{role.icon}</span>
+                    <span className={styles.roleLabel}>{role.label}</span>
+                    <span className={styles.roleDescription}>{role.description}</span>
+                  </button>
+                ))}
+              </div>
+              {errors.role && <span className={styles.errorText}>{errors.role}</span>}
+            </div>
+          )}
 
           {/* Personal Information */}
           <div className={styles.formSection}>
-            <label className={styles.sectionLabel}>Personal Information</label>
+            <label className={styles.sectionLabel}>{registrationType === 'clinic' ? 'Your Admin Profile' : 'Personal Information'}</label>
             <div className={styles.nameRow}>
               <div className={styles.formGroup}>
                 <label htmlFor="first_name">First Name *</label>
@@ -292,29 +397,12 @@ export default function RegisterPage() {
                 {errors.last_name && <span className={styles.errorText}>{errors.last_name}</span>}
               </div>
             </div>
-            {formData.role === 'DOCTOR' && (
-              <div className={styles.formGroup}>
-                <label htmlFor="specialization">Specialization *</label>
-                <input
-                  id="specialization"
-                  name="specialization"
-                  type="text"
-                  value={formData.specialization}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isLoading}
-                  placeholder="e.g. Gynaecologist, Cardiologist"
-                  className={errors.specialization ? styles.inputError : ''}
-                />
-                {errors.specialization && <span className={styles.errorText}>{errors.specialization}</span>}
-              </div>
-            )}
           </div>
 
           {/* Account Information */}
           <div className={styles.formSection}>
             <label className={styles.sectionLabel}>Account Information</label>
-            
+
             <div className={styles.formGroup}>
               <label htmlFor="username">Username *</label>
               <input
@@ -359,7 +447,7 @@ export default function RegisterPage() {
               />
               {errors.password && <span className={styles.errorText}>{errors.password}</span>}
               <span className={styles.helpText}>
-                At least 8 characters, with uppercase, lowercase, a number, and a special character (!@#$%^&* etc.)
+                At least 12 characters, with uppercase, lowercase, a number, and a special character (!@#$%^&* etc.)
               </span>
             </div>
 

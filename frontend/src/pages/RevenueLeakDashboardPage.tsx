@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useRolePermissions } from '../hooks/useRolePermissions';
 import { 
   getRevenueLeaks, 
   getLeakSummary,
@@ -46,6 +47,7 @@ const HIGH_VALUE_THRESHOLD = 10000; // ₦10,000
 
 export default function RevenueLeakDashboardPage() {
   const { user } = useAuth();
+  const { isAdmin } = useRolePermissions();
   const navigate = useNavigate();
   const { showError, showSuccess } = useToast();
   
@@ -64,28 +66,23 @@ export default function RevenueLeakDashboardPage() {
     new Date().toISOString().split('T')[0]
   );
   
-  // Check access
+  const isAdminUser = isAdmin;
+
+  // Access enforced by ProtectedRoute requireAdmin
   useEffect(() => {
     if (!user) {
       navigate('/login');
-      return;
     }
-    
-    if (user.role !== 'ADMIN' && user.role !== 'MANAGEMENT') {
-      showError('Access denied. This page is only available to Admin and Management roles.');
-      navigate('/dashboard');
-      return;
-    }
-  }, [user, navigate, showError]);
+  }, [user, navigate]);
   
   // Load data
   useEffect(() => {
-    if (!user || (user.role !== 'ADMIN' && user.role !== 'MANAGEMENT')) {
+    if (!user || !isAdmin) {
       return;
     }
     
     loadData();
-  }, [startDate, endDate, departmentFilter, statusFilter, user]);
+  }, [startDate, endDate, departmentFilter, statusFilter, user, isAdmin]);
   
   const loadData = async () => {
     try {
@@ -168,7 +165,7 @@ export default function RevenueLeakDashboardPage() {
     setSelectedLeak(null);
   };
   
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'MANAGEMENT')) {
+  if (!user || !isAdmin) {
     return null;
   }
   

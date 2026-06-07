@@ -37,7 +37,7 @@ def get_response_data(response):
 class TestVisitClosureAuthentication:
     """Test A1: Unauthenticated access denied."""
     
-    def test_unauthenticated_close_denied(self, open_visit_with_payment, consultation):
+    def test_unauthenticated_close_denied(self, open_visit_with_payment, consultation, api_client):
         """A1: Unauthenticated user cannot close visit."""
         client = APIClient()
         url = f"/api/v1/visits/{open_visit_with_payment.id}/close/"
@@ -51,10 +51,9 @@ class TestVisitClosureAuthentication:
 class TestVisitClosureRoleEnforcement:
     """Test R1: Role-based access control."""
     
-    def test_receptionist_cannot_close(self, open_visit_with_payment, consultation, receptionist_token):
+    def test_receptionist_cannot_close(self, open_visit_with_payment, consultation, receptionist_token, api_client):
         """R1: Receptionist cannot close visit - only Doctor can."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {receptionist_token}')
+        client = api_client(token=receptionist_token)
         url = f"/api/v1/visits/{open_visit_with_payment.id}/close/"
         
         response = client.post(url)
@@ -65,30 +64,27 @@ class TestVisitClosureRoleEnforcement:
         error_text = str(response_data).lower()
         assert 'doctor' in error_text or 'permission' in error_text or 'role' in error_text
     
-    def test_lab_tech_cannot_close(self, open_visit_with_payment, consultation, lab_tech_token):
+    def test_lab_tech_cannot_close(self, open_visit_with_payment, consultation, lab_tech_token, api_client):
         """R1: Lab Tech cannot close visit."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {lab_tech_token}')
+        client = api_client(token=lab_tech_token)
         url = f"/api/v1/visits/{open_visit_with_payment.id}/close/"
         
         response = client.post(url)
         
         assert response.status_code == status.HTTP_403_FORBIDDEN
     
-    def test_pharmacist_cannot_close(self, open_visit_with_payment, consultation, pharmacist_token):
+    def test_pharmacist_cannot_close(self, open_visit_with_payment, consultation, pharmacist_token, api_client):
         """R1: Pharmacist cannot close visit."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {pharmacist_token}')
+        client = api_client(token=pharmacist_token)
         url = f"/api/v1/visits/{open_visit_with_payment.id}/close/"
         
         response = client.post(url)
         
         assert response.status_code == status.HTTP_403_FORBIDDEN
     
-    def test_doctor_can_close(self, open_visit_with_payment, consultation, doctor_user, doctor_token):
+    def test_doctor_can_close(self, open_visit_with_payment, consultation, doctor_user, doctor_token, api_client):
         """R1: Doctor can close visit."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {doctor_token}')
+        client = api_client(token=doctor_token)
         url = f"/api/v1/visits/{open_visit_with_payment.id}/close/"
         
         response = client.post(url)
@@ -107,10 +103,9 @@ class TestVisitClosureRoleEnforcement:
 class TestVisitClosureConsultationEnforcement:
     """Test C1: Consultation required before closure."""
     
-    def test_cannot_close_without_consultation(self, open_visit_with_payment, doctor_token):
+    def test_cannot_close_without_consultation(self, open_visit_with_payment, doctor_token, api_client):
         """C1: Cannot close visit without consultation."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {doctor_token}')
+        client = api_client(token=doctor_token)
         url = f"/api/v1/visits/{open_visit_with_payment.id}/close/"
         
         response = client.post(url)
@@ -118,10 +113,9 @@ class TestVisitClosureConsultationEnforcement:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert 'consultation' in str(response.data).lower()
     
-    def test_can_close_with_consultation(self, open_visit_with_payment, consultation, doctor_token):
+    def test_can_close_with_consultation(self, open_visit_with_payment, consultation, doctor_token, api_client):
         """C1: Can close visit with consultation."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {doctor_token}')
+        client = api_client(token=doctor_token)
         url = f"/api/v1/visits/{open_visit_with_payment.id}/close/"
         
         response = client.post(url)
@@ -133,10 +127,9 @@ class TestVisitClosureConsultationEnforcement:
 class TestVisitClosureAlreadyClosed:
     """Test A2: Cannot close already closed visit."""
     
-    def test_cannot_close_already_closed_visit(self, closed_visit_with_payment, consultation, doctor_token):
+    def test_cannot_close_already_closed_visit(self, closed_visit_with_payment, consultation, doctor_token, api_client):
         """A2: Cannot close a visit that is already CLOSED."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {doctor_token}')
+        client = api_client(token=doctor_token)
         url = f"/api/v1/visits/{closed_visit_with_payment.id}/close/"
         
         response = client.post(url)
@@ -151,10 +144,9 @@ class TestVisitClosureAlreadyClosed:
 class TestVisitClosureImmutability:
     """Test I1: Immutability enforcement."""
     
-    def test_cannot_update_closed_visit(self, closed_visit_with_payment, doctor_token):
+    def test_cannot_update_closed_visit(self, closed_visit_with_payment, doctor_token, api_client):
         """I1: Cannot update CLOSED visit via API."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {doctor_token}')
+        client = api_client(token=doctor_token)
         url = f"/api/v1/visits/{closed_visit_with_payment.id}/"
         
         response = client.patch(url, {
@@ -164,10 +156,9 @@ class TestVisitClosureImmutability:
         assert response.status_code in [status.HTTP_403_FORBIDDEN, status.HTTP_409_CONFLICT]
         assert 'CLOSED' in str(response.data) or 'immutable' in str(response.data).lower()
     
-    def test_cannot_partial_update_closed_visit(self, closed_visit_with_payment, doctor_token):
+    def test_cannot_partial_update_closed_visit(self, closed_visit_with_payment, doctor_token, api_client):
         """I1: Cannot partially update CLOSED visit via API."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {doctor_token}')
+        client = api_client(token=doctor_token)
         url = f"/api/v1/visits/{closed_visit_with_payment.id}/"
         
         response = client.patch(url, {
@@ -176,7 +167,7 @@ class TestVisitClosureImmutability:
         
         assert response.status_code in [status.HTTP_403_FORBIDDEN, status.HTTP_409_CONFLICT]
     
-    def test_cannot_reopen_closed_visit_at_db_level(self, closed_visit_with_payment):
+    def test_cannot_reopen_closed_visit_at_db_level(self, closed_visit_with_payment, api_client):
         """I1: Cannot change CLOSED visit to OPEN at DB level."""
         closed_visit_with_payment.status = 'OPEN'
         
@@ -185,7 +176,7 @@ class TestVisitClosureImmutability:
         
         assert 'immutable' in str(exc_info.value).lower() or 'reopen' in str(exc_info.value).lower()
     
-    def test_cannot_create_new_consultation_for_closed_visit(self, closed_visit_with_payment, doctor_user):
+    def test_cannot_create_new_consultation_for_closed_visit(self, closed_visit_with_payment, doctor_user, api_client):
         """I1: Cannot create new consultation for CLOSED visit."""
         from apps.consultations.models import Consultation
         
@@ -204,10 +195,9 @@ class TestVisitClosureImmutability:
 class TestVisitClosureAuditLogging:
     """Test A3: Audit log created on closure."""
     
-    def test_audit_log_created_on_close(self, open_visit_with_payment, consultation, doctor_user, doctor_token):
+    def test_audit_log_created_on_close(self, open_visit_with_payment, consultation, doctor_user, doctor_token, api_client):
         """A3: Audit log created when visit is closed."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {doctor_token}')
+        client = api_client(token=doctor_token)
         url = f"/api/v1/visits/{open_visit_with_payment.id}/close/"
         
         # Count audit logs before
@@ -242,10 +232,9 @@ class TestVisitClosureAuditLogging:
 class TestVisitClosureSuccessPath:
     """Test successful closure path."""
     
-    def test_successful_closure(self, open_visit_with_payment, consultation, doctor_user, doctor_token):
+    def test_successful_closure(self, open_visit_with_payment, consultation, doctor_user, doctor_token, api_client):
         """Successful closure when all conditions are met."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {doctor_token}')
+        client = api_client(token=doctor_token)
         url = f"/api/v1/visits/{open_visit_with_payment.id}/close/"
         
         response = client.post(url)
@@ -265,17 +254,16 @@ class TestVisitClosureSuccessPath:
 class TestVisitClosureFailureScenarios:
     """Test failure scenarios."""
     
-    def test_close_nonexistent_visit(self, doctor_token):
+    def test_close_nonexistent_visit(self, doctor_token, api_client):
         """Failure: Cannot close nonexistent visit."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {doctor_token}')
+        client = api_client(token=doctor_token)
         url = "/api/v1/visits/99999/close/"
         
         response = client.post(url)
         
         assert response.status_code == status.HTTP_404_NOT_FOUND
     
-    def test_close_visit_without_consultation_db_level(self, open_visit_with_payment, doctor_user):
+    def test_close_visit_without_consultation_db_level(self, open_visit_with_payment, doctor_user, api_client):
         """Failure: Cannot close visit without consultation at DB level."""
         open_visit_with_payment.status = 'CLOSED'
         open_visit_with_payment.closed_by = doctor_user
@@ -285,12 +273,11 @@ class TestVisitClosureFailureScenarios:
         
         assert 'consultation' in str(exc_info.value).lower()
     
-    def test_cannot_create_new_orders_for_closed_visit(self, closed_visit_with_payment, consultation, doctor_user, doctor_token):
+    def test_cannot_create_new_orders_for_closed_visit(self, closed_visit_with_payment, consultation, doctor_user, doctor_token, api_client):
         """Failure: Cannot create new orders for CLOSED visit."""
         from apps.laboratory.models import LabOrder
         
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {doctor_token}')
+        client = api_client(token=doctor_token)
         url = f"/api/v1/visits/{closed_visit_with_payment.id}/laboratory/"
         
         response = client.post(url, {
@@ -305,10 +292,9 @@ class TestVisitClosureFailureScenarios:
         error_text = str(response_data).lower()
         assert 'closed' in error_text
     
-    def test_cannot_create_new_prescription_for_closed_visit(self, closed_visit_with_payment, consultation, doctor_user, doctor_token):
+    def test_cannot_create_new_prescription_for_closed_visit(self, closed_visit_with_payment, consultation, doctor_user, doctor_token, api_client):
         """Failure: Cannot create new prescription for CLOSED visit."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {doctor_token}')
+        client = api_client(token=doctor_token)
         url = f"/api/v1/visits/{closed_visit_with_payment.id}/prescriptions/"
         
         response = client.post(url, {

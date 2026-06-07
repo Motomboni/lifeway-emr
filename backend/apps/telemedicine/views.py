@@ -9,58 +9,57 @@ Enforcement:
 3. Audit logging mandatory
 4. Twilio Video integration
 """
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.exceptions import (
-    PermissionDenied,
-    ValidationError as DRFValidationError,
-    NotFound,
-)
-from django.utils import timezone
-from django.shortcuts import get_object_or_404
-from django.http import StreamingHttpResponse
-from django.conf import settings
-import uuid
+
 import logging
+import uuid
+
+from django.conf import settings
+from django.http import StreamingHttpResponse
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import (
+    NotFound,
+    PermissionDenied,
+)
+from rest_framework.exceptions import (
+    ValidationError as DRFValidationError,
+)
+from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 
-from .models import TelemedicineSession, TelemedicineParticipant
+from apps.appointments.models import Appointment
+from apps.visits.models import Visit
+from core.audit import AuditLog
+from core.tenant import filter_by_visit_organization
+
+from .models import TelemedicineParticipant, TelemedicineSession
+from .permissions import CanManageTelemedicine
 from .serializers import (
-    TelemedicineSessionSerializer,
-    TelemedicineSessionCreateSerializer,
-    TelemedicineTokenSerializer,
     CreateSessionSerializer,
-)
-from .permissions import CanManageTelemedicine, CanJoinTelemedicineSession
-from .utils import (
-    generate_twilio_access_token,
-    create_twilio_room,
-    end_twilio_room,
-    get_room_recordings,
+    TelemedicineSessionCreateSerializer,
+    TelemedicineSessionSerializer,
+    TelemedicineTokenSerializer,
 )
 from .transcription import run_transcription
-from .video_services import get_video_service
-from apps.visits.models import Visit
-from apps.appointments.models import Appointment
-from core.audit import AuditLog
+from .utils import (
+    create_twilio_room,
+    end_twilio_room,
+    generate_twilio_access_token,
+    get_room_recordings,
+)
 
 
 def log_telemedicine_action(
-    user,
-    action,
-    session_id,
-    visit_id=None,
-    request=None,
-    metadata=None
+    user, action, session_id, visit_id=None, request=None, metadata=None
 ):
     """Log telemedicine action to audit log."""
-    user_role = getattr(user, 'role', None) or \
-               getattr(user, 'get_role', lambda: None)()
+    user_role = getattr(user, "role", None) or getattr(user, "get_role", lambda: None)()
     if not user_role:
-        user_role = 'UNKNOWN'
-    
+        user_role = "UNKNOWN"
+
     AuditLog.log(
         user=user,
         role=user_role,
@@ -69,106 +68,118 @@ def log_telemedicine_action(
         resource_type="telemedicine_session",
         resource_id=session_id,
         request=request,
-        metadata=metadata or {}
+        metadata=metadata or {},
     )
 
 
 class TelemedicineSessionViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Telemedicine Sessions.
-    
+
     Rules enforced:
     - Doctor-only access for creating sessions
     - Visit-scoped architecture
     - Twilio Video integration
     - Audit logging
     """
-    
-    queryset = TelemedicineSession.objects.all().select_related(
-        'visit',
-        'appointment',
-        'doctor',
-        'patient',
-        'created_by'
-    ).prefetch_related('participants__user')
-    
+
+    queryset = (
+        TelemedicineSession.objects.all()
+        .select_related("visit", "appointment", "doctor", "patient", "created_by")
+        .prefetch_related("participants__user")
+    )
+
     serializer_class = TelemedicineSessionSerializer
     permission_classes = [CanManageTelemedicine]
     pagination_class = None  # Disable pagination for telemedicine sessions
-    
+
     def get_permissions(self):
         """
         Return appropriate permissions based on action.
-        
+
         - Create/Update/Delete: Doctor only (CanManageTelemedicine)
         - Read/Join: Doctor or Patient (CanJoinTelemedicineSession for join)
         """
-        if self.action in ['create', 'create_session', 'update', 'partial_update', 'destroy', 'start_session', 'end_session', 'request_transcription']:
+        if self.action in [
+            "create",
+            "create_session",
+            "update",
+            "partial_update",
+            "destroy",
+            "start_session",
+            "end_session",
+            "request_transcription",
+        ]:
             permission_classes = [CanManageTelemedicine]
-        elif self.action in ['get_access_token', 'leave_session', 'join']:
+        elif self.action in ["get_access_token", "leave_session", "join"]:
             # Join actions - use CanJoinTelemedicineSession
             from .permissions import CanJoinTelemedicineSession
+
             permission_classes = [CanJoinTelemedicineSession]
         else:
             # Read actions - allow authenticated users (filtered by queryset)
             from rest_framework.permissions import IsAuthenticated
+
             permission_classes = [IsAuthenticated]
-        
+
         return [permission() for permission in permission_classes]
-    
+
     def get_serializer_class(self):
         """Return appropriate serializer based on action."""
-        if self.action == 'create':
+        if self.action == "create":
             return TelemedicineSessionCreateSerializer
-        if self.action == 'create_session':
+        if self.action == "create_session":
             return CreateSessionSerializer
         return TelemedicineSessionSerializer
-    
+
     def get_queryset(self):
         """Filter sessions based on user role."""
         user = self.request.user
-        user_role = getattr(user, 'role', None) or \
-                   getattr(user, 'get_role', lambda: None)()
-        
+        user_role = (
+            getattr(user, "role", None) or getattr(user, "get_role", lambda: None)()
+        )
+
         queryset = super().get_queryset()
-        
+
         # Doctors see their own sessions
-        if user_role == 'DOCTOR':
+        if user_role == "DOCTOR":
             queryset = queryset.filter(doctor=user)
         # Patients see sessions for their visits
-        elif user_role == 'PATIENT':
+        elif user_role == "PATIENT":
             try:
                 from apps.patients.models import Patient
+
                 patient = Patient.objects.get(user=user, is_active=True)
                 queryset = queryset.filter(patient=patient)
             except Patient.DoesNotExist:
                 queryset = queryset.none()
-        
+
         # Filter by visit if provided
-        visit_id = self.request.query_params.get('visit_id')
+        visit_id = self.request.query_params.get("visit_id")
         if visit_id:
             queryset = queryset.filter(visit_id=visit_id)
-        
-        return queryset
-    
+
+        return filter_by_visit_organization(queryset, self.request)
+
     def perform_create(self, serializer):
         """Create telemedicine session with Twilio room."""
-        visit = serializer.validated_data['visit']
+        visit = serializer.validated_data["visit"]
         doctor = self.request.user
-        
+
         # Ensure user is a doctor
-        user_role = getattr(doctor, 'role', None) or \
-                   getattr(doctor, 'get_role', lambda: None)()
-        if user_role != 'DOCTOR':
+        user_role = (
+            getattr(doctor, "role", None) or getattr(doctor, "get_role", lambda: None)()
+        )
+        if user_role != "DOCTOR":
             raise PermissionDenied("Only doctors can create telemedicine sessions.")
-        
+
         # Get patient from visit
         patient = visit.patient
-        
+
         # Generate unique room name
         room_name = f"visit-{visit.id}-{uuid.uuid4().hex[:8]}"
-        recording_enabled = serializer.validated_data.get('recording_enabled', False)
-        
+        recording_enabled = serializer.validated_data.get("recording_enabled", False)
+
         try:
             # Create Twilio room (with recording on if user enabled it for this session)
             room_info = create_twilio_room(
@@ -176,171 +187,192 @@ class TelemedicineSessionViewSet(viewsets.ModelViewSet):
                 max_participants=2,
                 record_participants_on_connect=recording_enabled,
             )
-            
+
             # Create session
             session = serializer.save(
                 doctor=doctor,
                 patient=patient,
-                twilio_room_sid=room_info['room_sid'],
-                twilio_room_name=room_info['room_name'],
+                twilio_room_sid=room_info["room_sid"],
+                twilio_room_name=room_info["room_name"],
                 created_by=doctor,
-                status='SCHEDULED'
+                status="SCHEDULED",
             )
-            
+
             # Audit log
             log_telemedicine_action(
                 user=doctor,
-                action='CREATED',
+                action="CREATED",
                 session_id=session.id,
                 visit_id=visit.id,
                 request=self.request,
                 metadata={
-                    'room_sid': room_info['room_sid'],
-                    'room_name': room_info['room_name'],
-                }
+                    "room_sid": room_info["room_sid"],
+                    "room_name": room_info["room_name"],
+                },
             )
-            
+
             return session
-            
+
         except Exception as e:
             # Log error
             import logging
+
             logger = logging.getLogger(__name__)
             logger.error(f"Failed to create telemedicine session: {e}")
             raise DRFValidationError(f"Failed to create telemedicine session: {str(e)}")
-    
-    @action(detail=True, methods=['post'], url_path='start')
+
+    @action(detail=True, methods=["post"], url_path="start")
     def start_session(self, request, pk=None):
         """Start a telemedicine session."""
         session = self.get_object()
-        
-        if session.status != 'SCHEDULED':
+
+        if session.status != "SCHEDULED":
             raise DRFValidationError(
                 f"Cannot start session with status {session.status}."
             )
-        
-        session.status = 'IN_PROGRESS'
+
+        session.status = "IN_PROGRESS"
         session.actual_start = timezone.now()
         session.save()
-        
+
         # Audit log
         log_telemedicine_action(
             user=request.user,
-            action='STARTED',
+            action="STARTED",
             session_id=session.id,
             visit_id=session.visit_id,
-            request=request
+            request=request,
         )
-        
+
         return Response(
-            TelemedicineSessionSerializer(session).data,
-            status=status.HTTP_200_OK
+            TelemedicineSessionSerializer(session).data, status=status.HTTP_200_OK
         )
-    
-    @action(detail=True, methods=['post'], url_path='end')
+
+    @action(detail=True, methods=["post"], url_path="end")
     def end_session(self, request, pk=None):
         """End a telemedicine session. Optionally add a billing line item for the session."""
         session = self.get_object()
-        
-        if session.status != 'IN_PROGRESS':
+
+        if session.status != "IN_PROGRESS":
             raise DRFValidationError(
                 f"Cannot end session with status {session.status}."
             )
-        
-        add_billing = request.data.get('add_billing', False) if isinstance(request.data, dict) else False
-        
+
+        add_billing = (
+            request.data.get("add_billing", False)
+            if isinstance(request.data, dict)
+            else False
+        )
+
         try:
             # End Twilio room (may return None if room already deleted/expired)
             room_result = end_twilio_room(session.twilio_room_sid)
-            
+
             # Update session
-            session.status = 'COMPLETED'
+            session.status = "COMPLETED"
             session.actual_end = timezone.now()
-            
+
             # Log if room was already gone
             if room_result is None:
                 import logging
+
                 logger = logging.getLogger(__name__)
-                logger.info(f"Room {session.twilio_room_sid} was already deleted/expired when ending session {session.id}")
-            
+                logger.info(
+                    f"Room {session.twilio_room_sid} was already deleted/expired when ending session {session.id}"
+                )
+
             if session.actual_start:
                 duration = session.actual_end - session.actual_start
                 session.duration_seconds = int(duration.total_seconds())
-            
+
             # Get recordings if enabled
             if session.recording_enabled:
                 try:
                     recordings = get_room_recordings(session.twilio_room_sid)
                     if recordings:
                         latest_recording = recordings[0]
-                        session.recording_sid = latest_recording['sid']
-                        session.recording_url = latest_recording.get('url', '')
+                        session.recording_sid = latest_recording["sid"]
+                        session.recording_url = latest_recording.get("url", "")
                 except Exception as e:
                     import logging
+
                     logger = logging.getLogger(__name__)
                     logger.warning(f"Failed to get recordings: {e}")
-            
+
             session.save()
-            
+
             # Optional: add telemedicine session to visit bill
             billing_added = False
             if add_billing:
                 billing_added = self._add_telemedicine_billing(session, request.user)
-            
+
             # Audit log
             log_telemedicine_action(
                 user=request.user,
-                action='ENDED',
+                action="ENDED",
                 session_id=session.id,
                 visit_id=session.visit_id,
                 request=request,
                 metadata={
-                    'duration_seconds': session.duration_seconds,
-                    'add_billing': add_billing,
-                    'billing_added': billing_added,
-                }
+                    "duration_seconds": session.duration_seconds,
+                    "add_billing": add_billing,
+                    "billing_added": billing_added,
+                },
             )
-            
+
             response_data = TelemedicineSessionSerializer(session).data
             if add_billing:
-                response_data['billing_added'] = billing_added
-            
-            return Response(
-                response_data,
-                status=status.HTTP_200_OK
-            )
-            
+                response_data["billing_added"] = billing_added
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
         except Exception as e:
             import logging
+
             logger = logging.getLogger(__name__)
             logger.error(f"Failed to end telemedicine session: {e}")
             raise DRFValidationError(f"Failed to end session: {str(e)}")
-    
+
     def _add_telemedicine_billing(self, session, user):
         """Add a billing line item for this telemedicine session if configured."""
         from django.conf import settings
+
+        from apps.billing.billing_line_item_service import (
+            create_billing_line_item_from_service,
+        )
         from apps.billing.service_catalog_models import ServiceCatalog
-        from apps.billing.billing_line_item_service import create_billing_line_item_from_service
         from apps.consultations.models import Consultation
-        
-        service_code = getattr(settings, 'TELEMEDICINE_BILLING_SERVICE_CODE', None) or 'TELEMED-001'
+
+        service_code = (
+            getattr(settings, "TELEMEDICINE_BILLING_SERVICE_CODE", None)
+            or "TELEMED-001"
+        )
         try:
-            service = ServiceCatalog.objects.get(service_code=service_code, is_active=True)
+            service = ServiceCatalog.objects.get(
+                service_code=service_code, is_active=True
+            )
         except ServiceCatalog.DoesNotExist:
             import logging
+
             logging.getLogger(__name__).info(
                 f"Telemedicine billing skipped: service '{service_code}' not in ServiceCatalog. "
                 "Add a service with this code (e.g. Telemedicine Consultation) to enable session billing."
             )
             return False
-        
+
         visit = session.visit
-        if visit.status != 'OPEN':
+        if visit.status != "OPEN":
             return False
         # Telemedicine billing typically uses a standalone service (e.g. workflow_type OTHER);
         # link to visit's consultation if the service allows it, otherwise None
         consultation = Consultation.objects.filter(visit=visit).first()
-        if service.workflow_type not in ('GOPD_CONSULT', 'LAB_ORDER', 'DRUG_DISPENSE', 'PROCEDURE', 'RADIOLOGY_STUDY'):
+        if service.workflow_type not in (
+            "GOPD_CONSULT",
+            "LAB_ORDER",
+            "DRUG_DISPENSE",
+            "PROCEDURE",
+            "RADIOLOGY_STUDY",
+        ):
             consultation = None
         try:
             create_billing_line_item_from_service(
@@ -352,18 +384,24 @@ class TelemedicineSessionViewSet(viewsets.ModelViewSet):
             return True
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning(f"Could not add telemedicine billing: {e}")
+
+            logging.getLogger(__name__).warning(
+                f"Could not add telemedicine billing: {e}"
+            )
             return False
-    
-    @action(detail=True, methods=['post'], url_path='request-transcription')
+
+    @action(detail=True, methods=["post"], url_path="request-transcription")
     def request_transcription(self, request, pk=None):
         """Request automatic transcription of the session recording (after session is completed)."""
         session = self.get_object()
-        if session.status != 'COMPLETED':
+        if session.status != "COMPLETED":
             raise DRFValidationError(
                 "Transcription can only be requested for completed sessions."
             )
-        if session.transcription_status and session.transcription_status not in ('', 'FAILED'):
+        if session.transcription_status and session.transcription_status not in (
+            "",
+            "FAILED",
+        ):
             raise DRFValidationError(
                 f"Transcription already requested (status: {session.transcription_status})."
             )
@@ -372,23 +410,24 @@ class TelemedicineSessionViewSet(viewsets.ModelViewSet):
                 "No recording available for this session. Enable recording when creating the session."
             )
         session.transcription_requested_at = timezone.now()
-        session.transcription_status = 'PENDING'
-        session.save(update_fields=['transcription_requested_at', 'transcription_status'])
+        session.transcription_status = "PENDING"
+        session.save(
+            update_fields=["transcription_requested_at", "transcription_status"]
+        )
         run_transcription(session)
         session.refresh_from_db()
         log_telemedicine_action(
             user=request.user,
-            action='TRANSCRIPTION_REQUESTED',
+            action="TRANSCRIPTION_REQUESTED",
             session_id=session.id,
             visit_id=session.visit_id,
             request=request,
         )
         return Response(
-            TelemedicineSessionSerializer(session).data,
-            status=status.HTTP_200_OK
+            TelemedicineSessionSerializer(session).data, status=status.HTTP_200_OK
         )
-    
-    @action(detail=False, methods=['post'], url_path='create-session')
+
+    @action(detail=False, methods=["post"], url_path="create-session")
     def create_session(self, request):
         """
         Create a telemedicine session from an appointment. Generate room and link to appointment.
@@ -397,35 +436,41 @@ class TelemedicineSessionViewSet(viewsets.ModelViewSet):
         """
         serializer = CreateSessionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        appointment_id = serializer.validated_data['appointment_id']
-        recording_enabled = serializer.validated_data.get('recording_enabled', False)
-        
+        appointment_id = serializer.validated_data["appointment_id"]
+        recording_enabled = serializer.validated_data.get("recording_enabled", False)
+
         user = request.user
-        user_role = getattr(user, 'role', None) or getattr(user, 'get_role', lambda: None)()
-        if user_role != 'DOCTOR':
+        user_role = (
+            getattr(user, "role", None) or getattr(user, "get_role", lambda: None)()
+        )
+        if user_role != "DOCTOR":
             raise PermissionDenied("Only doctors can create telemedicine sessions.")
-        
+
         appointment = get_object_or_404(Appointment, id=appointment_id)
         if appointment.doctor != user:
-            raise PermissionDenied("You can only create sessions for your own appointments.")
-        if appointment.status not in ('SCHEDULED', 'CONFIRMED'):
+            raise PermissionDenied(
+                "You can only create sessions for your own appointments."
+            )
+        if appointment.status not in ("SCHEDULED", "CONFIRMED"):
             raise DRFValidationError("Appointment must be scheduled or confirmed.")
-        
+
         patient = appointment.patient
         visit = appointment.visit
         if not visit:
             visit = Visit.objects.create(
                 patient=patient,
-                visit_type='CONSULTATION',
-                chief_complaint=appointment.reason or 'Telemedicine consult',
+                visit_type="CONSULTATION",
+                chief_complaint=appointment.reason or "Telemedicine consult",
                 appointment=appointment,
-                status='OPEN',
+                status="OPEN",
             )
             appointment.visit = visit
-            appointment.save(update_fields=['visit'])
-        elif visit.status != 'OPEN':
-            raise DRFValidationError("Linked visit is not OPEN. Cannot start telemedicine.")
-        
+            appointment.save(update_fields=["visit"])
+        elif visit.status != "OPEN":
+            raise DRFValidationError(
+                "Linked visit is not OPEN. Cannot start telemedicine."
+            )
+
         room_name = f"visit-{visit.id}-{uuid.uuid4().hex[:8]}"
         try:
             room_info = create_twilio_room(
@@ -436,41 +481,48 @@ class TelemedicineSessionViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logger.error(f"Failed to create Twilio room: {e}")
             raise DRFValidationError(f"Failed to create video room: {str(e)}")
-        
+
         session = TelemedicineSession.objects.create(
             visit=visit,
             appointment=appointment,
             doctor=user,
             patient=patient,
-            twilio_room_sid=room_info['room_sid'],
-            twilio_room_name=room_info['room_name'],
-            status='SCHEDULED',
+            twilio_room_sid=room_info["room_sid"],
+            twilio_room_name=room_info["room_name"],
+            status="SCHEDULED",
             scheduled_start=timezone.now(),
             recording_enabled=recording_enabled,
             created_by=user,
         )
-        
-        base_url = getattr(settings, 'FRONTEND_URL', '').rstrip('/')
-        meeting_link = f"{base_url}/telemedicine/room/{session.id}" if base_url else room_info['room_name']
-        
+
+        base_url = getattr(settings, "FRONTEND_URL", "").rstrip("/")
+        meeting_link = (
+            f"{base_url}/telemedicine/room/{session.id}"
+            if base_url
+            else room_info["room_name"]
+        )
+
         log_telemedicine_action(
             user=user,
-            action='CREATED',
+            action="CREATED",
             session_id=session.id,
             visit_id=visit.id,
             request=request,
-            metadata={'room_sid': room_info['room_sid'], 'from_appointment': appointment_id},
+            metadata={
+                "room_sid": room_info["room_sid"],
+                "from_appointment": appointment_id,
+            },
         )
-        
+
         return Response(
             {
                 **TelemedicineSessionSerializer(session).data,
-                'meeting_link': meeting_link,
+                "meeting_link": meeting_link,
             },
             status=status.HTTP_201_CREATED,
         )
-    
-    @action(detail=True, methods=['get'], url_path='join')
+
+    @action(detail=True, methods=["get"], url_path="join")
     def join(self, request, pk=None):
         """
         Return meeting link (and token if Twilio) for joining the session.
@@ -479,143 +531,156 @@ class TelemedicineSessionViewSet(viewsets.ModelViewSet):
         """
         session = self.get_object()
         user = request.user
-        user_role = getattr(user, 'role', None) or getattr(user, 'get_role', lambda: None)()
-        
-        if user_role == 'DOCTOR' and session.doctor != user:
+        user_role = (
+            getattr(user, "role", None) or getattr(user, "get_role", lambda: None)()
+        )
+
+        if user_role == "DOCTOR" and session.doctor != user:
             raise PermissionDenied("You are not the doctor for this session.")
-        if user_role == 'PATIENT':
+        if user_role == "PATIENT":
             try:
                 from apps.patients.models import Patient
+
                 patient = Patient.objects.get(user=user, is_active=True)
                 if session.patient != patient:
                     raise PermissionDenied("You are not the patient for this session.")
             except Patient.DoesNotExist:
                 raise PermissionDenied("Patient profile not found.")
-        if user_role not in ('DOCTOR', 'PATIENT'):
+        if user_role not in ("DOCTOR", "PATIENT"):
             raise PermissionDenied("Only doctor or patient can join this session.")
-        
-        base_url = getattr(settings, 'FRONTEND_URL', '').rstrip('/')
-        meeting_link = f"{base_url}/telemedicine/room/{session.id}" if base_url else session.twilio_room_name
-        
-        payload = {'meeting_link': meeting_link, 'session_id': session.id}
+
+        base_url = getattr(settings, "FRONTEND_URL", "").rstrip("/")
+        meeting_link = (
+            f"{base_url}/telemedicine/room/{session.id}"
+            if base_url
+            else session.twilio_room_name
+        )
+
+        payload = {"meeting_link": meeting_link, "session_id": session.id}
         try:
             token = generate_twilio_access_token(
                 user=user,
                 room_sid=session.twilio_room_sid,
                 room_name=session.twilio_room_name,
             )
-            payload['access_token'] = token
-            payload['room_name'] = session.twilio_room_name
+            payload["access_token"] = token
+            payload["room_name"] = session.twilio_room_name
         except Exception as e:
             logger.warning(f"Twilio token not generated for join: {e}")
-        
+
         return Response(payload, status=status.HTTP_200_OK)
-    
-    @action(detail=False, methods=['post'], url_path='token')
+
+    @action(detail=False, methods=["post"], url_path="token")
     def get_access_token(self, request):
         """Get Twilio access token for joining a session."""
         serializer = TelemedicineTokenSerializer(
-            data=request.data,
-            context={'request': request}
+            data=request.data, context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
-        
-        session = serializer.context['session']
-        
+
+        session = serializer.context["session"]
+
         # Check if user can join
         user = request.user
-        user_role = getattr(user, 'role', None) or \
-                   getattr(user, 'get_role', lambda: None)()
-        
-        if user_role == 'DOCTOR' and session.doctor != user:
+        user_role = (
+            getattr(user, "role", None) or getattr(user, "get_role", lambda: None)()
+        )
+
+        if user_role == "DOCTOR" and session.doctor != user:
             raise PermissionDenied("You are not authorized to join this session.")
-        
+
         # Check patient access
-        if user_role == 'PATIENT':
+        if user_role == "PATIENT":
             try:
                 from apps.patients.models import Patient
+
                 patient = Patient.objects.get(user=user, is_active=True)
                 if session.patient != patient:
-                    raise PermissionDenied("You are not authorized to join this session.")
+                    raise PermissionDenied(
+                        "You are not authorized to join this session."
+                    )
             except Patient.DoesNotExist:
                 raise PermissionDenied("Patient profile not found.")
-        
+
         # Generate access token
         try:
             # Use room SID if available (more reliable), otherwise use room name
             token = generate_twilio_access_token(
                 user=user,
                 room_sid=session.twilio_room_sid,
-                room_name=session.twilio_room_name
+                room_name=session.twilio_room_name,
             )
-            
+
             # Track participant
             participant, created = TelemedicineParticipant.objects.get_or_create(
                 session=session,
                 user=user,
                 defaults={
-                    'joined_at': timezone.now(),
-                }
+                    "joined_at": timezone.now(),
+                },
             )
-            
+
             if not created and not participant.joined_at:
                 participant.joined_at = timezone.now()
                 participant.save()
-            
+
             # Audit log
             log_telemedicine_action(
                 user=user,
-                action='JOINED',
+                action="JOINED",
                 session_id=session.id,
                 visit_id=session.visit_id,
-                request=request
+                request=request,
             )
-            
-            return Response({
-                'token': token,
-                'room_name': session.twilio_room_name,
-                'room_sid': session.twilio_room_sid,  # Also return SID for flexibility
-                'session_id': session.id,
-            }, status=status.HTTP_200_OK)
-            
+
+            return Response(
+                {
+                    "token": token,
+                    "room_name": session.twilio_room_name,
+                    "room_sid": session.twilio_room_sid,  # Also return SID for flexibility
+                    "session_id": session.id,
+                },
+                status=status.HTTP_200_OK,
+            )
+
         except Exception as e:
             import logging
+
             logger = logging.getLogger(__name__)
             logger.error(f"Failed to generate access token: {e}")
             raise DRFValidationError(f"Failed to generate access token: {str(e)}")
-    
-    @action(detail=True, methods=['post'], url_path='leave')
+
+    @action(detail=True, methods=["post"], url_path="leave")
     def leave_session(self, request, pk=None):
         """Leave a telemedicine session."""
         session = self.get_object()
         user = request.user
-        
+
         try:
             participant = TelemedicineParticipant.objects.get(
-                session=session,
-                user=user
+                session=session, user=user
             )
-            
+
             participant.left_at = timezone.now()
             participant.save()
-            
+
             # Audit log
             log_telemedicine_action(
                 user=user,
-                action='LEFT',
+                action="LEFT",
                 session_id=session.id,
                 visit_id=session.visit_id,
-                request=request
+                request=request,
             )
-            
-            return Response({
-                'message': 'Left session successfully'
-            }, status=status.HTTP_200_OK)
-            
+
+            return Response(
+                {"message": "Left session successfully"}, status=status.HTTP_200_OK
+            )
+
         except TelemedicineParticipant.DoesNotExist:
             raise NotFound("You are not a participant in this session.")
 
-    @action(detail=True, methods=['get'], url_path='recording', url_name='recording')
+    @action(detail=True, methods=["get"], url_path="recording", url_name="recording")
     def get_recording(self, request, pk=None):
         """
         Stream the session recording. Twilio Media subresource can return either:
@@ -629,8 +694,9 @@ class TelemedicineSessionViewSet(viewsets.ModelViewSet):
             raise NotFound("No recording available for this session.")
         try:
             import requests
-            account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', None)
-            auth_token = getattr(settings, 'TWILIO_AUTH_TOKEN', None)
+
+            account_sid = getattr(settings, "TWILIO_ACCOUNT_SID", None)
+            auth_token = getattr(settings, "TWILIO_AUTH_TOKEN", None)
             if not account_sid or not auth_token:
                 raise NotFound("Recording service not configured.")
             auth = (account_sid, auth_token)

@@ -5,18 +5,16 @@ Endpoint pattern: /api/v1/visits/{visit_id}/insurance/
 
 This ensures insurance is ALWAYS visit-scoped.
 """
-from django.urls import path, include
+
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+
 from .insurance_views import VisitInsuranceViewSet
 
 # Create router for visit insurance viewset
 router = DefaultRouter()
-router.register(
-    r'',
-    VisitInsuranceViewSet,
-    basename='visit-insurance'
-)
+router.register(r"", VisitInsuranceViewSet, basename="visit-insurance")
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path("", include(router.urls)),
 ]

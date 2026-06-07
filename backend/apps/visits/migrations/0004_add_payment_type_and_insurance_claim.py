@@ -4,15 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('visits', '0003_update_payment_status_flow'),
+        ("visits", "0003_update_payment_status_flow"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='visit',
-            name='payment_type',
-            field=models.CharField(choices=[('CASH', 'Cash Payment'), ('INSURANCE', 'Insurance/HMO')], default='CASH', help_text='Payment type for this visit. Determines billing flow (CASH or INSURANCE).', max_length=20),
+            model_name="visit",
+            name="payment_type",
+            field=models.CharField(
+                choices=[("CASH", "Cash Payment"), ("INSURANCE", "Insurance/HMO")],
+                default="CASH",
+                help_text="Payment type for this visit. Determines billing flow (CASH or INSURANCE).",
+                max_length=20,
+            ),
         ),
     ]

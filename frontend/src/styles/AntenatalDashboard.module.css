@@ -238,7 +238,7 @@
 .outcomeBadge {
   display: inline-block;
   padding: 4px 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   color: white;
   font-size: 12px;
   font-weight: 500;
@@ -247,7 +247,7 @@
 .riskBadge {
   display: inline-block;
   padding: 4px 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background-color: #ffc107;
   color: #856404;
   font-size: 12px;

@@ -9,48 +9,49 @@ Note: Offline image sync endpoints are in offline_image_urls.py
 
 This ensures radiology requests and results are ALWAYS visit-scoped and consultation-dependent.
 """
-from django.urls import path, include
+
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from .views import RadiologyRequestViewSet, RadiologyOrderViewSet
-from .result_views import RadiologyResultViewSet
+
 from .image_upload_views import ImageUploadSessionViewSet
+from .result_views import RadiologyResultViewSet
+from .views import RadiologyRequestViewSet
 
 # Router for radiology requests (from Service Catalog)
 router = DefaultRouter()
 router.register(
-    r'',
+    r"",
     RadiologyRequestViewSet,  # Changed from RadiologyOrderViewSet to RadiologyRequestViewSet
-    basename='radiology-request'
+    basename="radiology-request",
 )
 
 # Router for image upload sessions
 upload_router = DefaultRouter()
 upload_router.register(
-    r'upload-sessions',
-    ImageUploadSessionViewSet,
-    basename='image-upload-session'
+    r"upload-sessions", ImageUploadSessionViewSet, basename="image-upload-session"
 )
 
 # Use explicit path patterns for radiology results to avoid router edge cases
 urlpatterns = router.urls + [
     # Radiology results - list/create
     path(
-        'results/',
-        RadiologyResultViewSet.as_view({'get': 'list', 'post': 'create'}),
-        name='radiology-result-list'
+        "results/",
+        RadiologyResultViewSet.as_view({"get": "list", "post": "create"}),
+        name="radiology-result-list",
     ),
     # Radiology results - detail operations
     path(
-        'results/<int:pk>/',
-        RadiologyResultViewSet.as_view({
-            'get': 'retrieve',
-            'put': 'update',
-            'patch': 'partial_update',
-            'delete': 'destroy'
-        }),
-        name='radiology-result-detail'
+        "results/<int:pk>/",
+        RadiologyResultViewSet.as_view(
+            {
+                "get": "retrieve",
+                "put": "update",
+                "patch": "partial_update",
+                "delete": "destroy",
+            }
+        ),
+        name="radiology-result-detail",
     ),
     # Image upload sessions - offline-first upload system
-    path('', include(upload_router.urls)),
+    path("", include(upload_router.urls)),
 ]
-

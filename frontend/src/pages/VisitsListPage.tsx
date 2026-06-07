@@ -4,9 +4,10 @@
  * Displays a list of visits with filtering options.
  * Per EMR Rules: Visit-scoped, role-based access.
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useRolePermissions } from '../hooks/useRolePermissions';
 import { fetchVisits } from '../api/visits';
 import { Visit } from '../types/visit';
 import { useToast } from '../hooks/useToast';
@@ -16,6 +17,7 @@ import styles from '../styles/VisitsList.module.css';
 
 export default function VisitsListPage() {
   const { user, isLoading: authLoading } = useAuth();
+  const { isAdmin, isReceptionist, isDoctor, isNurse, canCreateVisit } = useRolePermissions();
   const { showError } = useToast();
   const navigate = useNavigate();
 
@@ -41,12 +43,13 @@ export default function VisitsListPage() {
   }>({});
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  const updateFilters = (nextFilters: typeof filters) => {
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
-    setFilters(nextFilters);
-  };
+  // Only fetch when auth is ready and user is present (avoids 401 from firing before session is set)
+  useEffect(() => {
+    if (authLoading || !user) return;
+    loadVisits();
+  }, [filters, authLoading, user]);
 
-  const loadVisits = useCallback(async () => {
+  const loadVisits = async () => {
     try {
       setLoading(true);
       const response = await fetchVisits({
@@ -78,21 +81,14 @@ export default function VisitsListPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters, pagination.currentPage, pagination.pageSize, showError]);
-
-  // Only fetch when auth is ready and user is present (avoids 401 from firing before session is set)
-  useEffect(() => {
-    if (authLoading || !user) return;
-    loadVisits();
-  }, [authLoading, user, loadVisits]);
+  };
 
   const handleVisitClick = (visitId: number) => {
-    if (user?.role === 'DOCTOR') {
+    if (isDoctor) {
       navigate(`/visits/${visitId}/consultation`);
-    } else if (user?.role === 'NURSE') {
+    } else if (isNurse) {
       navigate(`/visits/${visitId}/nursing`);
-    } else if (user?.role === 'RECEPTIONIST') {
-      // Receptionists navigate to visit details page for billing access
+    } else {
       navigate(`/visits/${visitId}`);
     }
   };
@@ -128,7 +124,7 @@ export default function VisitsListPage() {
       <header className={styles.header}>
         <h1>Visits</h1>
         <div className={styles.actions}>
-          {user?.role === 'RECEPTIONIST' && (
+          {canCreateVisit && (
             <button
               className={styles.newVisitButton}
               onClick={() => navigate('/visits/new')}
@@ -144,7 +140,7 @@ export default function VisitsListPage() {
           <label>Status:</label>
           <select
             value={filters.status || ''}
-            onChange={(e) => updateFilters({
+            onChange={(e) => setFilters({
               ...filters,
               status: e.target.value as 'OPEN' | 'CLOSED' | undefined || undefined
             })}
@@ -159,24 +155,23 @@ export default function VisitsListPage() {
           <label>Payment:</label>
           <select
             value={filters.payment_status || ''}
-            onChange={(e) => updateFilters({
+            onChange={(e) => setFilters({
               ...filters,
               payment_status: e.target.value as 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'INSURANCE_PENDING' | 'INSURANCE_CLAIMED' | 'SETTLED' | undefined || undefined
             })}
           >
             <option value="">All</option>
             <option value="UNPAID">Unpaid</option>
-            <option value="PARTIALLY_PAID">Partially paid</option>
+            <option value="PARTIALLY_PAID">Partially Paid</option>
             <option value="PAID">Paid</option>
-            <option value="INSURANCE_PENDING">Insurance pending</option>
-            <option value="INSURANCE_CLAIMED">Insurance claimed</option>
+            <option value="INSURANCE_PENDING">Insurance Pending</option>
             <option value="SETTLED">Settled</option>
           </select>
         </div>
 
         <button
           className={styles.clearFiltersButton}
-          onClick={() => updateFilters({})}
+          onClick={() => setFilters({})}
         >
           Clear Filters
         </button>
@@ -187,7 +182,7 @@ export default function VisitsListPage() {
       ) : visits.length === 0 ? (
         <div className={styles.emptyState}>
           <p>No visits found</p>
-          {user?.role === 'RECEPTIONIST' && (
+          {canCreateVisit && (
             <button onClick={() => navigate('/visits/new')}>
               Create First Visit
             </button>
@@ -197,10 +192,11 @@ export default function VisitsListPage() {
         <div className={styles.visitsGrid}>
           {visits.map((visit) => {
             // All roles can click on visits, but navigation differs by role
-            const isClickable = 
-              user?.role === 'RECEPTIONIST' || // Receptionists can access all visits for billing
-              (user?.role === 'DOCTOR' && visit.status === 'OPEN') ||
-              (user?.role === 'NURSE' && visit.status === 'OPEN');
+            const isClickable =
+              isAdmin ||
+              isReceptionist ||
+              (isDoctor && visit.status === 'OPEN') ||
+              (isNurse && visit.status === 'OPEN');
             
             return (
               <div
@@ -226,7 +222,7 @@ export default function VisitsListPage() {
                   <p><strong>Created:</strong> {new Date(visit.created_at).toLocaleDateString()}</p>
                 </div>
 
-                {user?.role === 'DOCTOR' && visit.status === 'OPEN' && (
+                {isDoctor && visit.status === 'OPEN' && (
                   <div className={styles.visitActions}>
                     <button
                       className={styles.consultButton}
@@ -240,7 +236,7 @@ export default function VisitsListPage() {
                   </div>
                 )}
 
-                {user?.role === 'NURSE' && visit.status === 'OPEN' && (
+                {isNurse && visit.status === 'OPEN' && (
                   <div className={styles.visitActions}>
                     <button
                       className={styles.consultButton}
@@ -254,7 +250,7 @@ export default function VisitsListPage() {
                   </div>
                 )}
 
-                {user?.role === 'RECEPTIONIST' && (
+                {canCreateVisit && (
                   <div className={styles.visitActions}>
                     <button
                       className={styles.consultButton}
@@ -275,21 +271,6 @@ export default function VisitsListPage() {
 
       {!loading && visits.length > 0 && pagination.totalPages > 1 && (
         <div className={styles.pagination}>
-          <label className={styles.pageSizeControl}>
-            Rows per page:
-            <select
-              value={pagination.pageSize}
-              onChange={(e) => setPagination(prev => ({
-                ...prev,
-                currentPage: 1,
-                pageSize: Number(e.target.value),
-              }))}
-            >
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-            </select>
-          </label>
           <button
             className={styles.paginationButton}
             onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}

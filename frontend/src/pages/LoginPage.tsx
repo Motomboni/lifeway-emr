@@ -80,7 +80,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
   return (
     <div className={styles.loginContainer}>
       <div className={styles.loginCard}>
-        <h1 className={styles.title}>EMR System</h1>
+        <h1 className={styles.title}>Damianix EMR</h1>
         <h2 className={styles.subtitle}>Sign In</h2>
         
         {error && (

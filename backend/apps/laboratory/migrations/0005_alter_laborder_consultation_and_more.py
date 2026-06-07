@@ -6,21 +6,32 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('consultations', '0005_alter_consultation_visit'),
-        ('laboratory', '0004_add_test_templates'),
+        ("consultations", "0005_alter_consultation_visit"),
+        ("laboratory", "0004_add_test_templates"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='laborder',
-            name='consultation',
-            field=models.ForeignKey(help_text='Consultation this lab order belongs to. Lab orders require consultation context.', on_delete=django.db.models.deletion.PROTECT, related_name='lab_orders', to='consultations.consultation', validators=[apps.core.validators.validate_consultation_required]),
+            model_name="laborder",
+            name="consultation",
+            field=models.ForeignKey(
+                help_text="Consultation this lab order belongs to. Lab orders require consultation context.",
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="lab_orders",
+                to="consultations.consultation",
+                validators=[apps.core.validators.validate_consultation_required],
+            ),
         ),
         migrations.AlterField(
-            model_name='labresult',
-            name='lab_order',
-            field=models.OneToOneField(help_text='Lab order this result belongs to. One result per order.', on_delete=django.db.models.deletion.CASCADE, related_name='result', to='laboratory.laborder', validators=[apps.core.validators.validate_active_lab_order]),
+            model_name="labresult",
+            name="lab_order",
+            field=models.OneToOneField(
+                help_text="Lab order this result belongs to. One result per order.",
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="result",
+                to="laboratory.laborder",
+                validators=[apps.core.validators.validate_active_lab_order],
+            ),
         ),
     ]

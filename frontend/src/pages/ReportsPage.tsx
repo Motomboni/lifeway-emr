@@ -6,6 +6,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useRolePermissions } from '../hooks/useRolePermissions';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
 import BackToDashboard from '../components/common/BackToDashboard';
@@ -38,6 +39,7 @@ import styles from '../styles/ReportsPage.module.css';
 
 export default function ReportsPage() {
   const { user } = useAuth();
+  const { isAdmin } = useRolePermissions();
   const navigate = useNavigate();
   const { showError } = useToast();
   
@@ -50,12 +52,13 @@ export default function ReportsPage() {
   });
 
   useEffect(() => {
-    if (!user || user.role !== 'ADMIN') {
+    if (!user) return;
+    if (!isAdmin) {
       navigate('/dashboard');
       return;
     }
     loadReportData();
-  }, [user, dateRange]);
+  }, [user, dateRange, isAdmin, navigate]);
 
   const loadReportData = async () => {
     try {
@@ -81,7 +84,7 @@ export default function ReportsPage() {
     }).format(amount);
   };
 
-  if (!user || user.role !== 'ADMIN') {
+  if (!user || !isAdmin) {
     return null;
   }
 

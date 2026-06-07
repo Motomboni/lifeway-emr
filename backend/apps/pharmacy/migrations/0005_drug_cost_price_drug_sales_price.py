@@ -4,20 +4,31 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pharmacy', '0004_druginventory_stockmovement_and_more'),
+        ("pharmacy", "0004_druginventory_stockmovement_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='drug',
-            name='cost_price',
-            field=models.DecimalField(blank=True, decimal_places=2, help_text='Cost price (purchase price) of the drug', max_digits=10, null=True),
+            model_name="drug",
+            name="cost_price",
+            field=models.DecimalField(
+                blank=True,
+                decimal_places=2,
+                help_text="Cost price (purchase price) of the drug",
+                max_digits=10,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='drug',
-            name='sales_price',
-            field=models.DecimalField(blank=True, decimal_places=2, help_text='Sales price (selling price) of the drug', max_digits=10, null=True),
+            model_name="drug",
+            name="sales_price",
+            field=models.DecimalField(
+                blank=True,
+                decimal_places=2,
+                help_text="Sales price (selling price) of the drug",
+                max_digits=10,
+                null=True,
+            ),
         ),
     ]

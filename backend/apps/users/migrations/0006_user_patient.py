@@ -5,16 +5,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('patients', '0008_patient_portal_enabled'),
-        ('users', '0005_alter_user_role'),
+        ("patients", "0008_patient_portal_enabled"),
+        ("users", "0005_alter_user_role"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='patient',
-            field=models.OneToOneField(blank=True, help_text='Linked patient record (only for PATIENT role users)', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='portal_user', to='patients.patient'),
+            model_name="user",
+            name="patient",
+            field=models.OneToOneField(
+                blank=True,
+                help_text="Linked patient record (only for PATIENT role users)",
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="portal_user",
+                to="patients.patient",
+            ),
         ),
     ]

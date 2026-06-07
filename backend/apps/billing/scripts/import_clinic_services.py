@@ -4,52 +4,56 @@ Script to import clinic services from the provided data into the billing system.
 This script parses the clinic services data and imports them into the appropriate
 departmental price lists.
 """
+
 import os
 import sys
-import django
 from decimal import Decimal, InvalidOperation
 
+import django
+
 # Setup Django
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
+sys.path.append(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+)
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 django.setup()
 
 from apps.billing.price_lists import (
     LabServicePriceList,
     PharmacyServicePriceList,
-    RadiologyServicePriceList,
     ProcedureServicePriceList,
+    RadiologyServicePriceList,
 )
 
 # Map categories to departments
 CATEGORY_TO_DEPARTMENT = {
-    'CLINICAL CONSULTATION': 'PROCEDURE',
-    'ANC': 'PROCEDURE',
-    'REGISTRATION': 'PROCEDURE',
-    'VACCINES': 'PHARMACY',
-    'PROCEDURES': 'PROCEDURE',
-    'DENTAL': 'PROCEDURE',
-    'IVF DRUGS': 'PHARMACY',
-    'FERTILITY SERVICES': 'PROCEDURE',
-    'CONSUMABLES': 'PROCEDURE',
+    "CLINICAL CONSULTATION": "PROCEDURE",
+    "ANC": "PROCEDURE",
+    "REGISTRATION": "PROCEDURE",
+    "VACCINES": "PHARMACY",
+    "PROCEDURES": "PROCEDURE",
+    "DENTAL": "PROCEDURE",
+    "IVF DRUGS": "PHARMACY",
+    "FERTILITY SERVICES": "PROCEDURE",
+    "CONSUMABLES": "PROCEDURE",
 }
 
 DEPARTMENT_MODELS = {
-    'LAB': LabServicePriceList,
-    'PHARMACY': PharmacyServicePriceList,
-    'RADIOLOGY': RadiologyServicePriceList,
-    'PROCEDURE': ProcedureServicePriceList,
+    "LAB": LabServicePriceList,
+    "PHARMACY": PharmacyServicePriceList,
+    "RADIOLOGY": RadiologyServicePriceList,
+    "PROCEDURE": ProcedureServicePriceList,
 }
 
 
 def parse_amount(amount_str):
     """Parse amount string, removing commas and converting to Decimal."""
-    if not amount_str or amount_str == '0' or amount_str.strip() == '':
+    if not amount_str or amount_str == "0" or amount_str.strip() == "":
         return None
-    
+
     # Remove commas and spaces
-    amount_str = str(amount_str).replace(',', '').replace(' ', '').strip()
-    
+    amount_str = str(amount_str).replace(",", "").replace(" ", "").strip()
+
     try:
         return Decimal(amount_str)
     except (ValueError, TypeError, InvalidOperation):
@@ -60,25 +64,25 @@ def generate_service_code(category, name, index):
     """Generate a unique service code."""
     # Create a code from category prefix and index
     category_prefix = {
-        'CLINICAL CONSULTATION': 'CONS',
-        'ANC': 'ANC',
-        'REGISTRATION': 'REG',
-        'VACCINES': 'VAC',
-        'PROCEDURES': 'PROC',
-        'DENTAL': 'DENT',
-        'IVF DRUGS': 'IVF-DRUG',
-        'FERTILITY SERVICES': 'FERT',
-        'CONSUMABLES': 'CONS',
-    }.get(category, 'SVC')
-    
+        "CLINICAL CONSULTATION": "CONS",
+        "ANC": "ANC",
+        "REGISTRATION": "REG",
+        "VACCINES": "VAC",
+        "PROCEDURES": "PROC",
+        "DENTAL": "DENT",
+        "IVF DRUGS": "IVF-DRUG",
+        "FERTILITY SERVICES": "FERT",
+        "CONSUMABLES": "CONS",
+    }.get(category, "SVC")
+
     # Clean name for code
-    name_clean = ''.join(c for c in name.upper() if c.isalnum())[:10]
+    name_clean = "".join(c for c in name.upper() if c.isalnum())[:10]
     return f"{category_prefix}-{index:03d}-{name_clean}"
 
 
 def import_services():
     """Import all clinic services."""
-    
+
     # Clinic services data
     services_data = """
 CLINICAL CONSULTATION:
@@ -571,93 +575,105 @@ CONSUMABLES:
 40	SUBCUTE NEEDLE	500.00
 41	HOURLY OXYGEN ADMINISTRATION (PER HOUR)	8000.00
 """
-    
+
     # Parse the data
     current_category = None
     services = []
-    
-    for line in services_data.strip().split('\n'):
+
+    for line in services_data.strip().split("\n"):
         line = line.strip()
         if not line:
             continue
-        
+
         # Check if it's a category header
-        if line.endswith(':'):
+        if line.endswith(":"):
             current_category = line[:-1].strip()
             continue
-        
+
         # Parse service line (format: number name amount)
-        parts = line.split('\t')
+        parts = line.split("\t")
         if len(parts) >= 3:
             try:
                 sn = parts[0].strip()
                 name = parts[1].strip()
                 amount_str = parts[2].strip()
-                
+
                 amount = parse_amount(amount_str)
-                
+
                 # Skip if amount is 0 or None
                 if amount is None or amount == 0:
                     continue
-                
+
                 if current_category and name:
-                    department = CATEGORY_TO_DEPARTMENT.get(current_category, 'PROCEDURE')
-                    service_code = generate_service_code(current_category, name, int(sn))
-                    
-                    services.append({
-                        'department': department,
-                        'service_code': service_code,
-                        'service_name': name,
-                        'amount': amount,
-                        'description': f"{current_category} service"
-                    })
+                    department = CATEGORY_TO_DEPARTMENT.get(
+                        current_category, "PROCEDURE"
+                    )
+                    service_code = generate_service_code(
+                        current_category, name, int(sn)
+                    )
+
+                    services.append(
+                        {
+                            "department": department,
+                            "service_code": service_code,
+                            "service_name": name,
+                            "amount": amount,
+                            "description": f"{current_category} service",
+                        }
+                    )
             except Exception as e:
                 print(f"Error parsing line: {line} - {e}")
                 continue
-    
+
     # Import services
     stats = {
-        'total': len(services),
-        'created': 0,
-        'updated': 0,
-        'skipped': 0,
-        'errors': []
+        "total": len(services),
+        "created": 0,
+        "updated": 0,
+        "skipped": 0,
+        "errors": [],
     }
-    
+
     print(f"\nImporting {stats['total']} services...\n")
-    
+
     for service in services:
         try:
-            Model = DEPARTMENT_MODELS[service['department']]
-            
+            Model = DEPARTMENT_MODELS[service["department"]]
+
             # Check if service already exists
-            existing = Model.objects.filter(service_code=service['service_code']).first()
-            
+            existing = Model.objects.filter(
+                service_code=service["service_code"]
+            ).first()
+
             if existing:
-                existing.service_name = service['service_name']
-                existing.amount = service['amount']
-                existing.description = service['description']
+                existing.service_name = service["service_name"]
+                existing.amount = service["amount"]
+                existing.description = service["description"]
                 existing.is_active = True
                 existing.save()
-                stats['updated'] += 1
-                print(f"  Updated: {service['department']} - {service['service_code']} - {service['service_name']}")
+                stats["updated"] += 1
+                print(
+                    f"  Updated: {service['department']} - {service['service_code']} - {service['service_name']}"
+                )
             else:
                 Model.objects.create(
-                    service_code=service['service_code'],
-                    service_name=service['service_name'],
-                    amount=service['amount'],
-                    description=service['description'],
-                    is_active=True
+                    service_code=service["service_code"],
+                    service_name=service["service_name"],
+                    amount=service["amount"],
+                    description=service["description"],
+                    is_active=True,
                 )
-                stats['created'] += 1
+                stats["created"] += 1
                 amount_str = f"NGN {service['amount']:,.2f}"
-                print(f"  Created: {service['department']} - {service['service_code']} - {service['service_name']} - {amount_str}")
-        
+                print(
+                    f"  Created: {service['department']} - {service['service_code']} - {service['service_name']} - {amount_str}"
+                )
+
         except Exception as e:
-            stats['errors'].append(f"{service['service_code']}: {str(e)}")
-            stats['skipped'] += 1
+            stats["errors"].append(f"{service['service_code']}: {str(e)}")
+            stats["skipped"] += 1
             print(f"  ERROR: {service['service_code']} - {str(e)}")
-    
+
     # Print summary
     print("\n" + "=" * 60)
     print("Import Summary")
@@ -666,15 +682,14 @@ CONSUMABLES:
     print(f"Created: {stats['created']}")
     print(f"Updated: {stats['updated']}")
     print(f"Skipped: {stats['skipped']}")
-    if stats['errors']:
+    if stats["errors"]:
         print(f"\nErrors ({len(stats['errors'])}):")
-        for error in stats['errors'][:10]:
+        for error in stats["errors"][:10]:
             print(f"  - {error}")
-        if len(stats['errors']) > 10:
+        if len(stats["errors"]) > 10:
             print(f"  ... and {len(stats['errors']) - 10} more errors")
     print("=" * 60)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import_services()
-

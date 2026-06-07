@@ -4,15 +4,28 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('notifications', '0001_initial'),
+        ("notifications", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='emailnotification',
-            name='notification_type',
-            field=models.CharField(choices=[('APPOINTMENT_REMINDER', 'Appointment Reminder'), ('APPOINTMENT_CONFIRMED', 'Appointment Confirmed'), ('APPOINTMENT_CANCELLED', 'Appointment Cancelled'), ('LAB_RESULT_READY', 'Lab Result Ready'), ('RADIOLOGY_RESULT_READY', 'Radiology Result Ready'), ('PRESCRIPTION_READY', 'Prescription Ready'), ('PAYMENT_RECEIPT', 'Payment Receipt'), ('PATIENT_VERIFIED', 'Patient Account Verified'), ('SYSTEM_ALERT', 'System Alert')], help_text='Type of notification', max_length=50),
+            model_name="emailnotification",
+            name="notification_type",
+            field=models.CharField(
+                choices=[
+                    ("APPOINTMENT_REMINDER", "Appointment Reminder"),
+                    ("APPOINTMENT_CONFIRMED", "Appointment Confirmed"),
+                    ("APPOINTMENT_CANCELLED", "Appointment Cancelled"),
+                    ("LAB_RESULT_READY", "Lab Result Ready"),
+                    ("RADIOLOGY_RESULT_READY", "Radiology Result Ready"),
+                    ("PRESCRIPTION_READY", "Prescription Ready"),
+                    ("PAYMENT_RECEIPT", "Payment Receipt"),
+                    ("PATIENT_VERIFIED", "Patient Account Verified"),
+                    ("SYSTEM_ALERT", "System Alert"),
+                ],
+                help_text="Type of notification",
+                max_length=50,
+            ),
         ),
     ]

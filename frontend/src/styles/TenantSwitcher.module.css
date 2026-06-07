@@ -1,0 +1,149 @@
+/**
+ * Tenant Switcher styles
+ */
+.wrapper {
+  position: relative;
+}
+
+.usageBar {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary, #666);
+  border-bottom: 1px solid var(--border-color, #eee);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.usageBar .upgradeBtn {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.usageBar .upgradeBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+.usageBar .upgradeBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.6rem;
+  background: var(--bg-secondary, #f5f5f5);
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #666);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge.compact {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  max-width: 140px;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--bg-secondary, #f5f5f5);
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--text-primary, #333);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.trigger:hover {
+  background: var(--bg-tertiary, #eee);
+  border-color: var(--border-hover, #bbb);
+}
+
+.trigger.compact {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.triggerIcon {
+  font-size: 1em;
+}
+
+.triggerText {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  font-size: 0.65em;
+  opacity: 0.7;
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.25rem;
+  min-width: 200px;
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  list-style: none;
+  padding: 0.25rem;
+  z-index: 1000;
+}
+
+.dropdown li {
+  margin: 0;
+}
+
+.dropdown button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-primary, #333);
+  transition: background 0.2s;
+}
+
+.dropdown button:hover {
+  background: var(--bg-secondary, #f5f5f5);
+}
+
+.dropdown button.active {
+  background: var(--bg-secondary, #f0f0f0);
+  font-weight: 600;
+}
+
+.defaultBadge {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
+  background: var(--accent-light, #e3f2fd);
+  color: var(--accent, #1976d2);
+  border-radius: 4px;
+  margin-left: 0.5rem;
+}

@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('discharges', '0002_bed_ward_admission_dischargesummary_admission_and_more'),
+        ("discharges", "0002_bed_ward_admission_dischargesummary_admission_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='admission',
-            name='chief_complaint',
-            field=models.TextField(blank=True, default='', help_text='Chief complaint at admission'),
+            model_name="admission",
+            name="chief_complaint",
+            field=models.TextField(
+                blank=True, default="", help_text="Chief complaint at admission"
+            ),
         ),
     ]

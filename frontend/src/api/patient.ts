@@ -17,60 +17,34 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
-export interface PatientListOptions {
-  searchQuery?: string;
-  includeInactive?: boolean;
-  page?: number;
-  pageSize?: number;
-}
-
 /**
  * Fetch patients (with optional search)
  * Returns paginated response - extracts results array
  */
 export async function fetchPatients(searchQuery?: string): Promise<Patient[]> {
-  const response = await fetchPatientsPage({ searchQuery });
-  return response.results || [];
-}
-
-/**
- * Fetch one paginated page of patients.
- */
-export async function fetchPatientsPage(options: PatientListOptions = {}): Promise<PaginatedResponse<Patient>> {
-  const params = new URLSearchParams();
-  if (options.searchQuery) params.append('search', options.searchQuery);
-  if (options.includeInactive) params.append('include_inactive', 'true');
-  if (options.page) params.append('page', String(options.page));
-  if (options.pageSize) params.append('page_size', String(options.pageSize));
-
-  const queryString = params.toString();
-  const endpoint = queryString ? `/patients/?${queryString}` : '/patients/';
+  const endpoint = searchQuery
+    ? `/patients/?search=${encodeURIComponent(searchQuery)}`
+    : '/patients/';
   const response = await apiRequest<PaginatedResponse<Patient> | Patient[]>(endpoint);
 
   // Handle both paginated and non-paginated responses
   if (Array.isArray(response)) {
-    return {
-      count: response.length,
-      next: null,
-      previous: null,
-      results: response,
-    };
+    return response;
   }
 
-  return response;
+  // Paginated response
+  return response.results || [];
 }
 
 /**
  * Search patients
  * Note: The search endpoint returns a plain array, not paginated
  */
-export async function searchPatients(query: string, includeInactive = true): Promise<Patient[]> {
-  const params = new URLSearchParams({ q: query });
-  if (includeInactive) params.append('include_inactive', 'true');
+export async function searchPatients(query: string): Promise<Patient[]> {
   const response = await apiRequest<Patient[]>(
-    `/patients/search/?${params.toString()}`
+    `/patients/search/?q=${encodeURIComponent(query)}`
   );
-  
+
   // Search endpoint returns plain array
   return Array.isArray(response) ? response : [];
 }
@@ -184,4 +158,43 @@ export async function togglePortalAccess(
     method: 'POST',
     body: JSON.stringify({ enabled }),
   });
+}
+
+/**
+ * Export patient medical history as PDF
+ */
+export async function exportMedicalHistoryPdf(patientId: number): Promise<Blob> {
+  const token = localStorage.getItem('auth_token') || (() => {
+    try {
+      return JSON.parse(localStorage.getItem('auth_tokens') || '{}').access;
+    } catch { return null; }
+  })();
+
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
+  const response = await fetch(`${API_BASE_URL}/patients/${patientId}/export-pdf/`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    let errorMessage = `HTTP Error ${response.status}`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.detail || errorMessage;
+      const error = new Error(errorMessage) as any;
+      error.status = response.status;
+      throw error;
+    } catch (e: any) {
+      if (e.status === response.status) throw e; // Already parsed
+      throw new Error(`Failed to export PDF: ${errorMessage}`);
+    }
+  }
+
+  return await response.blob();
 }

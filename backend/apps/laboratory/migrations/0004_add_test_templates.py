@@ -6,34 +6,98 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('laboratory', '0003_labtestcatalog'),
+        ("laboratory", "0003_labtestcatalog"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='LabTestTemplate',
+            name="LabTestTemplate",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(help_text="Template name (e.g., 'Complete Blood Count', 'Liver Function Tests')", max_length=200)),
-                ('category', models.CharField(blank=True, help_text="Template category (e.g., 'Hematology', 'Chemistry', 'Microbiology')", max_length=100)),
-                ('description', models.TextField(blank=True, help_text='Description of when to use this template')),
-                ('tests', models.JSONField(help_text="List of test codes/names (JSON array, e.g., ['CBC', 'Hemoglobin', 'WBC Count'])")),
-                ('default_clinical_indication', models.TextField(blank=True, help_text='Default clinical indication text (can be edited when applying template)')),
-                ('is_active', models.BooleanField(default=True, help_text='Whether this template is active and available for use')),
-                ('usage_count', models.IntegerField(default=0, help_text='Number of times this template has been used')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('created_by', models.ForeignKey(help_text='User who created this template', on_delete=django.db.models.deletion.PROTECT, related_name='lab_test_templates_created', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        help_text="Template name (e.g., 'Complete Blood Count', 'Liver Function Tests')",
+                        max_length=200,
+                    ),
+                ),
+                (
+                    "category",
+                    models.CharField(
+                        blank=True,
+                        help_text="Template category (e.g., 'Hematology', 'Chemistry', 'Microbiology')",
+                        max_length=100,
+                    ),
+                ),
+                (
+                    "description",
+                    models.TextField(
+                        blank=True, help_text="Description of when to use this template"
+                    ),
+                ),
+                (
+                    "tests",
+                    models.JSONField(
+                        help_text="List of test codes/names (JSON array, e.g., ['CBC', 'Hemoglobin', 'WBC Count'])"
+                    ),
+                ),
+                (
+                    "default_clinical_indication",
+                    models.TextField(
+                        blank=True,
+                        help_text="Default clinical indication text (can be edited when applying template)",
+                    ),
+                ),
+                (
+                    "is_active",
+                    models.BooleanField(
+                        default=True,
+                        help_text="Whether this template is active and available for use",
+                    ),
+                ),
+                (
+                    "usage_count",
+                    models.IntegerField(
+                        default=0,
+                        help_text="Number of times this template has been used",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        help_text="User who created this template",
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="lab_test_templates_created",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Lab Test Template',
-                'verbose_name_plural': 'Lab Test Templates',
-                'db_table': 'lab_test_templates',
-                'ordering': ['category', 'name'],
-                'indexes': [models.Index(fields=['category', 'is_active'], name='lab_test_te_categor_60fd9c_idx'), models.Index(fields=['created_by'], name='lab_test_te_created_c5401f_idx')],
+                "verbose_name": "Lab Test Template",
+                "verbose_name_plural": "Lab Test Templates",
+                "db_table": "lab_test_templates",
+                "ordering": ["category", "name"],
+                "indexes": [
+                    models.Index(
+                        fields=["category", "is_active"],
+                        name="lab_test_te_categor_60fd9c_idx",
+                    ),
+                    models.Index(
+                        fields=["created_by"], name="lab_test_te_created_c5401f_idx"
+                    ),
+                ],
             },
         ),
     ]

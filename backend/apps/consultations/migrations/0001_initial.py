@@ -4,29 +4,71 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Consultation',
+            name="Consultation",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('history', models.TextField(blank=True, help_text='Patient history, chief complaint, and presenting symptoms')),
-                ('examination', models.TextField(blank=True, help_text='Physical examination findings and clinical observations')),
-                ('diagnosis', models.TextField(blank=True, help_text='Clinical diagnosis, differential diagnosis, and assessment')),
-                ('clinical_notes', models.TextField(blank=True, help_text='Additional clinical notes, treatment plan, and follow-up instructions')),
-                ('created_at', models.DateTimeField(auto_now_add=True, help_text='Timestamp when consultation was first created')),
-                ('updated_at', models.DateTimeField(auto_now=True, help_text='Timestamp when consultation was last modified')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "history",
+                    models.TextField(
+                        blank=True,
+                        help_text="Patient history, chief complaint, and presenting symptoms",
+                    ),
+                ),
+                (
+                    "examination",
+                    models.TextField(
+                        blank=True,
+                        help_text="Physical examination findings and clinical observations",
+                    ),
+                ),
+                (
+                    "diagnosis",
+                    models.TextField(
+                        blank=True,
+                        help_text="Clinical diagnosis, differential diagnosis, and assessment",
+                    ),
+                ),
+                (
+                    "clinical_notes",
+                    models.TextField(
+                        blank=True,
+                        help_text="Additional clinical notes, treatment plan, and follow-up instructions",
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True,
+                        help_text="Timestamp when consultation was first created",
+                    ),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(
+                        auto_now=True,
+                        help_text="Timestamp when consultation was last modified",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Consultation',
-                'verbose_name_plural': 'Consultations',
-                'db_table': 'consultations',
-                'ordering': ['-created_at'],
+                "verbose_name": "Consultation",
+                "verbose_name_plural": "Consultations",
+                "db_table": "consultations",
+                "ordering": ["-created_at"],
             },
         ),
     ]

@@ -12,27 +12,18 @@ Per EMR Context Document v2 (LOCKED):
 - No image is deleted locally until server ACK
 - PACS-lite: Group by Study/Series, Expose viewer URLs, Enforce read-only access
 """
+
 from rest_framework.routers import DefaultRouter
+
 from .offline_sync_views import OfflineImageMetadataViewSet
-from .viewer_views import RadiologyStudyViewSet, RadiologyImageViewSet
+from .viewer_views import RadiologyImageViewSet, RadiologyStudyViewSet
 
 # Offline image sync and PACS-lite router
 router = DefaultRouter()
 router.register(
-    r'offline-images',
-    OfflineImageMetadataViewSet,
-    basename='offline-image-metadata'
+    r"offline-images", OfflineImageMetadataViewSet, basename="offline-image-metadata"
 )
-router.register(
-    r'studies',
-    RadiologyStudyViewSet,
-    basename='radiology-study'
-)
-router.register(
-    r'images',
-    RadiologyImageViewSet,
-    basename='radiology-image'
-)
+router.register(r"studies", RadiologyStudyViewSet, basename="radiology-study")
+router.register(r"images", RadiologyImageViewSet, basename="radiology-image")
 
 urlpatterns = router.urls
-

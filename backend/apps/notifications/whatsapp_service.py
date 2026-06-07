@@ -4,7 +4,9 @@ WhatsApp message service - stub for sending appointment reminders.
 In production, integrate with WhatsApp Business API (e.g. Twilio WhatsApp,
 Meta Cloud API, or a local provider for Nigeria).
 """
+
 import logging
+
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -29,6 +31,6 @@ def send_whatsapp_message(phone: str, message: str) -> bool:
         phone[:6] + "***" if len(phone) > 6 else phone,
         message[:80] + "..." if len(message) > 80 else message,
     )
-    if getattr(settings, 'WHATSAPP_STUB_ALWAYS_FAIL', False):
+    if getattr(settings, "WHATSAPP_STUB_ALWAYS_FAIL", False):
         return False
     return True

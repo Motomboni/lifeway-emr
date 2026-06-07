@@ -5,15 +5,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('laboratory', '0005_alter_laborder_consultation_and_more'),
+        ("laboratory", "0005_alter_laborder_consultation_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='labresult',
-            name='lab_order',
-            field=models.OneToOneField(help_text='Lab order this result belongs to. One result per order.', on_delete=django.db.models.deletion.CASCADE, related_name='result', to='laboratory.laborder'),
+            model_name="labresult",
+            name="lab_order",
+            field=models.OneToOneField(
+                help_text="Lab order this result belongs to. One result per order.",
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="result",
+                to="laboratory.laborder",
+            ),
         ),
     ]

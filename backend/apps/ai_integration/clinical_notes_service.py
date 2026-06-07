@@ -4,12 +4,12 @@ AI clinical notes generation service.
 generate_clinical_note(transcript, note_type) -> structured note (SOAP/summary/discharge).
 Doctor must approve/edit before final save. Audit logged when visit is provided.
 """
-import logging
-from typing import Dict, Any, Optional
-from django.conf import settings
 
-from .models import AIFeatureType, AIRequest, AIConfiguration, AIProvider
-from .services import AIServiceFactory, AIServiceError
+import logging
+from typing import Any, Dict
+
+from .models import AIConfiguration, AIFeatureType, AIProvider, AIRequest
+from .services import AIServiceError, AIServiceFactory
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,10 @@ def _get_note_prompt(transcript: str, note_type: str) -> tuple:
     if note_type == "SOAP":
         return SOAP_SYSTEM, f"Generate a SOAP note from the following:\n\n{transcript}"
     if note_type == "summary":
-        return SUMMARY_SYSTEM, f"Summarize the following clinical encounter:\n\n{transcript}"
+        return (
+            SUMMARY_SYSTEM,
+            f"Summarize the following clinical encounter:\n\n{transcript}",
+        )
     if note_type == "discharge":
         return DISCHARGE_SYSTEM, f"Generate a discharge summary from:\n\n{transcript}"
     return SUMMARY_SYSTEM, f"Summarize:\n\n{transcript}"
@@ -109,7 +112,10 @@ def generate_clinical_note(
                 completion_tokens=completion_tokens,
                 total_tokens=prompt_tokens + completion_tokens,
                 cost_usd=cost,
-                request_payload={"note_type": note_type_display, "prompt_length": len(full_prompt)},
+                request_payload={
+                    "note_type": note_type_display,
+                    "prompt_length": len(full_prompt),
+                },
                 response_payload={"response_length": len(content)},
                 success=True,
             ).id

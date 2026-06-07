@@ -48,6 +48,19 @@ def consultation(open_visit_with_payment, doctor_user):
 
 
 @pytest.fixture
+def unpaid_consultation(open_visit_without_payment, doctor_user):
+    """Consultation on an unpaid visit for payment-enforcement tests."""
+    return Consultation.objects.create(
+        visit=open_visit_without_payment,
+        created_by=doctor_user,
+        history="Test history",
+        examination="Test examination",
+        diagnosis="Test diagnosis",
+        clinical_notes="Test notes",
+    )
+
+
+@pytest.fixture
 def prescription(open_visit_with_payment, consultation, doctor_user):
     """Create a prescription for testing."""
     return Prescription.objects.create(
@@ -64,7 +77,7 @@ def prescription(open_visit_with_payment, consultation, doctor_user):
 class TestPharmacyDispenseAuthentication:
     """Test A1: Unauthenticated access denied."""
     
-    def test_unauthenticated_dispense_denied(self, open_visit_with_payment, prescription):
+    def test_unauthenticated_dispense_denied(self, open_visit_with_payment, prescription, api_client):
         """A1: Unauthenticated user cannot dispense medication."""
         client = APIClient()
         url = f"/api/v1/visits/{open_visit_with_payment.id}/pharmacy/dispense/"
@@ -81,10 +94,9 @@ class TestPharmacyDispenseAuthentication:
 class TestPharmacyDispenseRoleEnforcement:
     """Test R1: Role-based access control."""
     
-    def test_doctor_cannot_dispense(self, open_visit_with_payment, prescription, doctor_token):
+    def test_doctor_cannot_dispense(self, open_visit_with_payment, prescription, doctor_token, api_client):
         """R1: Doctor cannot dispense medication - only Pharmacist can."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {doctor_token}')
+        client = api_client(token=doctor_token)
         url = f"/api/v1/visits/{open_visit_with_payment.id}/pharmacy/dispense/"
         
         response = client.post(url, {
@@ -97,10 +109,9 @@ class TestPharmacyDispenseRoleEnforcement:
         error_text = str(response.data).lower()
         assert 'pharmacist' in error_text or 'permission' in error_text or 'role' in error_text
     
-    def test_receptionist_cannot_dispense(self, open_visit_with_payment, prescription, receptionist_token):
+    def test_receptionist_cannot_dispense(self, open_visit_with_payment, prescription, receptionist_token, api_client):
         """R1: Receptionist cannot dispense medication."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {receptionist_token}')
+        client = api_client(token=receptionist_token)
         url = f"/api/v1/visits/{open_visit_with_payment.id}/pharmacy/dispense/"
         
         response = client.post(url, {
@@ -110,10 +121,9 @@ class TestPharmacyDispenseRoleEnforcement:
         
         assert response.status_code == status.HTTP_403_FORBIDDEN
     
-    def test_pharmacist_can_dispense(self, open_visit_with_payment, prescription, pharmacist_token):
+    def test_pharmacist_can_dispense(self, open_visit_with_payment, prescription, pharmacist_token, api_client):
         """R1: Pharmacist can dispense medication."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {pharmacist_token}')
+        client = api_client(token=pharmacist_token)
         url = f"/api/v1/visits/{open_visit_with_payment.id}/pharmacy/dispense/"
         
         response = client.post(url, {
@@ -135,10 +145,9 @@ class TestPharmacyDispenseRoleEnforcement:
 class TestPharmacyDispensePrescriptionEnforcement:
     """Test P1: Prescription must exist."""
     
-    def test_dispense_without_prescription_id(self, open_visit_with_payment, pharmacist_token):
+    def test_dispense_without_prescription_id(self, open_visit_with_payment, pharmacist_token, api_client):
         """P1: prescription_id is required in request body."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {pharmacist_token}')
+        client = api_client(token=pharmacist_token)
         url = f"/api/v1/visits/{open_visit_with_payment.id}/pharmacy/dispense/"
         
         response = client.post(url, {
@@ -148,10 +157,9 @@ class TestPharmacyDispensePrescriptionEnforcement:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert 'prescription_id' in response.data
     
-    def test_dispense_nonexistent_prescription(self, open_visit_with_payment, pharmacist_token):
+    def test_dispense_nonexistent_prescription(self, open_visit_with_payment, pharmacist_token, api_client):
         """P1: Prescription must exist."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {pharmacist_token}')
+        client = api_client(token=pharmacist_token)
         url = f"/api/v1/visits/{open_visit_with_payment.id}/pharmacy/dispense/"
         
         response = client.post(url, {
@@ -161,7 +169,7 @@ class TestPharmacyDispensePrescriptionEnforcement:
         
         assert response.status_code == status.HTTP_404_NOT_FOUND
     
-    def test_dispense_already_dispensed_prescription(self, open_visit_with_payment, prescription, pharmacist_user, pharmacist_token):
+    def test_dispense_already_dispensed_prescription(self, open_visit_with_payment, prescription, pharmacist_user, pharmacist_token, api_client):
         """P1: Cannot dispense an already dispensed prescription."""
         # Dispense the prescription first
         prescription.dispensed = True
@@ -169,8 +177,7 @@ class TestPharmacyDispensePrescriptionEnforcement:
         prescription.status = 'DISPENSED'
         prescription.save()
         
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {pharmacist_token}')
+        client = api_client(token=pharmacist_token)
         url = f"/api/v1/visits/{open_visit_with_payment.id}/pharmacy/dispense/"
         
         response = client.post(url, {
@@ -181,13 +188,12 @@ class TestPharmacyDispensePrescriptionEnforcement:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert 'already been dispensed' in str(response.data)
     
-    def test_dispense_cancelled_prescription(self, open_visit_with_payment, prescription, pharmacist_token):
+    def test_dispense_cancelled_prescription(self, open_visit_with_payment, prescription, pharmacist_token, api_client):
         """P1: Cannot dispense a cancelled prescription."""
         prescription.status = 'CANCELLED'
         prescription.save()
         
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {pharmacist_token}')
+        client = api_client(token=pharmacist_token)
         url = f"/api/v1/visits/{open_visit_with_payment.id}/pharmacy/dispense/"
         
         response = client.post(url, {
@@ -204,13 +210,15 @@ class TestPharmacyDispensePrescriptionEnforcement:
 class TestPharmacyDispensePaymentEnforcement:
     """Test P2: Payment must be CLEARED."""
     
-    def test_dispense_with_payment_pending(self, open_visit_without_payment, consultation, doctor_user, pharmacist_token):
-        """P2: Cannot dispense if payment is PENDING."""
+    def test_dispense_with_payment_pending(
+        self, open_visit_without_payment, unpaid_consultation, doctor_user, pharmacist_token, api_client
+    ):
+        """P2: Cannot dispense if payment is not cleared."""
         # Try to create prescription for unpaid visit (may fail at model level)
         try:
             prescription = Prescription.objects.create(
                 visit=open_visit_without_payment,
-                consultation=consultation,
+                consultation=unpaid_consultation,
                 drug='Amoxicillin',
                 dosage='500mg',
                 prescribed_by=doctor_user,
@@ -221,8 +229,7 @@ class TestPharmacyDispensePaymentEnforcement:
             # The test verifies that unpaid visits prevent prescription creation
             pytest.skip("Prescription creation failed for unpaid visit (expected behavior)")
         
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {pharmacist_token}')
+        client = api_client(token=pharmacist_token)
         url = f"/api/v1/visits/{open_visit_without_payment.id}/pharmacy/dispense/"
         
         response = client.post(url, {
@@ -240,21 +247,26 @@ class TestPharmacyDispensePaymentEnforcement:
 class TestPharmacyDispenseVisitStatusEnforcement:
     """Test V1: Visit must be OPEN."""
     
-    def test_dispense_for_closed_visit(self, closed_visit_with_payment, consultation, doctor_user, pharmacist_token):
+    def test_dispense_for_closed_visit(self, open_visit_with_payment, consultation, doctor_user, pharmacist_token, api_client):
         """V1: Cannot dispense for CLOSED visit."""
-        # Create prescription for closed visit
+        from django.utils import timezone
+
         prescription = Prescription.objects.create(
-            visit=closed_visit_with_payment,
+            visit=open_visit_with_payment,
             consultation=consultation,
             drug='Amoxicillin',
             dosage='500mg',
             prescribed_by=doctor_user,
             status='PENDING'
         )
+
+        open_visit_with_payment.status = 'CLOSED'
+        open_visit_with_payment.closed_by = doctor_user
+        open_visit_with_payment.closed_at = timezone.now()
+        open_visit_with_payment.save()
         
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {pharmacist_token}')
-        url = f"/api/v1/visits/{closed_visit_with_payment.id}/pharmacy/dispense/"
+        client = api_client(token=pharmacist_token)
+        url = f"/api/v1/visits/{open_visit_with_payment.id}/pharmacy/dispense/"
         
         response = client.post(url, {
             'prescription_id': prescription.id,
@@ -271,10 +283,9 @@ class TestPharmacyDispenseVisitStatusEnforcement:
 class TestPharmacyDispenseAuditLogging:
     """Test A2: Audit log created on success."""
     
-    def test_audit_log_created_on_dispense(self, open_visit_with_payment, prescription, pharmacist_user, pharmacist_token):
+    def test_audit_log_created_on_dispense(self, open_visit_with_payment, prescription, pharmacist_user, pharmacist_token, api_client):
         """A2: Audit log created when medication is dispensed."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {pharmacist_token}')
+        client = api_client(token=pharmacist_token)
         url = f"/api/v1/visits/{open_visit_with_payment.id}/pharmacy/dispense/"
         
         # Count audit logs before
@@ -312,10 +323,9 @@ class TestPharmacyDispenseAuditLogging:
 class TestPharmacyDispenseSuccessPath:
     """Test successful dispensing path."""
     
-    def test_successful_dispense(self, open_visit_with_payment, prescription, pharmacist_user, pharmacist_token):
+    def test_successful_dispense(self, open_visit_with_payment, prescription, pharmacist_user, pharmacist_token, api_client):
         """Successful dispensing when all conditions are met."""
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f'Bearer {pharmacist_token}')
+        client = api_client(token=pharmacist_token)
         url = f"/api/v1/visits/{open_visit_with_payment.id}/pharmacy/dispense/"
         
         response = client.post(url, {

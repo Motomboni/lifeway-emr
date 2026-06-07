@@ -4,30 +4,48 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0007_add_biometric_fields'),
+        ("users", "0007_add_biometric_fields"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='device_type',
-            field=models.CharField(blank=True, choices=[('web', 'Web'), ('ios', 'iOS'), ('android', 'Android'), ('unknown', 'Unknown')], help_text='Type of device last used', max_length=20),
+            model_name="user",
+            name="device_type",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("web", "Web"),
+                    ("ios", "iOS"),
+                    ("android", "Android"),
+                    ("unknown", "Unknown"),
+                ],
+                help_text="Type of device last used",
+                max_length=20,
+            ),
         ),
         migrations.AddField(
-            model_name='user',
-            name='last_login_device',
-            field=models.CharField(blank=True, help_text='Last device used for login', max_length=255),
+            model_name="user",
+            name="last_login_device",
+            field=models.CharField(
+                blank=True, help_text="Last device used for login", max_length=255
+            ),
         ),
         migrations.AddField(
-            model_name='user',
-            name='phone',
-            field=models.CharField(blank=True, help_text='Phone number for SMS/WhatsApp OTP', max_length=20, null=True),
+            model_name="user",
+            name="phone",
+            field=models.CharField(
+                blank=True,
+                help_text="Phone number for SMS/WhatsApp OTP",
+                max_length=20,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='user',
-            name='portal_enabled',
-            field=models.BooleanField(default=False, help_text='Whether user has portal access enabled'),
+            model_name="user",
+            name="portal_enabled",
+            field=models.BooleanField(
+                default=False, help_text="Whether user has portal access enabled"
+            ),
         ),
     ]

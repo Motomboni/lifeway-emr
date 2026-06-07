@@ -52,17 +52,20 @@
 }
 
 .paymentMethodButton {
-  padding: 1rem;
-  border-radius: 0.5rem;
-  border: 2px solid #e5e7eb;
-  background: white;
+  padding: 1.25rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  background: var(--bg-primary, white);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   text-align: left;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 }
 
 .paymentMethodButton:hover:not(:disabled) {
-  border-color: #d1d5db;
+  border-color: #3b82f6;
+  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.08);
+  transform: translateY(-2px);
 }
 
 .paymentMethodButton:disabled {
@@ -72,7 +75,8 @@
 
 .paymentMethodButtonActive {
   border-color: #3b82f6;
-  background: #eff6ff;
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.8), rgba(219, 234, 254, 0.4));
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
 }
 
 .paymentMethodIcon {
@@ -92,10 +96,11 @@
 }
 
 .paymentForm {
-  background: #f9fafb;
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-primary, #ffffff);
+  border-radius: var(--radius-md);
+  padding: 1.75rem;
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
 }
 
 .paymentFormTitle {
@@ -149,14 +154,23 @@
 
 .submitButton {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
   color: white;
   border: none;
   cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.875rem;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  font-size: 0.95rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.submitButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .submitButton:disabled {

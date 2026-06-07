@@ -5,16 +5,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('clinical', '0002_proceduretask'),
-        ('consultations', '0005_alter_consultation_visit'),
+        ("clinical", "0002_proceduretask"),
+        ("consultations", "0005_alter_consultation_visit"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='proceduretask',
-            name='consultation',
-            field=models.ForeignKey(blank=True, help_text='Consultation this procedure belongs to. Required for clinical procedures, optional for registration/administrative services.', null=True, on_delete=django.db.models.deletion.PROTECT, related_name='procedure_tasks', to='consultations.consultation'),
+            model_name="proceduretask",
+            name="consultation",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Consultation this procedure belongs to. Required for clinical procedures, optional for registration/administrative services.",
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="procedure_tasks",
+                to="consultations.consultation",
+            ),
         ),
     ]

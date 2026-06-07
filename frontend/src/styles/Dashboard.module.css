@@ -11,7 +11,7 @@
 
 .dashboardHeader {
   background: var(--bg-primary);
-  border-bottom: 2px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
   padding: 1rem 2rem;
   box-shadow: 0 2px 4px var(--shadow);
   transition: background-color 0.3s ease, border-color 0.3s ease;
@@ -25,15 +25,11 @@
 
 .headerContent {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.headerContent h1 {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: 1.5rem;
-  font-weight: 700;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .userInfo {
@@ -71,18 +67,19 @@
 
 .logoutButton {
   padding: 0.5rem 1rem;
-  background-color: #f44336;
+  background: var(--error);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background 0.15s, transform 0.1s;
 }
 
 .logoutButton:hover {
-  background-color: #d32f2f;
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .dashboardMain {
@@ -96,47 +93,66 @@
 
 .dashboardContent {
   background: var(--bg-primary);
-  border-radius: 8px;
-  padding: 2rem;
-  box-shadow: 0 1px 3px var(--shadow);
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  border-radius: var(--radius-lg);
+  padding: 2.5rem;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
 }
 
 .dashboardContent h2 {
   margin: 0 0 2rem 0;
   color: var(--text-primary);
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
   transition: color 0.3s ease;
 }
 
 .actionCards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1.5rem;
 }
 
 .actionCard {
-  background: #f9f9f9;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 1.5rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
   cursor: pointer;
-  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.actionCard::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 3px;
+  background: var(--primary-gradient);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease-out;
 }
 
 .actionCard:hover {
-  background: #f0f0f0;
-  border-color: #2196f3;
-  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
-  transform: translateY(-2px);
+  background: var(--bg-primary);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+}
+
+.actionCard:hover::before {
+  transform: scaleX(1);
 }
 
 .actionCard h3 {
   margin: 0 0 0.5rem 0;
-  color: #333;
-  font-size: 1.125rem;
-  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 1.15rem;
+  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -149,18 +165,20 @@
   min-width: 24px;
   height: 24px;
   padding: 0 8px;
-  background-color: #f44336;
+  background: var(--error);
   color: white;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   font-size: 0.75rem;
   font-weight: 700;
   line-height: 1;
+  box-shadow: var(--shadow-sm);
 }
 
 .actionCard p {
   margin: 0;
-  color: #666;
-  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 
 .dashboardHeader {
@@ -183,51 +201,88 @@
 
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.5rem;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
 }
 
 .statCard {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
-  padding: 1.5rem;
+  position: relative;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.25rem;
   color: white;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.25);
+  transition: all 0.2s ease;
+}
+
+.statCard::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 150px;
+  height: 150px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transform: scale(1);
+  transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+  pointer-events: none;
+}
+
+.statCard:hover::after {
+  transform: scale(1.6);
 }
 
 .statCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(5, 150, 105, 0.35);
 }
 
 .statCard:nth-child(2) {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25);
+}
+
+.statCard:nth-child(2):hover {
+  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.35);
 }
 
 .statCard:nth-child(3) {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
+}
+
+.statCard:nth-child(3):hover {
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35);
 }
 
 .statIcon {
   font-size: 2.5rem;
   opacity: 0.9;
+  z-index: 1;
+}
+
+.statInfo {
+  z-index: 1;
 }
 
 .statInfo h3 {
   margin: 0;
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -1px;
 }
 
 .statInfo p {
   margin: 0.25rem 0 0 0;
-  font-size: 0.875rem;
-  opacity: 0.9;
+  font-size: 0.9rem;
+  font-weight: 500;
+  opacity: 0.85;
 }
 
 .section {
@@ -236,7 +291,7 @@
 
 .section h2 {
   margin: 0 0 1rem 0;
-  color: #2c3e50;
+  color: var(--text-primary);
   font-size: 1.25rem;
   font-weight: 600;
 }
@@ -251,7 +306,7 @@
 .sectionHeader h2,
 .sectionHeader h3 {
   margin: 0;
-  color: #2c3e50;
+  color: var(--text-primary);
   font-size: 1.25rem;
   font-weight: 600;
 }
@@ -280,32 +335,36 @@
 }
 
 .recentItem {
-  background: #f8f9fa;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 1rem 1.5rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.75rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 }
 
 .recentItem:hover {
-  background: #f0f0f0;
-  border-color: #3498db;
+  background: var(--bg-secondary);
+  border-color: var(--primary);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
+  transform: translateX(6px);
   cursor: pointer;
 }
 
 .recentItemInfo h4 {
-  margin: 0 0 0.25rem 0;
-  color: #2c3e50;
-  font-size: 1rem;
+  margin: 0 0 0.35rem 0;
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  font-weight: 600;
 }
 
 .recentItemInfo p {
   margin: 0;
-  color: #7f8c8d;
-  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
 }
 
 .recentItemBadges {
@@ -318,7 +377,7 @@
 .badgeCleared,
 .badgePending {
   padding: 0.25rem 0.75rem;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -573,21 +632,22 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 0.625rem 1.25rem;
+  background: var(--primary-gradient);
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 0.95rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .primaryButton:hover {
+  background: var(--primary-gradient-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+  box-shadow: var(--shadow-md);
 }
 
 .primaryButton:active {
@@ -598,20 +658,20 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: #f8f9fa;
-  color: #495057;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  font-size: 0.95rem;
+  padding: 0.625rem 1.25rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
 }
 
 .secondaryButton:hover {
-  background: #e9ecef;
-  border-color: #adb5bd;
+  background: var(--bg-hover);
+  border-color: var(--text-muted);
 }
 
 .loading {
@@ -686,15 +746,16 @@
   background: var(--bg-primary);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
   text-align: center;
+  box-shadow: var(--shadow-sm);
 }
 
 .actionGrid .actionCard:hover {
   border-color: var(--primary);
-  box-shadow: 0 4px 12px var(--shadow-lg);
+  box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
@@ -719,22 +780,22 @@
 
 [data-theme="dark"] .quickActions .actionGrid .actionCard,
 [data-theme="dark"] .quickActions .actionGrid .actionCard span {
-  color: #e8e8e8;
+  color: var(--text-primary);
 }
 
 [data-theme="dark"] .quickActions .actionGrid .actionCard {
-  background-color: #2d2d2d;
-  border-color: #404040;
+  background-color: var(--bg-primary);
+  border-color: var(--border-color);
 }
 
 [data-theme="dark"] .quickActions .actionGrid .actionCard:hover {
-  background-color: #3d3d3d;
+  background-color: var(--bg-tertiary);
   border-color: var(--primary);
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 [data-theme="dark"] .quickActions .actionGrid .actionCard:hover span {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .filterSelect {
@@ -756,7 +817,7 @@
   text-align: center;
   padding: 3rem;
   background: white;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   border: 2px dashed #e0e0e0;
 }
 
@@ -768,7 +829,7 @@
 
 .tableContainer {
   background: white;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -847,7 +908,7 @@
   gap: 0.75rem;
   padding: 1rem;
   background: white;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 
 .chartBar {
@@ -867,14 +928,14 @@
   flex: 1;
   height: 24px;
   background: #f1f3f4;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   position: relative;
   overflow: hidden;
 }
 
 .chartBarFill {
   height: 100%;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   transition: width 0.5s ease;
 }
 
@@ -892,7 +953,7 @@
 .nurseActionsSection {
   background: linear-gradient(135deg, #e8f4f8, #d1ecf1);
   border: 1px solid #bee5eb;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 1.5rem;
   margin-bottom: 2rem;
 }

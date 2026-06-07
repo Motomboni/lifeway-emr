@@ -125,7 +125,7 @@
 .kpiCard {
   background: #f8f9fa;
   border: 2px solid #dee2e6;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 24px;
   text-align: center;
   transition: transform 0.2s, box-shadow 0.2s;

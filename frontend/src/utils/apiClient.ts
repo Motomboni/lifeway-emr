@@ -5,8 +5,9 @@
  * Per EMR Rules: All API calls must include JWT Bearer token.
  */
 import { parseApiError, isNetworkError, isTimeoutError } from './errorHandler';
+import { getTenantSlugFromHostname, isSubdomainTenantEnabled } from './tenantSubdomain';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || '/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 /**
  * Get authentication token from localStorage
@@ -22,9 +23,32 @@ export function getAuthToken(): string | null {
       // Invalid JSON
     }
   }
-  
+
   // Fallback to legacy format
   return localStorage.getItem('auth_token');
+}
+
+/**
+ * Get current organization ID from localStorage (for multi-tenant API requests)
+ */
+export function getOrganizationId(): number | null {
+  const id = localStorage.getItem('organization_id');
+  if (id) {
+    const num = parseInt(id, 10);
+    if (!isNaN(num)) return num;
+  }
+  return null;
+}
+
+/**
+ * Set current organization ID (call after login or tenant switch)
+ */
+export function setOrganizationId(id: number | null): void {
+  if (id === null) {
+    localStorage.removeItem('organization_id');
+  } else {
+    localStorage.setItem('organization_id', String(id));
+  }
 }
 
 /**
@@ -118,7 +142,7 @@ export async function apiRequest<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const token = getAuthToken();
-  
+
   if (!token) {
     // Redirect to login if no token
     if (window.location.pathname !== '/login') {
@@ -126,16 +150,28 @@ export async function apiRequest<T>(
     }
     throw new Error('No authentication token found');
   }
-  
+
+  // Multi-tenant: add organization header when set
+  const orgId = getOrganizationId();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+    ...(options.headers as Record<string, string>),
+  };
+  if (orgId !== null) {
+    headers['X-Organization-Id'] = String(orgId);
+  } else if (isSubdomainTenantEnabled()) {
+    const tenantSlug = getTenantSlugFromHostname();
+    if (tenantSlug) {
+      headers['X-Organization-Slug'] = tenantSlug;
+    }
+  }
+
   let response: Response;
   try {
     response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        ...options.headers,
-      },
+      headers,
     });
   } catch (error) {
     // Handle network errors
@@ -163,32 +199,34 @@ export async function apiRequest<T>(
         errorData = { detail: `HTTP ${response.status}: ${response.statusText}` };
       }
     }
-    
+
     // Check if this is a 503 from a service worker or network unreachable
     const msg = (errorData.message ?? errorData.detail ?? '').toString().toLowerCase();
-    const isServiceWorker503 = response.status === 503 && 
-                               (errorData.error === 'Offline' || 
-                                msg.includes('offline') ||
-                                msg.includes('not available offline') ||
-                                msg.includes('network request failed') ||
-                                msg.includes('network error') ||
-                                (errorData.error && String(errorData.error).toLowerCase().includes('network')));
-    
+    const isServiceWorker503 = response.status === 503 &&
+      (errorData.error === 'Offline' ||
+        msg.includes('offline') ||
+        msg.includes('not available offline') ||
+        msg.includes('network request failed') ||
+        msg.includes('network error') ||
+        (errorData.error && String(errorData.error).toLowerCase().includes('network')));
+
     // If it's a service worker 503 but we're actually online, retry the request
     // This handles cases where service workers incorrectly cache offline state
     if (isServiceWorker503 && navigator.onLine) {
       try {
+        const retryHeaders: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache',
+          ...(options.headers as Record<string, string>),
+        };
+        if (orgId !== null) retryHeaders['X-Organization-Id'] = String(orgId);
         const retryResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
           ...options,
           cache: 'no-store',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'Cache-Control': 'no-cache',
-            ...options.headers,
-          },
+          headers: retryHeaders,
         });
-        
+
         if (retryResponse.ok) {
           if (retryResponse.status === 204) {
             return {} as T;
@@ -199,59 +237,64 @@ export async function apiRequest<T>(
         // Retry failed, continue with normal error handling
       }
     }
-    
+
     // Check if this is an expected 404 for list endpoints (empty results)
     // These are handled gracefully by hooks, so we suppress console noise
     const isExpected404 = response.status === 404 && (
-      endpoint.includes('/results/') || 
+      endpoint.includes('/results/') ||
       endpoint.endsWith('/results') ||
       endpoint.includes('/insurance/') ||  // Insurance endpoints may not exist for all visits
       endpoint.includes('/billing/reconciliation/today/') // "no reconciliation yet today" is expected
     );
-    
+
     // Check if this is a 401 that will be handled by token refresh
     // Suppress console errors for 401s that will be auto-refreshed
-    const is401WithRefresh = response.status === 401 && 
-                             !endpoint.includes('/auth/refresh/') && 
-                             !endpoint.includes('/auth/login/') &&
-                             getRefreshToken() !== null; // Only suppress if we have a refresh token to try
-    
+    const is401WithRefresh = response.status === 401 &&
+      !endpoint.includes('/auth/refresh/') &&
+      !endpoint.includes('/auth/login/') &&
+      getRefreshToken() !== null; // Only suppress if we have a refresh token to try
+
     // Also suppress 401s and 504s from background polling (notifications, locks, pending verifications, clinical alerts)
-    const isBackgroundPolling = endpoint.includes('/visits/?status=') || 
-                                endpoint.includes('/locks/') ||
-                                endpoint.includes('/notifications/') ||
-                                endpoint.includes('/patients/pending-verification/') ||
-                                endpoint.includes('/clinical/alerts/');
+    const isBackgroundPolling = endpoint.includes('/visits/?status=') ||
+      endpoint.includes('/locks/') ||
+      endpoint.includes('/notifications/') ||
+      endpoint.includes('/patients/pending-verification/') ||
+      endpoint.includes('/clinical/alerts/');
     const is401FromPolling = response.status === 401 && isBackgroundPolling;
     const is504FromPolling = response.status === 504 && isBackgroundPolling;
-    
+
     // Suppress all service worker 503 logs (we retry when online; when offline it's expected)
     const isExpected503 = isServiceWorker503;
-    
+
     // Suppress 403 errors for payment-related restrictions (expected business logic)
     // These are not bugs - they indicate the visit needs payment before clinical access
-    const isPaymentRequired403 = response.status === 403 && 
-                                  (errorData.detail?.includes('Payment') || 
-                                   errorData.message?.includes('Payment') ||
-                                   errorData.detail?.includes('payment'));
+    const isPaymentRequired403 = response.status === 403 &&
+      (errorData.detail?.includes('Payment') ||
+        errorData.message?.includes('Payment') ||
+        errorData.detail?.includes('payment'));
 
     // Suppress 400 "billing line item already exists" - expected when adding same service twice
     // Backend may return { detail: [...] } or a raw array as the response body
     const addItemDetailStr = Array.isArray(errorData)
       ? errorData.map((x: any) => String(x)).join(' ')
       : (errorData?.detail != null
-          ? (Array.isArray(errorData.detail)
-              ? errorData.detail.map((x: any) => String(x)).join(' ')
-              : String(errorData.detail))
-          : '');
+        ? (Array.isArray(errorData.detail)
+          ? errorData.detail.map((x: any) => String(x)).join(' ')
+          : String(errorData.detail))
+        : '');
     const isBillingAlreadyExists = response.status === 400 &&
       endpoint.includes('/billing/add-item') &&
       (addItemDetailStr.includes('already exists') || addItemDetailStr.includes('one billing line item per visit'));
-    
+
+    // Suppress UI-handled expected errors to keep the console clean
+    const isNoOrgSelected = response.status === 400 && errorData?.detail === 'No organization selected.';
+    const isUserNotFound = response.status === 404 && errorData?.detail === 'User not found.';
+
     // Log error details for debugging (suppress expected errors)
-    const shouldSuppressLog = isExpected404 || is401WithRefresh || is401FromPolling || 
-                              is504FromPolling || isExpected503 || isPaymentRequired403 || isBillingAlreadyExists;
-    
+    const shouldSuppressLog = isExpected404 || is401WithRefresh || is401FromPolling ||
+      is504FromPolling || isExpected503 || isPaymentRequired403 ||
+      isBillingAlreadyExists || isNoOrgSelected || isUserNotFound;
+
     if (!shouldSuppressLog) {
       console.error('API Error Response:', {
         status: response.status,
@@ -264,14 +307,14 @@ export async function apiRequest<T>(
     if (response.status === 400 && endpoint.includes('/billing/add-item') && !isBillingAlreadyExists) {
       console.warn('[Billing add-item 400]', addItemDetailStr || errorData);
     }
-    
+
     const errorMessage = parseApiError({ response: { status: response.status, data: errorData } });
-    
+
     // Create error object with both message and raw data for field-specific error parsing
     const error = new Error(errorMessage) as any;
     error.responseData = errorData; // Attach raw error data for field-specific parsing
     error.status = response.status;
-    
+
     // Handle specific error codes
     if (response.status === 401) {
       // Unauthorized - try to refresh token first
@@ -279,17 +322,19 @@ export async function apiRequest<T>(
       if (!endpoint.includes('/auth/refresh/') && !endpoint.includes('/auth/login/')) {
         try {
           const newAccessToken = await refreshAccessToken();
-          
+
           if (newAccessToken) {
             // Token refreshed successfully, retry the original request
             try {
+              const retryHeaders: Record<string, string> = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${newAccessToken}`,
+                ...(options.headers as Record<string, string>),
+              };
+              if (orgId !== null) retryHeaders['X-Organization-Id'] = String(orgId);
               const retryResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
                 ...options,
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${newAccessToken}`,
-                  ...options.headers,
-                },
+                headers: retryHeaders,
               });
 
               if (retryResponse.ok) {
@@ -332,12 +377,12 @@ export async function apiRequest<T>(
           // Continue to logout flow below
         }
       }
-      
+
       // Refresh failed or not applicable - clear auth and redirect to login
       // Suppress console errors for expected token expiration
-      const isTokenExpired = errorData.code === 'token_not_valid' && 
-                            errorData.messages?.some((m: any) => m.message === 'Token is expired');
-      
+      const isTokenExpired = errorData.code === 'token_not_valid' &&
+        errorData.messages?.some((m: any) => m.message === 'Token is expired');
+
       if (!isTokenExpired) {
         // Only log if it's not a simple token expiration
         console.error('API Error Response:', {
@@ -346,7 +391,7 @@ export async function apiRequest<T>(
           data: errorData,
         });
       }
-      
+
       localStorage.removeItem('auth_tokens');
       localStorage.removeItem('auth_user');
       localStorage.removeItem('auth_token');
@@ -355,7 +400,7 @@ export async function apiRequest<T>(
       }
       throw new Error('Unauthorized');
     }
-    
+
     throw error;
   }
 

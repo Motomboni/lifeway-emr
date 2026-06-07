@@ -4,8 +4,6 @@
 import { apiRequest } from '../utils/apiClient';
 import { DischargeSummary, DischargeSummaryCreate } from '../types/discharges';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || '/api/v1';
-
 /**
  * Fetch discharge summary for a visit
  */
@@ -45,8 +43,9 @@ export async function exportDischargeSummaryAsText(
   visitId: number,
   dischargeSummaryId: number
 ): Promise<Blob> {
+  const base = import.meta.env.VITE_API_URL || '';
   const response = await fetch(
-    `${API_BASE_URL}/visits/${visitId}/discharge-summaries/${dischargeSummaryId}/export/text/`,
+    `${base}/api/v1/visits/${visitId}/discharge-summaries/${dischargeSummaryId}/export/text/`,
     {
       method: 'GET',
       headers: {
@@ -69,8 +68,9 @@ export async function exportDischargeSummaryAsHTML(
   visitId: number,
   dischargeSummaryId: number
 ): Promise<Blob> {
+  const base = import.meta.env.VITE_API_URL || '';
   const response = await fetch(
-    `${API_BASE_URL}/visits/${visitId}/discharge-summaries/${dischargeSummaryId}/export/html/`,
+    `${base}/api/v1/visits/${visitId}/discharge-summaries/${dischargeSummaryId}/export/html/`,
     {
       method: 'GET',
       headers: {

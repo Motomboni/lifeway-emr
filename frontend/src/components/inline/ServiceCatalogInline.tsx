@@ -62,9 +62,9 @@ function getAddServiceErrorMessage(error: any, fallback: string): string {
   return isAlreadyExists ? ALREADY_ADDED_MSG : (backendMsg || fallback);
 }
 
-export default function ServiceCatalogInline({ 
-  visitId, 
-  onServiceAdded 
+export default function ServiceCatalogInline({
+  visitId,
+  onServiceAdded
 }: ServiceCatalogInlineProps) {
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
@@ -76,6 +76,9 @@ export default function ServiceCatalogInline({
   const [showPrescriptionForm, setShowPrescriptionForm] = useState(false);
   const [showLabOrderForm, setShowLabOrderForm] = useState(false);
   const [showRadiologyOrderForm, setShowRadiologyOrderForm] = useState(false);
+  const [categoryDepartment, setCategoryDepartment] = useState<
+    'LAB' | 'PHARMACY' | 'RADIOLOGY' | 'PROCEDURE' | undefined
+  >(undefined);
 
   // Load visit data
   useEffect(() => {
@@ -151,7 +154,7 @@ export default function ServiceCatalogInline({
       // Check procedure lock (consultation_id is optional for procedures)
       try {
         const lockResult = await evaluateLock('procedure', { visit_id: parseInt(visitId) });
-        
+
         if (lockResult.is_locked) {
           showError(lockResult.human_readable_message);
           return;
@@ -170,10 +173,10 @@ export default function ServiceCatalogInline({
         service_code: service.service_code,
       });
       showSuccess(`${service.service_name} ordered and added to patient's account`);
-      
+
       // Close the service search after successful addition
       setShowServiceSearch(false);
-      
+
       // Notify parent component to refresh data if needed
       if (onServiceAdded) {
         onServiceAdded();
@@ -199,11 +202,11 @@ export default function ServiceCatalogInline({
         additional_data: prescriptionDetails,
       });
       showSuccess(`Prescription for ${selectedService.service_name} created successfully`);
-      
+
       // Close the prescription form
       setShowPrescriptionForm(false);
       setSelectedService(null);
-      
+
       // Notify parent component to refresh data if needed
       if (onServiceAdded) {
         onServiceAdded();
@@ -234,14 +237,14 @@ export default function ServiceCatalogInline({
         service_code: selectedService.service_code,
         additional_data: labOrderDetails,
       });
-      
+
       logger.debug('Lab order created successfully');
       showSuccess(`Lab order for ${selectedService.service_name} created successfully`);
-      
+
       // Close the lab order form
       setShowLabOrderForm(false);
       setSelectedService(null);
-      
+
       // Notify parent component to refresh data if needed
       if (onServiceAdded) {
         onServiceAdded();
@@ -273,11 +276,11 @@ export default function ServiceCatalogInline({
         additional_data: radiologyOrderDetails,
       });
       showSuccess(`Radiology order for ${selectedService.service_name} created successfully`);
-      
+
       // Close the radiology order form
       setShowRadiologyOrderForm(false);
       setSelectedService(null);
-      
+
       // Notify parent component to refresh data if needed
       if (onServiceAdded) {
         onServiceAdded();
@@ -318,28 +321,61 @@ export default function ServiceCatalogInline({
           <div className={styles.formGroup}>
             <label>Search Service Catalog</label>
             <p className={styles.helpText}>
-              Search and order services from the catalog. Charges appear on the patient account,
-              in Reception billing, and in <strong>Ordered services &amp; charges</strong> below for your reference.
+              Search and select a service category to quickly locate what you need.
             </p>
             <ServiceSearchInput
               onServiceSelect={handleServiceSelect}
-              placeholder="Search services (e.g., consultation, dental, vaccine, lab test)..."
+              department={categoryDepartment}
+              placeholder="Search services (e.g., consultation, blood test, vaccine)..."
               disabled={addingService}
             />
+
+            <div className={styles.quickCategories}>
+              <span className={styles.quickCategoriesLabel}>Quick Categories:</span>
+              <button
+                type="button"
+                className={`${styles.categoryChip} ${styles.categoryPharmacy}${categoryDepartment === 'PHARMACY' ? ` ${styles.categoryChipActive}` : ''}`}
+                onClick={() => setCategoryDepartment((prev) => (prev === 'PHARMACY' ? undefined : 'PHARMACY'))}
+              >
+                💊 Pharmacy
+              </button>
+              <button
+                type="button"
+                className={`${styles.categoryChip} ${styles.categoryLab}${categoryDepartment === 'LAB' ? ` ${styles.categoryChipActive}` : ''}`}
+                onClick={() => setCategoryDepartment((prev) => (prev === 'LAB' ? undefined : 'LAB'))}
+              >
+                🧪 Lab Test
+              </button>
+              <button
+                type="button"
+                className={`${styles.categoryChip} ${styles.categoryRadiology}${categoryDepartment === 'RADIOLOGY' ? ` ${styles.categoryChipActive}` : ''}`}
+                onClick={() => setCategoryDepartment((prev) => (prev === 'RADIOLOGY' ? undefined : 'RADIOLOGY'))}
+              >
+                ☢️ Radiology
+              </button>
+              <button
+                type="button"
+                className={`${styles.categoryChip} ${styles.categoryProcedure}${categoryDepartment === 'PROCEDURE' ? ` ${styles.categoryChipActive}` : ''}`}
+                onClick={() => setCategoryDepartment((prev) => (prev === 'PROCEDURE' ? undefined : 'PROCEDURE'))}
+              >
+                🩺 Procedure
+              </button>
+            </div>
           </div>
           <div className={styles.formActions}>
             <button
               className={styles.cancelButton}
               onClick={() => {
                 setShowServiceSearch(false);
+                setCategoryDepartment(undefined);
               }}
               disabled={addingService}
             >
-              Cancel
+              Cancel Ordering
             </button>
           </div>
           {addingService && (
-            <p className={styles.helpText}>Adding service to patient's account...</p>
+            <p className={styles.successMessage} style={{ marginTop: '10px' }}>Processing addition to patient's medical bill...</p>
           )}
         </div>
       )}
@@ -377,12 +413,12 @@ export default function ServiceCatalogInline({
       {!showServiceSearch && !showPrescriptionForm && !showLabOrderForm && !showRadiologyOrderForm && (
         <div className={styles.infoText}>
           <p>
-            💡 <strong>Order Services:</strong> Search and order from the catalog; items bill to the
-            patient account and are listed under <strong>Ordered services &amp; charges</strong> on this page
-            (same as reception billing line items).
+            💡 <strong>Order Services:</strong> Search and order services from the catalog.
+            Services will be automatically added to the patient's bill and will appear
+            in the Receptionist dashboard for payment processing.
           </p>
           <p>
-            <strong>Note:</strong> When lab or radiology orders are completed by technicians, 
+            <strong>Note:</strong> When lab or radiology orders are completed by technicians,
             the billing will automatically update in the Receptionist dashboard.
           </p>
         </div>
