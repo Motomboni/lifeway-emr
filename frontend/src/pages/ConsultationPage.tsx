@@ -30,10 +30,10 @@ import { useToast } from '../hooks/useToast';
 import { useOffline } from '../hooks/useOffline';
 import { ConsultationData, Consultation } from '../types/consultation';
 import { closeVisit } from '../api/visits';
-import { getBillingSummary } from '../api/billing';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import ServiceCatalogInline from '../components/inline/ServiceCatalogInline';
+import VisitChargesReadOnly from '../components/billing/VisitChargesReadOnly';
 import VitalSignsInline from '../components/clinical/VitalSignsInline';
 import ClinicalAlertsInline from '../components/clinical/ClinicalAlertsInline';
 import DocumentsInline from '../components/documents/DocumentsInline';
@@ -51,10 +51,6 @@ interface ConsultationPageProps {
 }
 
 export default function ConsultationPage({ visitId }: ConsultationPageProps) {
-  const [billingSummary, setBillingSummary] = useState<{ payment_gates?: { registration_paid?: boolean } } | null>(null);
-  const [billingSummaryLoading, setBillingSummaryLoading] = useState(true);
-  const registrationPaid = billingSummary?.payment_gates?.registration_paid === true;
-
   const {
     consultation,
     loading,
@@ -62,7 +58,7 @@ export default function ConsultationPage({ visitId }: ConsultationPageProps) {
     saveConsultation,
     updateConsultation,
     isSaving
-  } = useConsultation(visitId, { enabled: registrationPaid });
+  } = useConsultation(visitId);
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -71,24 +67,8 @@ export default function ConsultationPage({ visitId }: ConsultationPageProps) {
 
   const [visitStatus, setVisitStatus] = useState<'OPEN' | 'CLOSED'>('OPEN');
   const [isClosingVisit, setIsClosingVisit] = useState(false);
-
-  // Load billing summary to check payment gate before calling consultation API (avoids 403)
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setBillingSummaryLoading(true);
-      try {
-        const summary = await getBillingSummary(parseInt(visitId, 10));
-        if (!cancelled) setBillingSummary(summary);
-      } catch {
-        if (!cancelled) setBillingSummary(null);
-      } finally {
-        if (!cancelled) setBillingSummaryLoading(false);
-      }
-    };
-    load();
-    return () => { cancelled = true; };
-  }, [visitId]);
+  /** Bumps after catalog orders so doctor-facing charge list refetches */
+  const [orderedChargesRefresh, setOrderedChargesRefresh] = useState(0);
 
   const [formData, setFormData] = useState<ConsultationData>({
     history: '',
@@ -145,19 +125,25 @@ export default function ConsultationPage({ visitId }: ConsultationPageProps) {
     }
   }, [consultation]);
 
-  // Track dirty state by comparing current form data with original
-  // Compare only the consultation fields, not merge_with_patient_record
+  // Track dirty state by comparing current form data with original.
+  // Compare only the consultation fields plus the merge_with_patient_record flag.
   const isDirty = originalData
-    ? (formData.history !== originalData.history ||
-       formData.examination !== originalData.examination ||
-       formData.diagnosis !== originalData.diagnosis ||
-       formData.clinical_notes !== originalData.clinical_notes)
-    : Object.values({
-        history: formData.history,
-        examination: formData.examination,
-        diagnosis: formData.diagnosis,
-        clinical_notes: formData.clinical_notes
-      }).some(value => typeof value === 'string' && value.trim() !== '');
+    ? (
+        formData.history !== originalData.history ||
+        formData.examination !== originalData.examination ||
+        formData.diagnosis !== originalData.diagnosis ||
+        formData.clinical_notes !== originalData.clinical_notes ||
+        mergeWithPatientRecord
+      )
+    : (
+        Object.values({
+          history: formData.history,
+          examination: formData.examination,
+          diagnosis: formData.diagnosis,
+          clinical_notes: formData.clinical_notes
+        }).some(value => typeof value === 'string' && value.trim() !== '') ||
+        mergeWithPatientRecord
+      );
 
   const handleFieldChange = (field: keyof ConsultationData, value: string) => {
     setFormData(prev => ({
@@ -205,13 +191,14 @@ export default function ConsultationPage({ visitId }: ConsultationPageProps) {
           : 'Consultation saved successfully'
         );
       }
-      // Update original data after successful save (exclude merge_with_patient_record from comparison)
+      // Update original data after successful save and reset merge flag
       setOriginalData({
         history: formData.history,
         examination: formData.examination,
         diagnosis: formData.diagnosis,
         clinical_notes: formData.clinical_notes
       });
+      setMergeWithPatientRecord(false);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to save consultation';
       showError(errorMessage);
@@ -230,6 +217,7 @@ export default function ConsultationPage({ visitId }: ConsultationPageProps) {
         clinical_notes: ''
       });
     }
+    setMergeWithPatientRecord(false);
   };
 
   const handleCloseVisit = async () => {
@@ -273,56 +261,17 @@ export default function ConsultationPage({ visitId }: ConsultationPageProps) {
     loadVisitStatus();
   }, [visitId]);
 
-  // Wait for billing summary to know if we can access consultation
-  if (billingSummaryLoading) {
-    return <ConsultationSkeleton />;
-  }
-
-  // Block access when registration not paid (no consultation API call, so no 403)
-  if (!registrationPaid) {
-    return (
-      <div className={styles.consultationWorkspace}>
-        <BackToDashboard />
-        <div className={styles.errorContainer}>
-          <div className={styles.errorMessage}>Registration payment required</div>
-          <div className={styles.errorDetails}>
-            Registration must be paid before access to consultation. Please collect at reception.
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate(`/visits/${visitId}#billing-section`)}
-            style={{ marginTop: '1rem', padding: '0.5rem 1rem', cursor: 'pointer' }}
-          >
-            Go to Visit Billing →
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // Show loading skeleton while consultation loads
   if (loading) {
     return <ConsultationSkeleton />;
   }
 
-  // Show error state (e.g. consultation payment required or other API error)
+  // Show error state when consultation API fails
   if (error && !consultation) {
-    const isPaymentError = /payment|registration|consultation/i.test(error);
     return (
       <div className={styles.errorContainer}>
-        <div className={styles.errorMessage}>
-          {isPaymentError ? 'Payment required' : 'Error loading consultation'}
-        </div>
+        <div className={styles.errorMessage}>Error loading consultation</div>
         <div className={styles.errorDetails}>{error}</div>
-        {isPaymentError && (
-          <button
-            type="button"
-            onClick={() => navigate(`/visits/${visitId}#billing-section`)}
-            style={{ marginTop: '1rem', padding: '0.5rem 1rem', cursor: 'pointer' }}
-          >
-            Go to Visit Billing →
-          </button>
-        )}
       </div>
     );
   }
@@ -392,7 +341,18 @@ export default function ConsultationPage({ visitId }: ConsultationPageProps) {
         
         {/* Service Catalog - available for doctors to order services */}
         {user?.role === 'DOCTOR' && (
-          <ServiceCatalogInline visitId={visitId} />
+          <>
+            <ServiceCatalogInline
+              visitId={visitId}
+              onServiceAdded={() => setOrderedChargesRefresh((n) => n + 1)}
+            />
+            <div className={styles.inlineComponent}>
+              <VisitChargesReadOnly
+                visitId={parseInt(visitId, 10)}
+                refreshTrigger={orderedChargesRefresh}
+              />
+            </div>
+          </>
         )}
         
         {/* Lab Orders & Results - show orders and their results */}

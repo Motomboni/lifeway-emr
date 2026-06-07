@@ -32,6 +32,7 @@ import { useActionLock } from '../hooks/useActionLock';
 import WalletPaymentButton from '../components/wallet/WalletPaymentButton';
 import WalletTopUpButton from '../components/wallet/WalletTopUpButton';
 import BillingSection from '../components/billing/BillingSection';
+import VisitChargesReadOnly from '../components/billing/VisitChargesReadOnly';
 import InvoiceReceiptPanel from '../components/billing/InvoiceReceiptPanel';
 import { PaystackReturnHandler } from '../components/billing/PaystackCheckout';
 import AINotesPanel from '../components/ai/AINotesPanel';
@@ -104,7 +105,7 @@ export default function VisitDetailsPage() {
           }
         }
         
-        // Load billing summary (all roles) and payments first so we can gate consultation on payment_gates
+        // Load billing summary (all roles) and payments
         const [summaryResult, paymentsData] = await Promise.allSettled([
           getBillingSummary(visitValue.id).catch(() => null),
           fetchPayments(visitId).catch(() => [])
@@ -120,25 +121,20 @@ export default function VisitDetailsPage() {
           setPayments(paymentsData.value as Payment[]);
         }
 
-        // Only fetch consultation when registration payment gate is cleared (avoids 403 from backend)
-        // CLOSED visits: allow read-only consultation load if we have it
-        const registrationPaid = billingSummaryValue?.payment_gates?.registration_paid === true;
-        const canLoadClinicalData =
-          visitValue.status === 'CLOSED' ? true : registrationPaid;
-
-        if (canLoadClinicalData) {
-          try {
-            const data = await fetchConsultation(visitId);
-            if (Array.isArray(data)) {
-              setConsultation(data.length > 0 ? data[0] : null);
-            } else {
-              setConsultation(data);
-            }
-          } catch (err) {
-            // 404 = no consultation yet; 403 = payment required (handled by UI)
-            if (err instanceof Error && !err.message.includes('404') && !err.message.includes('403')) {
-              console.warn('Failed to load consultation:', err);
-            }
+        try {
+          const data = await fetchConsultation(visitId);
+          if (Array.isArray(data)) {
+            setConsultation(data.length > 0 ? data[0] : null);
+          } else {
+            setConsultation(data);
+          }
+        } catch (err) {
+          // 404 = no consultation yet
+          if (
+            err instanceof Error &&
+            !err.message.includes('404')
+          ) {
+            console.warn('Failed to load consultation:', err);
           }
         }
         
@@ -350,27 +346,7 @@ export default function VisitDetailsPage() {
             {visit.status === 'OPEN' && user?.role === 'DOCTOR' && (
               <>
                 {(() => {
-                  const gates = billingSummary?.payment_gates;
-                  // Only enable when we have gates (billing loaded) and both payments are done
-                  const registrationPaid = gates ? gates.registration_paid === true : false;
-                  const consultationPaid = gates ? gates.consultation_paid === true : false;
-                  const canAccessConsultation = registrationPaid;
-                  const canStartEncounter = consultationPaid;
-                  const canStart = canAccessConsultation && canStartEncounter;
-                  const disabledTitle = !canAccessConsultation
-                    ? 'Registration payment required before access. Collect at reception.'
-                    : !canStartEncounter
-                    ? 'Consultation payment is required before starting the encounter. Collect at reception.'
-                    : undefined;
                   const handleConsultationClick = () => {
-                    if (!canStart) {
-                      if (!canAccessConsultation) {
-                        showError('Registration payment is required before access to consultation. Collect at reception.');
-                      } else {
-                        showError('Consultation payment is required before starting the encounter. Collect at reception.');
-                      }
-                      return;
-                    }
                     navigate(`/visits/${visitId}/consultation`);
                   };
                   return (
@@ -380,8 +356,7 @@ export default function VisitDetailsPage() {
                           type="button"
                           className={styles.consultationButton}
                           onClick={handleConsultationClick}
-                          disabled={!canStart}
-                          title={disabledTitle ?? 'Open consultation'}
+                          title="Open consultation"
                         >
                           Open Consultation
                         </button>
@@ -390,8 +365,7 @@ export default function VisitDetailsPage() {
                           type="button"
                           className={styles.consultationButton}
                           onClick={handleConsultationClick}
-                          disabled={!canStart}
-                          title={disabledTitle ?? 'Start consultation'}
+                          title="Start consultation"
                         >
                           Start Consultation
                         </button>
@@ -413,39 +387,6 @@ export default function VisitDetailsPage() {
       </header>
 
       <div className={styles.content}>
-        {/* Payment gates: Registration & Consultation must be paid before access */}
-        {billingSummary?.payment_gates && (
-          <>
-            {!billingSummary.payment_gates.registration_paid && (
-              <div className={styles.paymentWarning}>
-                <div className={styles.warningContent}>
-                  <span className={styles.warningIcon}>⚠️</span>
-                  <div>
-                    <h3>Registration Payment Required</h3>
-                    <p>Registration must be paid before access to consultation. Collect at reception.</p>
-                    {user?.role === 'RECEPTIONIST' && (
-                      <p>
-                        <a href="#billing-section" className={styles.paymentLink} onClick={(e) => { e.preventDefault(); document.getElementById('billing-section')?.scrollIntoView({ behavior: 'smooth' }); }}>Go to Billing →</a>
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-            {billingSummary.payment_gates.registration_paid && !billingSummary.payment_gates.consultation_paid && user?.role === 'DOCTOR' && (
-              <div className={styles.paymentWarning}>
-                <div className={styles.warningContent}>
-                  <span className={styles.warningIcon}>⚠️</span>
-                  <div>
-                    <h3>Consultation Payment Required</h3>
-                    <p>Consultation must be paid before starting the encounter. Collect at reception.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
         {/* Consultation Section */}
         <section className={styles.section}>
           <h2>Consultation</h2>
@@ -456,15 +397,7 @@ export default function VisitDetailsPage() {
               variant="card"
             />
           )}
-          {billingSummary?.payment_gates && !billingSummary.payment_gates.registration_paid ? (
-            <div className={styles.emptyState}>
-              <p>Registration payment is required before access to consultation.</p>
-            </div>
-          ) : billingSummary?.payment_gates && !billingSummary.payment_gates.consultation_paid && user?.role === 'DOCTOR' ? (
-            <div className={styles.emptyState}>
-              <p>Consultation payment is required before starting the encounter.</p>
-            </div>
-          ) : consultation ? (
+          {consultation ? (
             <div className={styles.consultationCard}>
               <div className={styles.consultationDetails}>
                 {consultation.history && (
@@ -508,7 +441,7 @@ export default function VisitDetailsPage() {
           )}
         </section>
 
-        {/* Admission Section - Doctor only */}
+        {/* Admission Section - doctors & administrators */}
         {visit && (
           <AdmissionSection
             visitId={visit.id}
@@ -574,6 +507,13 @@ export default function VisitDetailsPage() {
               await loadVisitDetails();
             }}
           />
+        )}
+
+        {/* Ordered services (read-only) — same line items as reception billing; doctors need visibility */}
+        {user?.role === 'DOCTOR' && visit && (
+          <section className={styles.section}>
+            <VisitChargesReadOnly visitId={visit.id} charges={charges} />
+          </section>
         )}
 
         {/* Billing Section - Receptionist only */}

@@ -10,6 +10,16 @@
 
 Find your **role** in the Table of Contents. Follow the steps in order. **Bold** = what to click or type. If something does not work, go to **Troubleshooting** at the end for your role.
 
+### Screenshots
+
+Figures below live in `docs/manual-screenshots/` (PNG). To **regenerate** them from a running app, start the backend, then from the `frontend/` folder run:
+
+`npm run capture-manual-screenshots`
+
+Details and optional roles: `docs/manual-screenshots/README.md`.
+
+Until you run the capture script, image links may appear broken in some viewers; that is expected.
+
 ---
 
 ## Table of Contents
@@ -36,6 +46,10 @@ Find your **role** in the Table of Contents. Follow the steps in order. **Bold**
 4. Click **Login** (or press Enter).
 5. You will see the **Receptionist Dashboard** with your name and quick action cards.
 
+![Sign In screen — username and password](manual-screenshots/01-login.png)
+
+![Receptionist dashboard — Quick Actions](manual-screenshots/02-receptionist-dashboard.png)
+
 ## 1.2 Registering a New Patient
 
 1. On the Dashboard, click **Patient Registration**.
@@ -45,6 +59,8 @@ Find your **role** in the Table of Contents. Follow the steps in order. **Bold**
 5. If the patient has insurance: tick the option and fill Provider, Policy number, Coverage type, Valid from/to.
 6. If the patient should access the Patient Portal: tick **Create Patient Portal Login** and enter **Email** (required).
 7. Click **Submit** or **Register Patient**. Note the new Patient ID.
+
+![Patient Registration — personal and contact sections](manual-screenshots/03-patient-registration.png)
 
 ## 1.3 Creating a New Visit
 
@@ -59,13 +75,15 @@ Find your **role** in the Table of Contents. Follow the steps in order. **Bold**
 1. Click **Visits**.
 2. Use filters if needed (Status, Payment status). Click the visit row to open **Visit Details**.
 
+![Visits list — filters and visit cards](manual-screenshots/04-visits-list.png)
+
 ## 1.5 Billing and Collecting Payment
 
 1. Open the visit (Section 1.4). Scroll to **Billing & Payments**.
 2. Tabs: **Summary** (totals), **Charges** (add services/MISC), **Payments** (collect here).
 3. To add a charge: **Charges** tab → Add charge / Add MISC → Description and Amount → Save.
 4. To collect payment: **Payments** tab → choose **Cash**, **POS**, **Transfer**, **Paystack**, or **Wallet** → enter Amount (and reference for POS/Transfer) → confirm.
-5. Repeat until balance is zero. The doctor can only start consultation after required payments are recorded.
+5. Repeat until balance is zero. Consultation can start before payment is completed, and billing can continue during/after care.
 
 ## 1.6 Pending Queue
 
@@ -74,6 +92,8 @@ Find your **role** in the Table of Contents. Follow the steps in order. **Bold**
 ## 1.7 Patient Verification
 
 1. Click **Patient Verification**. See list of patients waiting for portal verification. Check identity and click **Verify** for the correct patient. Confirm.
+
+![Patient Verification — portal account checks](manual-screenshots/06-patient-verification.png)
 
 ## 1.8 Insurance Claims
 
@@ -91,14 +111,18 @@ Find your **role** in the Table of Contents. Follow the steps in order. **Bold**
 
 1. Open the EMR. Enter **username** and **password**. Click **Login**. You will see the **Doctor Dashboard**.
 
+![Doctor Dashboard — Quick Actions](manual-screenshots/07-doctor-dashboard.png)
+
 ## 2.2 Finding and Opening a Visit
 
 1. Click **View All Visits** or **Visits**. Find the patient/visit. Click the visit row to open **Visit Details**.
 
+![Visits — doctor view with Open Consultation on open visits](manual-screenshots/08-doctor-visits-list.png)
+
 ## 2.3 Starting the Consultation
 
-1. On Visit Details, if you see “Registration payment required” or “Consultation payment required,” ask the patient to pay at reception. After payment is recorded, refresh the page.
-2. Click **Start Consultation** or **Open Consultation**. You will be on the Consultation screen for this visit.
+1. On Visit Details, click **Start Consultation** or **Open Consultation**. You will be on the Consultation screen for this visit.
+2. Payment can still be collected by reception while or after consultation is in progress.
 
 ## 2.4 Filling the Consultation Form
 
@@ -126,6 +150,13 @@ Find your **role** in the Table of Contents. Follow the steps in order. **Bold**
 
 1. Click **Telemedicine** from Dashboard or Visit Details. Follow the steps to start or join a video call.
 
+## 2.10 Appointments (doctor)
+
+1. From the Dashboard, click **My Appointments** (or open **Appointments** from the menu if your layout shows it).
+2. View or manage slots as trained.
+
+![Appointments — schedule view](manual-screenshots/09-appointments.png)
+
 ---
 
 # 3. NURSE
@@ -133,6 +164,8 @@ Find your **role** in the Table of Contents. Follow the steps in order. **Bold**
 ## 3.1 Logging In
 
 1. Open the EMR. Enter **username** and **password**. Click **Login**. You will see the **Nurse Dashboard**.
+
+*Optional screenshot:* after running the capture script with `MANUAL_NURSE_EMAIL` / `MANUAL_NURSE_PASSWORD`, use `manual-screenshots/11-nurse-dashboard.png` in your printed handbook.
 
 ## 3.2 Finding a Visit
 
@@ -160,6 +193,8 @@ Use **Back to Dashboard** to return.
 
 1. Click **Lab Orders**. Open the order to process. Enter or upload **results**. Save/submit when done. **Lab Test Catalog**: view or manage tests if your role has access.
 
+![Lab Orders — technician queue](manual-screenshots/10-lab-orders.png)
+
 ---
 
 # 5. RADIOLOGY TECHNICIAN
@@ -172,6 +207,8 @@ Use **Back to Dashboard** to return.
 
 1. Click **Radiology Orders**. Open the order. Upload or link **images** and complete the study. Save. Use **Radiology Upload Status** and **Radiology Study Types** if available.
 
+*Optional screenshot:* `manual-screenshots/12-radiology-orders.png` (set `MANUAL_RADIOLOGY_EMAIL` / `MANUAL_RADIOLOGY_PASSWORD` when running the capture script).
+
 ---
 
 # 6. PHARMACIST
@@ -179,6 +216,8 @@ Use **Back to Dashboard** to return.
 ## 6.1 Logging In
 
 1. Open the EMR. Enter **username** and **password**. Click **Login**.
+
+*Optional screenshots:* `manual-screenshots/13-pharmacist-dashboard.png`, `14-prescriptions.png`, `15-drug-catalog-inventory.png` (set pharmacist env vars in `docs/manual-screenshots/README.md`).
 
 ## 6.2 Dispensing Prescriptions
 
@@ -199,6 +238,8 @@ Access **Drug Catalog & Inventory** from the dashboard. In one place you can:
 
 Admins can do everything Receptionists, Doctors, Nurses, Lab, Radiology, and Pharmacy can do. In addition:
 
+*Optional screenshot:* `manual-screenshots/16-admin-dashboard.png` (set `MANUAL_ADMIN_EMAIL` / `MANUAL_ADMIN_PASSWORD` when capturing).
+
 1. **Audit logs**: View system activity (who did what, when).  
 2. **Backups**: Create or restore backups (usually IT/senior admin).  
 3. **System health**: Check system status.  
@@ -216,6 +257,8 @@ Use **Back to Dashboard** to return.
 ## 8.1 Logging In
 
 1. Open the **Patient Portal** link. Enter **email** (or username) and **password**. Click **Login**. You will see **My dashboard**.
+
+*Optional screenshot:* `manual-screenshots/17-patient-portal-dashboard.png` (patient portal user env vars in `docs/manual-screenshots/README.md`).
 
 ## 8.2 Dashboard and Sections
 
@@ -238,7 +281,7 @@ Use **Logout** when you finish, especially on a shared computer.
 ## Receptionist
 
 - **Forgot password:** Use “Forgot password” on the login page, or ask an Administrator to reset it.  
-- **“Start Consultation” greyed out:** Registration (and consultation) must be paid. In Visit Details → Billing & Payments → Payments tab, record the payment. Refresh the page.  
+- **“Start Consultation” greyed out:** This is no longer expected for payment reasons. Check role permissions, visit status (must be OPEN), and refresh the page.  
 - **Page not loading:** Refresh (F5). Check internet. Try another browser or clear cache.  
 - **“Please select a patient”:** Click a patient from the search results before clicking Create Visit.  
 - **Payment not reflecting:** Refresh Visit Details. For Paystack/Wallet, wait a few seconds and refresh again.  
@@ -247,8 +290,8 @@ Use **Logout** when you finish, especially on a shared computer.
 ## Doctor
 
 - **Forgot password:** Use “Forgot password” or ask an Administrator.  
-- **“Start Consultation” disabled:** Registration/consultation must be paid. Ask reception to record payment; refresh Visit Details.  
-- **Consultation form won’t save:** Check internet. If “Registration payment required,” reception must record payment first.  
+- **“Start Consultation” disabled:** This is no longer expected for payment reasons. Confirm the visit is OPEN and your role is Doctor.  
+- **Consultation form won’t save:** Check internet, required fields, and whether the visit is CLOSED.  
 - **AI Clinical Notes: “Enter transcript or bullet notes”:** Type something in the Transcript box before clicking Generate note.  
 - **E-Prescription: Cannot save with Severe interaction:** Change the prescription or enter an **Override reason**, then save.  
 - **Page not loading:** Refresh (F5). Re-open the visit from Visits → same visit → Open Consultation. Use in-app links, not the browser back button.
@@ -282,7 +325,7 @@ Use **Logout** when you finish, especially on a shared computer.
 ## Administrator
 
 - **Forgot password:** Use “Forgot password”; if not available, another Admin must reset it.  
-- **Staff report “button disabled”:** For consultation, ensure registration/consultation payment is recorded. For access, check user role and account. Use Audit logs if needed.  
+- **Staff report “button disabled”:** For consultation, check user role, account status, and whether the visit is OPEN. Use Audit logs if needed.  
 - **Page not loading:** Refresh. Clear cache or try another browser. Report persistent failures to IT.  
 - **Backup/restore fails:** Check permissions and server space. Follow on-screen message; contact IT with exact error.
 

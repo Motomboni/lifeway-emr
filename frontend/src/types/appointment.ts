@@ -9,6 +9,8 @@ export interface Appointment {
   patient_id?: string;
   doctor: number;
   doctor_name?: string;
+  doctor_specialization?: string | null;
+  doctor_display_name?: string | null;
   visit?: number | null;
   appointment_date: string;
   duration_minutes: number;

@@ -83,6 +83,7 @@ export default function PrescriptionInline({ visitId, consultationId }: Prescrip
   const [newPrescriptionDuration, setNewPrescriptionDuration] = useState('');
   const [newPrescriptionQuantity, setNewPrescriptionQuantity] = useState('');
   const [newPrescriptionInstructions, setNewPrescriptionInstructions] = useState('');
+  const [dispenseQuantityById, setDispenseQuantityById] = useState<Record<number, string>>({});
 
   const handleCreatePrescription = async () => {
     if (!consultationId) {
@@ -120,9 +121,19 @@ export default function PrescriptionInline({ visitId, consultationId }: Prescrip
   };
 
   const handleDispense = async (prescriptionId: number) => {
+    const dispensedQuantity = (dispenseQuantityById[prescriptionId] || '').trim();
+    if (!dispensedQuantity) {
+      showError('Please enter the exact quantity dispensed');
+      return;
+    }
     try {
-      await dispensePrescription(visitId, prescriptionId);
+      await dispensePrescription(visitId, prescriptionId, dispensedQuantity);
       showSuccess('Prescription dispensed successfully');
+      setDispenseQuantityById(prev => {
+        const next = { ...prev };
+        delete next[prescriptionId];
+        return next;
+      });
       await refresh();
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Failed to dispense prescription');
@@ -301,12 +312,26 @@ export default function PrescriptionInline({ visitId, consultationId }: Prescrip
               </span>
             </div>
             {prescription.status === 'PENDING' && !prescription.dispensed && canDispense && (
-              <DispenseButtonWithLock
-                prescriptionId={prescription.id}
-                visitId={visitId}
-                onDispense={handleDispense}
-                isDispensing={isSaving}
-              />
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="Dispensed qty (e.g., 24 tablets)"
+                  value={dispenseQuantityById[prescription.id] || ''}
+                  onChange={(e) =>
+                    setDispenseQuantityById(prev => ({
+                      ...prev,
+                      [prescription.id]: e.target.value
+                    }))
+                  }
+                  style={{ minWidth: 220, padding: '0.4rem 0.5rem' }}
+                />
+                <DispenseButtonWithLock
+                  prescriptionId={prescription.id}
+                  visitId={visitId}
+                  onDispense={handleDispense}
+                  isDispensing={isSaving}
+                />
+              </div>
             )}
           </div>
 
@@ -337,6 +362,9 @@ export default function PrescriptionInline({ visitId, consultationId }: Prescrip
               </div>
               {prescription.dispensing_notes && (
                 <div className={styles.resultData}>{prescription.dispensing_notes}</div>
+              )}
+              {prescription.dispensed_quantity && (
+                <div className={styles.resultData}><strong>Dispensed Quantity:</strong> {prescription.dispensed_quantity}</div>
               )}
               <div className={styles.resultMeta}>
                 Dispensed: {new Date(prescription.dispensed_date).toLocaleString()}

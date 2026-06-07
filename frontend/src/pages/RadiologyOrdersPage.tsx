@@ -8,11 +8,10 @@
  * Status (PENDING / COMPLETED), Order Date, Report Date (if completed).
  * Actions: "Add Report" for PENDING, "View Report" for COMPLETED.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchVisits, PaginatedResponse } from '../api/visits';
-import { fetchRadiologyOrders, updateRadiologyReport } from '../api/radiology';
+import { fetchRadiologyOrders, fetchRadiologyWorklist, updateRadiologyReport } from '../api/radiology';
 import { Visit } from '../types/visit';
 import { RadiologyOrder } from '../types/radiology';
 import { useToast } from '../hooks/useToast';
@@ -99,38 +98,20 @@ export default function RadiologyOrdersPage() {
   const [resultImageCount, setResultImageCount] = useState<Record<number, number>>({});
   const [savingResult, setSavingResult] = useState(false);
 
-  useEffect(() => {
-    loadVisits();
-  }, []);
-
-  useEffect(() => {
-    if (selectedVisit) {
-      loadRadiologyOrders(selectedVisit.toString());
-    } else {
-      setRadiologyOrders([]);
-    }
-  }, [selectedVisit]);
-
-  const loadVisits = async () => {
+  const loadVisits = useCallback(async () => {
     try {
       setLoading(true);
-      const visitsResponse = await fetchVisits({ status: 'OPEN' });
-      const allVisitsRaw = Array.isArray(visitsResponse) ? visitsResponse : (visitsResponse as PaginatedResponse<Visit>).results;
-      const allVisits = (allVisitsRaw || []).filter((v: Visit) =>
-        v.payment_status === 'PAID' ||
-        v.payment_status === 'SETTLED' ||
-        v.payment_status === 'PARTIALLY_PAID'
-      );
-      setVisits(allVisits);
+      const worklistVisits = await fetchRadiologyWorklist('all');
+      setVisits(worklistVisits);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load visits';
       showError(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [showError]);
 
-  const loadRadiologyOrders = async (visitId: string) => {
+  const loadRadiologyOrders = useCallback(async (visitId: string) => {
     try {
       setLoadingOrders(true);
       const response = await fetchRadiologyOrders(visitId);
@@ -147,7 +128,19 @@ export default function RadiologyOrdersPage() {
     } finally {
       setLoadingOrders(false);
     }
-  };
+  }, [showError]);
+
+  useEffect(() => {
+    loadVisits();
+  }, [loadVisits]);
+
+  useEffect(() => {
+    if (selectedVisit) {
+      loadRadiologyOrders(selectedVisit.toString());
+    } else {
+      setRadiologyOrders([]);
+    }
+  }, [selectedVisit, loadRadiologyOrders]);
 
   const selectedVisitData = selectedVisit ? (visits.find((v) => v.id === selectedVisit) ?? null) : null;
   const isCompleted = (order: RadiologyOrder) =>
@@ -209,12 +202,12 @@ export default function RadiologyOrdersPage() {
       <BackToDashboard />
       <header className={styles.header}>
         <h1>Radiology Orders</h1>
-        <p>Select a visit to view and process radiology orders</p>
+        <p>Select a visit to view migrated and current radiology orders</p>
       </header>
 
       <div className={styles.content}>
         <div className={styles.visitsPanel}>
-          <h2>Visits with Pending Orders</h2>
+          <h2>Visits with Radiology Orders</h2>
           {loading ? (
             <LoadingSkeleton count={5} />
           ) : visits.length === 0 ? (

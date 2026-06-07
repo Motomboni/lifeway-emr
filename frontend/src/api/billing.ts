@@ -46,7 +46,8 @@ export interface BillingSummary {
 }
 
 export interface VisitCharge {
-  id: number;
+  /** Numeric VisitCharge id or string id for catalog line items, e.g. `billing_line_item_42` */
+  id: number | string;
   visit_id: number;
   category: 'CONSULTATION' | 'LAB' | 'RADIOLOGY' | 'DRUG' | 'PROCEDURE' | 'MISC';
   description: string;
@@ -115,11 +116,124 @@ export interface BillingPendingQueueResponse {
   visits: PendingQueueVisit[];
 }
 
+export interface GlobalPayment {
+  id: number;
+  visit: number;
+  visit_id: number;
+  amount: string;
+  payment_method: 'CASH' | 'POS' | 'TRANSFER' | 'PAYSTACK' | 'WALLET' | 'INSURANCE';
+  status: 'PENDING' | 'PARTIAL' | 'CLEARED' | 'FAILED' | 'REFUNDED';
+  transaction_reference?: string;
+  notes?: string;
+  processed_by: number;
+  processed_by_name?: string | null;
+  created_at: string;
+  updated_at: string;
+  is_legacy: boolean;
+  patient: {
+    id: number;
+    patient_id: string;
+    name: string;
+  };
+  visit_status: string;
+}
+
+export interface PaymentHistoryResponse {
+  count: number;
+  page: number;
+  page_size: number;
+  results: GlobalPayment[];
+}
+
+export interface DeferredLegacyPayment {
+  charge_id: number;
+  legacy_pay_id: number | null;
+  visit_id: number;
+  visit_status: string;
+  patient: {
+    id: number;
+    patient_id: string;
+    name: string;
+  };
+  service_line: string;
+  category: string;
+  recorded_amount: string;
+  catalog_amount: string | null;
+  catalog_match_name?: string | null;
+  amount_due: string;
+  price_source?: 'recorded' | 'catalog' | 'legacy_median' | 'unknown';
+  needs_price: boolean;
+  description: string;
+  created_at: string;
+}
+
+export interface DeferredLegacyPaymentsResponse {
+  count: number;
+  page?: number;
+  page_size?: number;
+  results: DeferredLegacyPayment[];
+}
+
+export interface SettleDeferredPaymentResult {
+  payment_id: number;
+  charge_id: number;
+  visit_id: number;
+  amount: string;
+  payment_status: string;
+  outstanding_balance: string;
+}
+
 /**
  * Get central billing pending queue (Receptionist only)
  */
 export async function getBillingPendingQueue(): Promise<BillingPendingQueueResponse> {
   return apiRequest<BillingPendingQueueResponse>('/billing/pending-queue/');
+}
+
+/**
+ * Get global payment history, including migrated legacy payments.
+ */
+export async function getPaymentHistory(params: {
+  search?: string;
+  status?: string;
+  legacyOnly?: boolean;
+  page?: number;
+  pageSize?: number;
+} = {}): Promise<PaymentHistoryResponse> {
+  const searchParams = new URLSearchParams();
+  if (params.search) searchParams.append('search', params.search);
+  if (params.status) searchParams.append('status', params.status);
+  if (params.legacyOnly) searchParams.append('legacy_only', 'true');
+  if (params.page) searchParams.append('page', params.page.toString());
+  if (params.pageSize) searchParams.append('page_size', params.pageSize.toString());
+
+  const queryString = searchParams.toString();
+  return apiRequest<PaymentHistoryResponse>(`/billing/payments/${queryString ? `?${queryString}` : ''}`);
+}
+
+export async function getDeferredLegacyPayments(
+  search = '',
+  page = 1,
+  pageSize = 48,
+): Promise<DeferredLegacyPaymentsResponse> {
+  const params = new URLSearchParams();
+  if (search) params.append('search', search);
+  if (page > 1) params.append('page', String(page));
+  if (pageSize !== 48) params.append('page_size', String(pageSize));
+  const query = params.toString();
+  return apiRequest<DeferredLegacyPaymentsResponse>(
+    `/billing/deferred-payments/${query ? `?${query}` : ''}`,
+  );
+}
+
+export async function settleDeferredLegacyPayment(
+  chargeId: number,
+  data: PaymentCreateData,
+): Promise<SettleDeferredPaymentResult> {
+  return apiRequest<SettleDeferredPaymentResult>(`/billing/deferred-payments/${chargeId}/settle/`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
 /**
@@ -166,7 +280,11 @@ export async function createInsurance(visitId: number, data: InsuranceCreateData
  * Get list of HMO Providers
  */
 export async function getHMOProviders(): Promise<any[]> {
-  return apiRequest<any[]>(`/billing/hmo-providers/`);
+  const response = await apiRequest<any[] | { results?: any[] }>(`/billing/hmo-providers/`);
+  if (Array.isArray(response)) {
+    return response;
+  }
+  return response?.results ?? [];
 }
 
 /**

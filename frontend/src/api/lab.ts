@@ -8,16 +8,31 @@
  * - POST   /api/v1/visits/{visitId}/laboratory/results/   - Create lab result (Lab Tech)
  */
 import { LabOrder, LabOrderCreateData, LabResult, LabResultCreateData } from '../types/lab';
+import { Visit } from '../types/visit';
 import { apiRequest } from '../utils/apiClient';
 
 // Re-export types for convenience
 export type { LabOrder, LabOrderCreateData, LabResult, LabResultCreateData } from '../types/lab';
+
+interface WorklistResponse<T> {
+  count: number;
+  page: number;
+  page_size: number;
+  results: T[];
+}
 
 /**
  * Fetch lab orders for a visit
  */
 export async function fetchLabOrders(visitId: string): Promise<LabOrder[]> {
   return apiRequest<LabOrder[]>(`/visits/${visitId}/laboratory/`);
+}
+
+export async function fetchLabOrderWorklist(status: 'all' | 'pending' = 'all'): Promise<Visit[]> {
+  const response = await apiRequest<WorklistResponse<Visit>>(
+    `/laboratory/orders/worklist/?status=${status}&page_size=500`
+  );
+  return response.results || [];
 }
 
 /**

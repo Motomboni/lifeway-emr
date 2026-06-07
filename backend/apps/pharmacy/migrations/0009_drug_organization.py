@@ -5,7 +5,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
     dependencies = [
         ("organizations", "0001_initial"),
-        ("pharmacy", "0007_eprescription_models"),
+        ("pharmacy", "0008_prescription_dispensed_quantity"),
     ]
 
     operations = [

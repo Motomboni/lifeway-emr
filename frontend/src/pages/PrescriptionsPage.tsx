@@ -4,10 +4,9 @@
  * For Pharmacists to view and dispense prescriptions.
  * Per EMR Rules: Visit-scoped, shows visits with pending prescriptions.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchVisits, PaginatedResponse } from '../api/visits';
-import { fetchPrescriptions, dispensePrescription } from '../api/prescription';
+import { fetchPrescriptions, fetchPrescriptionWorklist, dispensePrescription } from '../api/prescription';
 import { Visit } from '../types/visit';
 import { Prescription } from '../types/prescription';
 import { useToast } from '../hooks/useToast';
@@ -80,39 +79,14 @@ export default function PrescriptionsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
   const [dispensing, setDispensing] = useState<number | null>(null);
+  const [dispensedQuantityById, setDispensedQuantityById] = useState<Record<number, string>>({});
+  const [dispensingNotesById, setDispensingNotesById] = useState<Record<number, string>>({});
 
-  useEffect(() => {
-    loadVisitsWithPendingPrescriptions();
-  }, []);
-
-  useEffect(() => {
-    if (selectedVisit) {
-      loadPrescriptions(selectedVisit.toString());
-    }
-  }, [selectedVisit]);
-
-  const loadVisitsWithPendingPrescriptions = async () => {
+  const loadVisitsWithPendingPrescriptions = useCallback(async () => {
     try {
       setLoading(true);
-      // Load all visits (both OPEN and CLOSED) - pharmacists need to see all visits with prescriptions
-      // Payment status doesn't matter for viewing prescriptions (only for dispensing)
-      const response = await fetchVisits({});
-      const allVisits = Array.isArray(response) ? response : (response as PaginatedResponse<Visit>).results;
-      
-      // Filter visits to only show those with prescriptions
-      const visitsWithPrescriptions: Visit[] = [];
-      for (const visit of allVisits) {
-        try {
-          const prescriptions = await fetchPrescriptions(visit.id.toString());
-          // Only include visits that have at least one prescription
-          if (prescriptions.length > 0) {
-            visitsWithPrescriptions.push(visit);
-          }
-        } catch (err) {
-          // Skip visits where we can't load prescriptions (might be permission issue or no prescriptions)
-        }
-      }
-      setVisits(visitsWithPrescriptions);
+      const worklistVisits = await fetchPrescriptionWorklist('all');
+      setVisits(worklistVisits);
     } catch (error) {
       console.error('Error loading visits:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to load visits';
@@ -120,9 +94,9 @@ export default function PrescriptionsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showError]);
 
-  const loadPrescriptions = async (visitId: string) => {
+  const loadPrescriptions = useCallback(async (visitId: string) => {
     try {
       setLoadingPrescriptions(true);
       const prescs = await fetchPrescriptions(visitId);
@@ -136,15 +110,45 @@ export default function PrescriptionsPage() {
     } finally {
       setLoadingPrescriptions(false);
     }
-  };
+  }, [showError]);
+
+  useEffect(() => {
+    loadVisitsWithPendingPrescriptions();
+  }, [loadVisitsWithPendingPrescriptions]);
+
+  useEffect(() => {
+    if (selectedVisit) {
+      loadPrescriptions(selectedVisit.toString());
+    }
+  }, [selectedVisit, loadPrescriptions]);
 
   const handleDispense = async (prescriptionId: number) => {
     if (!selectedVisit) return;
+    const dispensedQuantity = (dispensedQuantityById[prescriptionId] || '').trim();
+    if (!dispensedQuantity) {
+      showError('Please enter the exact quantity dispensed');
+      return;
+    }
 
     try {
       setDispensing(prescriptionId);
-      await dispensePrescription(selectedVisit.toString(), prescriptionId);
+      await dispensePrescription(
+        selectedVisit.toString(),
+        prescriptionId,
+        dispensedQuantity,
+        dispensingNotesById[prescriptionId] || ''
+      );
       showSuccess('Prescription dispensed successfully');
+      setDispensedQuantityById(prev => {
+        const next = { ...prev };
+        delete next[prescriptionId];
+        return next;
+      });
+      setDispensingNotesById(prev => {
+        const next = { ...prev };
+        delete next[prescriptionId];
+        return next;
+      });
       await loadPrescriptions(selectedVisit.toString());
     } catch (error: any) {
       // Parse error message from API response
@@ -183,7 +187,7 @@ export default function PrescriptionsPage() {
       <BackToDashboard />
       <header className={styles.header}>
         <h1>Prescriptions</h1>
-        <p>Select a visit to view and dispense prescriptions</p>
+        <p>Select a visit to view migrated and current prescriptions</p>
       </header>
 
       <div className={styles.content}>
@@ -258,16 +262,39 @@ export default function PrescriptionsPage() {
                             <p className={styles.notesText}>{prescription.dispensing_notes}</p>
                           </div>
                         )}
+                        {prescription.dispensed_quantity && (
+                          <p><strong>Dispensed Quantity:</strong> {prescription.dispensed_quantity}</p>
+                        )}
                       </div>
                       <div className={styles.prescriptionActions}>
                         {prescription.status === 'PENDING' && 
                          selectedVisitData?.status === 'OPEN' && (
-                          <DispenseButtonWithLock
-                            prescriptionId={prescription.id}
-                            visitId={selectedVisit}
-                            onDispense={handleDispense}
-                            isDispensing={dispensing === prescription.id}
-                          />
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
+                            <input
+                              type="text"
+                              placeholder="Exact dispensed quantity (e.g., 24 tablets)"
+                              value={dispensedQuantityById[prescription.id] || ''}
+                              onChange={(e) =>
+                                setDispensedQuantityById(prev => ({ ...prev, [prescription.id]: e.target.value }))
+                              }
+                              style={{ padding: '8px 10px', border: '1px solid #dcdcdc', borderRadius: 6 }}
+                            />
+                            <textarea
+                              placeholder="Optional dispensing notes"
+                              value={dispensingNotesById[prescription.id] || ''}
+                              onChange={(e) =>
+                                setDispensingNotesById(prev => ({ ...prev, [prescription.id]: e.target.value }))
+                              }
+                              rows={2}
+                              style={{ padding: '8px 10px', border: '1px solid #dcdcdc', borderRadius: 6, resize: 'vertical' }}
+                            />
+                            <DispenseButtonWithLock
+                              prescriptionId={prescription.id}
+                              visitId={selectedVisit}
+                              onDispense={handleDispense}
+                              isDispensing={dispensing === prescription.id}
+                            />
+                          </div>
                         )}
                         {prescription.status === 'PENDING' && 
                          selectedVisitData?.status === 'CLOSED' && (

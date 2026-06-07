@@ -2,7 +2,7 @@
  * Authentication API Client
  */
 import { apiRequest, unauthenticatedRequest } from '../utils/apiClient';
-import { User, UserRole } from '../types/auth';
+import { User, UserRole, AssumableRoleOption } from '../types/auth';
 
 /**
  * Check if a JWT access token is expired (or will expire in the next 60s).
@@ -36,6 +36,7 @@ export interface RegisterData {
   first_name: string;
   last_name: string;
   role: UserRole;
+  specialization?: string;
 }
 
 export interface OrganizationMembership {
@@ -83,10 +84,51 @@ export async function refreshAccessToken(refreshToken: string): Promise<{ access
 }
 
 /**
+ * List active registered doctors (same source as appointments / visit assignment).
+ */
+export async function fetchRegisteredDoctors(): Promise<User[]> {
+  return apiRequest<User[]>('/auth/doctors/');
+}
+
+/**
  * Get current user
  */
 export async function getCurrentUser(): Promise<User> {
   return apiRequest<User>('/auth/me/');
+}
+
+export interface AssumeRoleResponse extends LoginResponse {
+  assumable_roles?: string[];
+}
+
+/**
+ * Admin: switch to another staff role for testing (new JWT tokens).
+ */
+export async function assumeRole(role: UserRole): Promise<AssumeRoleResponse> {
+  return apiRequest<AssumeRoleResponse>('/auth/assume-role/', {
+    method: 'POST',
+    body: JSON.stringify({ role }),
+  });
+}
+
+/**
+ * Admin: return to normal administrator session.
+ */
+export async function clearAssumedRole(): Promise<AssumeRoleResponse> {
+  return apiRequest<AssumeRoleResponse>('/auth/clear-assumed-role/', {
+    method: 'POST',
+  });
+}
+
+export interface AssumableRolesResponse {
+  roles: AssumableRoleOption[];
+  viewing_as_role: boolean;
+  current_role: UserRole;
+  actual_role: UserRole;
+}
+
+export async function fetchAssumableRoles(): Promise<AssumableRolesResponse> {
+  return apiRequest<AssumableRolesResponse>('/auth/assumable-roles/');
 }
 
 /**
@@ -136,4 +178,45 @@ export async function logoutUser(refreshToken: string): Promise<void> {
     // So we don't throw - the caller will clear state anyway
     return;
   }
+}
+
+export interface ForgotPasswordRequest {
+  identifier: string;
+}
+
+export async function forgotPassword(data: ForgotPasswordRequest): Promise<void> {
+  await unauthenticatedRequest('/auth/forgot-password/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export interface ResetPasswordRequest {
+  uid: string;
+  token: string;
+  new_password: string;
+  new_password_confirm: string;
+}
+
+export async function resetPassword(data: ResetPasswordRequest): Promise<void> {
+  await unauthenticatedRequest('/auth/reset-password/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export interface AccountUpdateRequest {
+  current_password: string;
+  new_password?: string;
+  new_password_confirm?: string;
+  new_email?: string;
+  new_username?: string;
+  new_specialization?: string;
+}
+
+export async function updateAccount(data: AccountUpdateRequest): Promise<User> {
+  return apiRequest<User>('/auth/account/', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
 }

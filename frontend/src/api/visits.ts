@@ -18,6 +18,9 @@ export interface VisitDetails {
   patient: number;
   patient_name?: string;
   patient_id?: string;
+  assigned_doctor?: number | null;
+  assigned_doctor_name?: string | null;
+  assigned_doctor_specialization?: string | null;
   patient_details?: {
     name: string;
     age?: number;
@@ -52,6 +55,22 @@ export interface PaginatedResponse<T> {
   next: string | null;
   previous: string | null;
   results: T[];
+}
+
+export function getVisitListCount(response: Visit[] | PaginatedResponse<Visit>): number {
+  return Array.isArray(response) ? response.length : response.count;
+}
+
+export function getVisitListResults(response: Visit[] | PaginatedResponse<Visit>): Visit[] {
+  return Array.isArray(response) ? response : response.results;
+}
+
+/**
+ * Fetch total visit count for optional filters (single lightweight request).
+ */
+export async function fetchVisitCount(filters?: VisitFilters): Promise<number> {
+  const response = await fetchVisits({ ...filters, page: 1, page_size: 1 });
+  return getVisitListCount(response);
 }
 
 /**

@@ -19,6 +19,7 @@ export interface Patient {
   emergency_contact_phone?: string;
   emergency_contact_relationship?: string;
   national_id?: string;
+  national_health_id?: string;
   blood_group?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
   allergies?: string;
   medical_history?: string;
@@ -52,6 +53,7 @@ export interface PatientCreateData {
   emergency_contact_phone?: string;
   emergency_contact_relationship?: string;
   national_id?: string;
+  national_health_id?: string;
   blood_group?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
   allergies?: string;
   medical_history?: string;

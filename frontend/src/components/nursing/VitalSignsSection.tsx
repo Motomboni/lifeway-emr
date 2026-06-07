@@ -8,6 +8,8 @@ import React, { useState, useEffect } from 'react';
 import { useToast } from '../../hooks/useToast';
 import { fetchVitalSignsNurse, createVitalSignsNurse } from '../../api/nursing';
 import { fetchVisitDetails } from '../../api/visits';
+import { fetchRegisteredDoctors } from '../../api/auth';
+import { User } from '../../types/auth';
 import { VitalSigns, VitalSignsCreate } from '../../types/clinical';
 import SpeechToTextButton from '../common/SpeechToTextButton';
 import styles from '../../styles/NurseVisit.module.css';
@@ -25,6 +27,8 @@ export default function VitalSignsSection({ visitId, canCreate }: VitalSignsSect
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [patientGender, setPatientGender] = useState<string | null>(null);
+  const [assignedDoctorLabel, setAssignedDoctorLabel] = useState<string | null>(null);
+  const [registeredDoctors, setRegisteredDoctors] = useState<User[]>([]);
   
   const [formData, setFormData] = useState<VitalSignsCreate>({
     temperature: null,
@@ -46,17 +50,43 @@ export default function VitalSignsSection({ visitId, canCreate }: VitalSignsSect
 
   useEffect(() => {
     loadVitalSigns();
-    loadPatientGender();
+    loadVisitSideInfo();
   }, [visitId]);
 
-  const loadPatientGender = async () => {
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await fetchRegisteredDoctors();
+        if (!cancelled) {
+          setRegisteredDoctors(Array.isArray(list) ? list : []);
+        }
+      } catch {
+        if (!cancelled) {
+          setRegisteredDoctors([]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const loadVisitSideInfo = async () => {
     try {
       const visitDetails = await fetchVisitDetails(visitId);
       const gender = visitDetails.patient_details?.gender || null;
       setPatientGender(gender);
+      const name = visitDetails.assigned_doctor_name?.trim();
+      if (name) {
+        setAssignedDoctorLabel(name);
+      } else if (visitDetails.assigned_doctor != null && visitDetails.assigned_doctor !== undefined) {
+        setAssignedDoctorLabel(`Doctor user #${visitDetails.assigned_doctor}`);
+      } else {
+        setAssignedDoctorLabel(null);
+      }
     } catch (error) {
-      console.error('Failed to load patient gender:', error);
-      // Don't show error to user, just leave gender as null
+      console.error('Failed to load visit side info:', error);
     }
   };
 
@@ -89,7 +119,6 @@ export default function VitalSignsSection({ visitId, canCreate }: VitalSignsSect
     
     try {
       setSaving(true);
-      // Convert temperature from Fahrenheit to Celsius if provided
       // For male patients, ensure female-specific fields are null
       const isFemale = patientGender === 'FEMALE';
       const dataToSend: VitalSignsCreate = { ...formData };
@@ -109,17 +138,16 @@ export default function VitalSignsSection({ visitId, canCreate }: VitalSignsSect
         }
       }
       
-      // Handle temperature conversion and validation
+      // Handle temperature validation (Celsius, per backend model help_text)
       if (dataToSend.temperature && dataToSend.temperature > 0) {
-        // Convert Fahrenheit to Celsius: C = (F - 32) * 5/9
         // Round to 2 decimal places to match backend max_digits=5, decimal_places=2 constraint
-        const celsiusTemp = (dataToSend.temperature - 32) * 5 / 9;
-        // Round to exactly 2 decimal places using toFixed and parseFloat
-        const roundedTemp = parseFloat(celsiusTemp.toFixed(2));
-        
+        const roundedTemp = parseFloat(dataToSend.temperature.toFixed(2));
+
         // Validate temperature is within acceptable range (30.0-45.0°C)
         if (roundedTemp < 30.0 || roundedTemp > 45.0) {
-          showError(`Temperature ${roundedTemp.toFixed(1)}°C is out of range. Must be between 30.0°C and 45.0°C.`);
+          showError(
+            `Temperature ${roundedTemp.toFixed(1)}°C is out of range. Must be between 30.0°C and 45.0°C.`
+          );
           setSaving(false);
           return;
         }
@@ -213,11 +241,31 @@ export default function VitalSignsSection({ visitId, canCreate }: VitalSignsSect
         )}
       </div>
 
+      <div className={styles.assignedDoctorBanner} role="status">
+        <strong>Assigned physician (reception):</strong>{' '}
+        {assignedDoctorLabel || '— Not specified at registration'}
+      </div>
+
+      <details className={styles.doctorReference}>
+        <summary>Registered doctors (reference — same list as reception)</summary>
+        {registeredDoctors.length === 0 ? (
+          <p className={styles.helpTextMuted}>No doctors loaded.</p>
+        ) : (
+          <ul className={styles.doctorList}>
+            {registeredDoctors.map((d) => {
+              const label =
+                [d.first_name, d.last_name].filter(Boolean).join(' ').trim() || d.username;
+              return <li key={d.id}>{label}</li>;
+            })}
+          </ul>
+        )}
+      </details>
+
       {showForm && canCreate && (
         <form onSubmit={handleSubmit} className={styles.vitalSignsForm}>
           <div className={styles.formGrid}>
             <div className={styles.formField}>
-              <label>Temperature (°F)</label>
+              <label>Temperature (°C)</label>
               <input
                 type="number"
                 step="0.1"
@@ -392,7 +440,7 @@ export default function VitalSignsSection({ visitId, canCreate }: VitalSignsSect
                 {vs.temperature && (
                   <div className={styles.vitalSignItem}>
                     <label>Temperature:</label>
-                    <span>{((parseFloat(vs.temperature.toString()) * 9 / 5) + 32).toFixed(1)}°F</span>
+                    <span>{parseFloat(vs.temperature.toString()).toFixed(1)}°C</span>
                   </div>
                 )}
                 {vs.systolic_bp && vs.diastolic_bp && (

@@ -31,6 +31,21 @@ Required in `.env` for production:
 - `DB_PASSWORD` – Postgres password (required by prod compose)
 - `ALLOWED_HOSTS` – include your public hostname(s)
 - `CORS_ALLOWED_ORIGINS` – include your frontend URL(s)
+- `FRONTEND_URL` – public SPA URL used in links/callbacks
+- `SECURE_SSL_REDIRECT` / `SECURE_PROXY_SSL_HEADER` – match your HTTPS/reverse-proxy setup
+
+Optional one-time admin bootstrap:
+
+```bash
+export DJANGO_SUPERUSER_USERNAME=admin
+export DJANGO_SUPERUSER_EMAIL=admin@yourdomain.com
+export DJANGO_SUPERUSER_ROLE=ADMIN
+export DJANGO_SUPERUSER_PASSWORD='use-a-strong-temporary-password'
+python backend/create_superuser.py
+unset DJANGO_SUPERUSER_PASSWORD
+```
+
+Do not put real admin passwords, API tokens, or database passwords into source-controlled files.
 
 ### 2. Option A – Multi-service (recommended for production)
 
@@ -89,6 +104,33 @@ docker build -t emr-app:latest .
 - **Backend**: `curl http://localhost:8000/api/v1/` (multi-service) or use frontend `/health` (standalone).
 - **Logs**: `docker compose -f docker-compose.prod.yml logs -f backend`
 - **Restart**: `docker compose -f docker-compose.prod.yml restart backend`
+
+---
+
+## Final staging smoke test
+
+Run these before a production cutover:
+
+```bash
+python backend/manage.py check --deploy
+python backend/manage.py collectstatic --noinput
+npm run build --prefix frontend
+```
+
+Then confirm these user flows against the staging URL:
+
+- Login as an admin/doctor user.
+- Open `/visits` and confirm pagination shows the migrated total, not just the first page.
+- Open a migrated patient and a migrated visit.
+- Open visit billing, lab, prescription, and radiology panels.
+- Generate a receipt/invoice if PDF features are in scope.
+- Verify `tmp/lmc_migration/reconciliation.csv` or the archived migration report has business sign-off.
+
+Known deployment dependencies:
+
+- Install WeasyPrint native libraries on the server if PDF output is required.
+- Enforce HTTPS either at Django (`SECURE_SSL_REDIRECT=true`) or at the reverse proxy/load balancer.
+- Rotate any local credentials that were ever exposed during setup.
 
 ---
 

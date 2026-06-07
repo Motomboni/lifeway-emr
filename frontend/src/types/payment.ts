@@ -7,8 +7,8 @@ export interface Payment {
   visit: number;
   visit_id: number;
   amount: string;
-  payment_method: 'CASH' | 'CARD' | 'BANK_TRANSFER' | 'MOBILE_MONEY' | 'INSURANCE' | 'WALLET' | 'PAYSTACK';
-  status: 'PENDING' | 'CLEARED' | 'FAILED' | 'REFUNDED';
+  payment_method: 'CASH' | 'POS' | 'TRANSFER' | 'CARD' | 'BANK_TRANSFER' | 'MOBILE_MONEY' | 'INSURANCE' | 'WALLET' | 'PAYSTACK';
+  status: 'PENDING' | 'PARTIAL' | 'CLEARED' | 'FAILED' | 'REFUNDED';
   transaction_reference?: string;
   notes?: string;
   processed_by: number;

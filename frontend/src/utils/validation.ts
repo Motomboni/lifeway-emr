@@ -36,11 +36,11 @@ export function validateEmail(email: string): string | null {
 }
 
 /** Min length and complexity to match backend (core.password_validators). */
-const PASSWORD_MIN_LENGTH = 12;
+const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_SPECIAL = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/;
 
 /**
- * Validate password for registration (matches backend: 12+ chars, upper, lower, digit, special).
+ * Validate password for registration (matches backend: 8+ chars, upper, lower, digit, special).
  */
 export function validatePassword(password: string): string | null {
   if (!password) return 'Password is required';

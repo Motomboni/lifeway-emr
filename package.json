@@ -1,0 +1,11 @@
+{
+  "name": "modern-emr",
+  "private": true,
+  "description": "Monorepo root. The React app and package.json live in frontend/",
+  "scripts": {
+    "start": "npm run start --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "test": "npm run test --prefix frontend",
+    "install:frontend": "npm install --prefix frontend"
+  }
+}

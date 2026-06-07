@@ -8,6 +8,7 @@ export interface User {
   email: string;
   first_name: string;
   last_name: string;
+  specialization?: string;
   role: 'DOCTOR' | 'NURSE' | 'LAB_TECH' | 'RADIOLOGY_TECH' | 'PHARMACIST' | 'RECEPTIONIST' | 'PATIENT' | 'ADMIN' | 'MANAGEMENT';
   is_active: boolean;
   is_superuser?: boolean;

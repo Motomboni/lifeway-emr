@@ -206,7 +206,7 @@ DATABASES = {
     }
 }
 
-# Password validation (clinic-grade: length 12, complexity)
+# Password validation (min 8 characters, complexity)
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
@@ -245,7 +245,7 @@ REQUIRE_ORGANIZATION_CONTEXT = os.environ.get(
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "core.jwt_auth.RoleAwareJWTAuthentication",
         # Session auth kept for admin panel
         "rest_framework.authentication.SessionAuthentication",
     ],
@@ -470,6 +470,9 @@ TENANT_SUBDOMAIN_ENABLED = os.environ.get(
 ).lower() in ("true", "1", "yes")
 TENANT_BASE_DOMAIN = os.environ.get("TENANT_BASE_DOMAIN", "localhost")
 
+# Public SPA origin for email links, telemedicine redirects, patient portal URLs (no /api path)
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+
 CORS_ALLOW_HEADERS = [
     "accept",
     "accept-encoding",
@@ -515,6 +518,25 @@ RADIOLOGY_STORAGE = os.environ.get("RADIOLOGY_STORAGE", None)
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
 os.makedirs(LOGS_DIR, exist_ok=True)
 
+def _build_file_log_handler(filename: str, level: str = 'INFO') -> dict:
+    """Use plain FileHandler on Windows/dev to avoid log rotation file-lock errors."""
+    path = os.path.join(LOGS_DIR, filename)
+    if DEBUG or os.name == 'nt':
+        return {
+            'level': level,
+            'class': 'logging.FileHandler',
+            'filename': path,
+            'formatter': 'verbose',
+        }
+    return {
+        'level': level,
+        'class': 'logging.handlers.RotatingFileHandler',
+        'filename': path,
+        'maxBytes': 1024 * 1024 * 15,
+        'backupCount': 10,
+        'formatter': 'verbose',
+    }
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -534,22 +556,8 @@ LOGGING = {
         },
     },
     "handlers": {
-        "file": {
-            "level": "INFO",
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": os.path.join(LOGS_DIR, "django.log"),
-            "maxBytes": 1024 * 1024 * 15,  # 15MB
-            "backupCount": 10,
-            "formatter": "verbose",
-        },
-        "error_file": {
-            "level": "ERROR",
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": os.path.join(LOGS_DIR, "django_errors.log"),
-            "maxBytes": 1024 * 1024 * 15,  # 15MB
-            "backupCount": 10,
-            "formatter": "verbose",
-        },
+        "file": _build_file_log_handler("django.log"),
+        "error_file": _build_file_log_handler("django_errors.log", "ERROR"),
         "console": {
             "level": "DEBUG" if DEBUG else "INFO",
             "class": "logging.StreamHandler",

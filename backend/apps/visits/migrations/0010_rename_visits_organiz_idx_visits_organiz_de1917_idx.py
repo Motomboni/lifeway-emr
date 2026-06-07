@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('visits', '0007_add_organization'),
+        ('visits', '0009_service_area'),
     ]
 
     operations = [

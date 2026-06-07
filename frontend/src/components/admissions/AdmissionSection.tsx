@@ -2,7 +2,7 @@
  * Admission Section Component
  * 
  * Component for viewing and managing patient admission to wards/beds.
- * Doctor-only: Create, update, discharge, and transfer admissions.
+ * Doctors and administrators: Create, discharge, and transfer admissions.
  */
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -89,10 +89,13 @@ export default function AdmissionSection({
     transfer_notes: '',
   });
 
-  const isDoctor = user?.role === 'DOCTOR';
-  const canAdmit = isDoctor && visitStatus === 'OPEN' && !admission;
-  const canDischarge = isDoctor && admission && admission.admission_status === 'ADMITTED';
-  const canTransfer = isDoctor && admission && admission.admission_status === 'ADMITTED';
+  const canManageAdmission =
+    user?.role === 'DOCTOR' ||
+    user?.role === 'ADMIN' ||
+    user?.is_superuser === true;
+  const canAdmit = canManageAdmission && visitStatus === 'OPEN' && !admission;
+  const canDischarge = canManageAdmission && admission && admission.admission_status === 'ADMITTED';
+  const canTransfer = canManageAdmission && admission && admission.admission_status === 'ADMITTED';
 
   useEffect(() => {
     loadAdmission();
@@ -611,8 +614,8 @@ export default function AdmissionSection({
             <p className={styles.helpText}>
               {visitStatus !== 'OPEN' 
                 ? 'Visit must be OPEN to admit patient.'
-                : !isDoctor
-                ? 'Only doctors can admit patients.'
+                : !canManageAdmission
+                ? 'Only doctors or administrators can admit patients.'
                 : ''}
             </p>
           )}

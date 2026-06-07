@@ -79,16 +79,11 @@ Request:
 Response:
 ```json
 {
-  "is_locked": true,
-  "reason_code": "PAYMENT_NOT_CLEARED",
-  "human_readable_message": "Consultation is locked because payment is not cleared...",
-  "details": {
-    "payment_status": "UNPAID"
-  },
-  "unlock_actions": [
-    "Process payment for this visit",
-    "Update payment status to PAID or SETTLED"
-  ]
+  "is_locked": false,
+  "reason_code": "CUSTOM",
+  "human_readable_message": "Consultation is available.",
+  "details": {},
+  "unlock_actions": []
 }
 ```
 
@@ -153,16 +148,14 @@ Variants:
 ### Consultation Lock
 
 **Locked when:**
-- Visit payment not cleared
 - Visit is closed
 - Visit not found
 
 **Example message:**
-> "Consultation is locked because payment is not cleared. Current payment status: UNPAID. Please process payment before starting consultation."
+> "Consultation is available."
 
 **Unlock actions:**
-- Process payment for this visit
-- Update payment status to PAID or SETTLED
+- Re-open the visit if it is closed
 
 ### Radiology Upload Lock
 
@@ -236,7 +229,7 @@ Display lock messages inline in forms:
 All lock evaluations are logged:
 
 ```
-INFO: Lock evaluation: action=consultation, locked=True, reason=PAYMENT_NOT_CLEARED, kwargs={'visit_id': 123}
+INFO: Lock evaluation: action=consultation, locked=False, reason=CUSTOM, kwargs={'visit_id': 123}
 ```
 
 This provides a complete audit trail of why actions were blocked.
@@ -315,12 +308,10 @@ export const checkCustomActionLock = async (
 Test lock evaluations:
 
 ```python
-def test_consultation_lock_payment_not_cleared():
+def test_consultation_lock_unpaid_visit_allowed():
     visit = create_visit(payment_status='UNPAID')
     result = LockEvaluator.evaluate_consultation_lock(visit.id)
-    assert result.is_locked
-    assert result.reason_code == LockReasonCode.PAYMENT_NOT_CLEARED
-    assert 'payment' in result.human_readable_message.lower()
+    assert not result.is_locked
 ```
 
 ## Future Enhancements

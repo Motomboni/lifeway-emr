@@ -65,6 +65,12 @@
   background: var(--bg-primary, white);
 }
 
+.resultCount {
+  margin: -0.75rem 0 1rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
 .searchButton {
   padding: 1rem 2rem;
   background: linear-gradient(135deg, #3b82f6, #2563eb);
