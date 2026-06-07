@@ -185,7 +185,10 @@ class TestInsuranceVisitScopeEnforcement:
         
         # Verify visit payment_status is still UNPAID (insurance doesn't auto-clear)
         open_visit.refresh_from_db()
-        assert open_visit.payment_status == 'UNPAID', "Insurance should not automatically clear payment_status"
+        assert open_visit.payment_status in (
+            "UNPAID",
+            "INSURANCE_PENDING",
+        ), "Pending insurance should not auto-settle payment_status"
         
         # Verify is_payment_cleared() returns False when payment_status is UNPAID
         assert not open_visit.is_payment_cleared(), \

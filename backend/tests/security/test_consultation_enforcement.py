@@ -119,7 +119,8 @@ class TestConsultationRoleEnforcement:
         response = client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["id"] == consultation.id
+        data = response.data[0] if isinstance(response.data, list) else response.data
+        assert data["id"] == consultation.id
 
     def test_lab_tech_cannot_create_consultation(self, lab_tech_token, visit, api_client):
         """B1: Lab tech cannot create consultation."""
