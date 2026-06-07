@@ -164,15 +164,15 @@ class TestInsuranceVisitScopeEnforcement:
         open_visit.payment_status = 'UNPAID'
         open_visit.save()
         
-        # Create insurance with full coverage
+        # Pending insurance must not auto-settle the visit
         VisitInsurance.objects.create(
             visit=open_visit,
             provider=hmo_provider,
             policy_number='POL123',
             coverage_type='FULL',
             coverage_percentage=100,
-            approval_status='APPROVED',
-            approved_amount=Decimal('10000.00'),
+            approval_status='PENDING',
+            approved_amount=None,
             created_by=receptionist_user
         )
         

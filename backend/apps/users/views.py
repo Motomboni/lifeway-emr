@@ -323,7 +323,7 @@ def register(request):
         ...
     }
     """
-    serializer = RegisterSerializer(data=request.data)
+    serializer = RegisterSerializer(data=request.data, context={"request": request})
 
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -44,7 +44,7 @@ class TestPatientRegistration:
         response = client.post("/api/v1/patients/", data)
 
         assert response.status_code == status.HTTP_201_CREATED
-        patient = Patient.objects.get(id=response.data["id"])
+        patient = Patient.objects.get(id=response.data["patient"]["id"])
         # New patient registration (not self-registration) doesn't create user account
         # This test verifies the patient record is created correctly
         assert patient.first_name == "John"
@@ -265,7 +265,7 @@ class TestPatientPortalAccess:
 class TestPatientVerificationWorkflow:
     """Test complete patient verification workflow."""
 
-    def test_complete_verification_workflow(self, receptionist_token, api_client):
+    def test_complete_verification_workflow(self, receptionist_token, api_client, test_org):
         """Test complete workflow: registration → verification → portal access."""
         from rest_framework.exceptions import PermissionDenied
 
@@ -293,6 +293,7 @@ class TestPatientVerificationWorkflow:
             user=user,
             is_verified=False,
             is_active=True,
+            organization=test_org,
         )
 
         # Step 2: Verify patient cannot access portal

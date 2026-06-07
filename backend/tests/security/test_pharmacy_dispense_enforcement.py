@@ -247,20 +247,26 @@ class TestPharmacyDispensePaymentEnforcement:
 class TestPharmacyDispenseVisitStatusEnforcement:
     """Test V1: Visit must be OPEN."""
     
-    def test_dispense_for_closed_visit(self, closed_visit_with_payment, consultation, doctor_user, pharmacist_token, api_client):
+    def test_dispense_for_closed_visit(self, open_visit_with_payment, consultation, doctor_user, pharmacist_token, api_client):
         """V1: Cannot dispense for CLOSED visit."""
-        # Create prescription for closed visit
+        from django.utils import timezone
+
         prescription = Prescription.objects.create(
-            visit=closed_visit_with_payment,
+            visit=open_visit_with_payment,
             consultation=consultation,
             drug='Amoxicillin',
             dosage='500mg',
             prescribed_by=doctor_user,
             status='PENDING'
         )
+
+        open_visit_with_payment.status = 'CLOSED'
+        open_visit_with_payment.closed_by = doctor_user
+        open_visit_with_payment.closed_at = timezone.now()
+        open_visit_with_payment.save()
         
         client = api_client(token=pharmacist_token)
-        url = f"/api/v1/visits/{closed_visit_with_payment.id}/pharmacy/dispense/"
+        url = f"/api/v1/visits/{open_visit_with_payment.id}/pharmacy/dispense/"
         
         response = client.post(url, {
             'prescription_id': prescription.id,

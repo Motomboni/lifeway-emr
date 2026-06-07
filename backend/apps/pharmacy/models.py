@@ -578,8 +578,8 @@ class Prescription(models.Model):
         if self.visit.status == "CLOSED":
             raise ValidationError(
                 "Cannot create or modify prescription for a CLOSED visit. "
-                "Visit ID: %(visit_id)s is CLOSED. Closed visits are immutable per EMR governance rules."
-            ) % {"visit_id": self.visit_id}
+                f"Visit ID: {self.visit_id} is CLOSED. Closed visits are immutable per EMR governance rules."
+            )
 
         # ❌ GOVERNANCE RULE: Consultation is REQUIRED
         if not self.consultation_id:

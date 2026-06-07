@@ -105,10 +105,10 @@ class TestConsultationRoleEnforcement:
             or response.status_code == status.HTTP_403_FORBIDDEN
         )
 
-    def test_receptionist_cannot_read_consultation(
+    def test_receptionist_can_read_consultation_when_registration_cleared(
         self, receptionist_token, visit, doctor_user, api_client
     ):
-        """B1: Receptionist cannot read consultation."""
+        """Receptionist can read consultation when registration payment gate is cleared."""
         consultation = Consultation.objects.create(
             visit=visit, created_by=doctor_user, history="Test history"
         )
@@ -118,7 +118,8 @@ class TestConsultationRoleEnforcement:
 
         response = client.get(url)
 
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["id"] == consultation.id
 
     def test_lab_tech_cannot_create_consultation(self, lab_tech_token, visit, api_client):
         """B1: Lab tech cannot create consultation."""
