@@ -42,6 +42,11 @@ export function parseApiError(error: any): string {
         if (typeof d === 'string') return d;
         return String(d);
       }
+
+      if (response.data.non_field_errors) {
+        const nfe = response.data.non_field_errors;
+        return Array.isArray(nfe) ? nfe.join('; ') : String(nfe);
+      }
       
       if (response.data.message) {
         return response.data.message;

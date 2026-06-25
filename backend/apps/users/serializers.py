@@ -4,6 +4,7 @@ User serializers for authentication and user management.
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
+from django.conf import settings
 from .models import User
 
 
@@ -190,6 +191,14 @@ class RegisterSerializer(serializers.ModelSerializer):
                 'password_confirm': "Password fields didn't match."
             })
         role = attrs.get('role')
+        if role == 'ADMIN':
+            raise serializers.ValidationError({
+                'role': (
+                    'Administrator accounts cannot be created via self-registration. '
+                    'Ask an existing admin to create your account, or use '
+                    'python manage.py createsuperuser for local setup.'
+                ),
+            })
         specialization = (attrs.get('specialization') or '').strip()
         if role == 'DOCTOR' and not specialization:
             raise serializers.ValidationError({
@@ -226,9 +235,9 @@ class RegisterSerializer(serializers.ModelSerializer):
             patient.clean()
             patient.save()
         else:
-            # For all non-PATIENT roles (staff accounts), require explicit admin approval
-            # before the account can be used. Admin approves via Dashboard or Django admin.
-            if user.is_active:
+            # Staff accounts require admin approval in production.
+            # In DEBUG/local dev, activate immediately so new accounts can sign in.
+            if not settings.DEBUG and user.is_active:
                 user.is_active = False
                 user.save(update_fields=['is_active'])
         

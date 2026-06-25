@@ -45,11 +45,15 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface RegisterResponse extends User {
+  message?: string;
+}
+
 /**
  * Register a new user
  */
-export async function registerUser(data: RegisterData): Promise<User> {
-  return unauthenticatedRequest<User>('/auth/register/', {
+export async function registerUser(data: RegisterData): Promise<RegisterResponse> {
+  return unauthenticatedRequest<RegisterResponse>('/auth/register/', {
     method: 'POST',
     body: JSON.stringify(data),
   });

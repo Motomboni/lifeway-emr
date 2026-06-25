@@ -20,12 +20,6 @@ interface RoleOption {
 
 const ROLE_OPTIONS: RoleOption[] = [
   {
-    value: 'ADMIN',
-    label: 'Administrator',
-    description: 'Full system access and management',
-    icon: '👤',
-  },
-  {
     value: 'DOCTOR',
     label: 'Doctor',
     description: 'Create consultations, orders, and prescriptions',
@@ -187,7 +181,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      await registerUser({
+      const created = await registerUser({
         username: formData.username,
         email: formData.email,
         password: formData.password,
@@ -198,7 +192,7 @@ export default function RegisterPage() {
         specialization: formData.role === 'DOCTOR' ? formData.specialization.trim() : undefined,
       });
 
-      showSuccess('Account created successfully! Please sign in.');
+      showSuccess(created.message || 'Account created successfully! Please sign in.');
       navigate('/login');
     } catch (error) {
       const err = error as Error & { responseData?: Record<string, string | string[]> };

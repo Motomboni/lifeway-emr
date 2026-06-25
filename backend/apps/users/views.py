@@ -42,12 +42,19 @@ from .serializers import (
 
 User = get_user_model()
 
-# Clinic-grade: strict rate limits on auth endpoints (per IP)
-AUTH_RATE_LIMIT_LOGIN = (5, 20)   # 5/min, 20/hour per IP
-AUTH_RATE_LIMIT_REFRESH = (30, 200)
-AUTH_RATE_LIMIT_REGISTER = (3, 10)  # 3/min, 10/hour
-AUTH_RATE_LIMIT_FORGOT_PASSWORD = (3, 10)
-AUTH_RATE_LIMIT_RESET_PASSWORD = (5, 20)
+# Auth rate limits (per IP). Relaxed in DEBUG so local testing is not blocked.
+if settings.DEBUG:
+    AUTH_RATE_LIMIT_LOGIN = (60, 1000)
+    AUTH_RATE_LIMIT_REFRESH = (120, 2000)
+    AUTH_RATE_LIMIT_REGISTER = (30, 200)
+    AUTH_RATE_LIMIT_FORGOT_PASSWORD = (30, 200)
+    AUTH_RATE_LIMIT_RESET_PASSWORD = (60, 1000)
+else:
+    AUTH_RATE_LIMIT_LOGIN = (5, 20)
+    AUTH_RATE_LIMIT_REFRESH = (30, 200)
+    AUTH_RATE_LIMIT_REGISTER = (3, 10)
+    AUTH_RATE_LIMIT_FORGOT_PASSWORD = (3, 10)
+    AUTH_RATE_LIMIT_RESET_PASSWORD = (5, 20)
 
 
 @api_view(['POST'])
@@ -406,12 +413,21 @@ def register(request):
         )
     
     user = serializer.save()
-    
-    # Serialize user data (exclude password)
+
     user_serializer = UserSerializer(user)
-    
+    payload = dict(user_serializer.data)
+    if user.role != 'PATIENT' and not user.is_active:
+        payload['message'] = (
+            'Account created. Your staff account is awaiting administrator approval '
+            'before you can sign in.'
+        )
+    elif user.role != 'PATIENT' and settings.DEBUG:
+        payload['message'] = 'Account created. You can sign in now (local development mode).'
+    else:
+        payload['message'] = 'Account created. You can sign in now.'
+
     return Response(
-        user_serializer.data,
+        payload,
         status=status.HTTP_201_CREATED
     )
 
