@@ -1,0 +1,297 @@
+.invitePanel {
+  background: linear-gradient(165deg, #0f2a2a 0%, #163a3c 48%, #1a2f3d 100%);
+  color: #e8f4f2;
+  border-radius: 16px;
+  padding: 1.25rem 1.35rem;
+  border: 1px solid rgba(120, 200, 190, 0.22);
+  box-shadow: 0 12px 32px rgba(8, 24, 28, 0.28);
+}
+
+.invitePanelCompact {
+  padding: 1rem;
+}
+
+.inviteHeader h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.inviteHeader p {
+  margin: 0 0 1rem;
+  color: rgba(232, 244, 242, 0.72);
+  font-size: 0.875rem;
+}
+
+.roster {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.rosterItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.rosterName {
+  font-size: 0.9rem;
+}
+
+.rosterActions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.roleChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(94, 196, 176, 0.22);
+  color: #b8f0e2;
+}
+
+.rolePatient {
+  background: rgba(120, 160, 220, 0.25);
+  color: #c9dcff;
+}
+
+.revokeBtn {
+  border: none;
+  background: transparent;
+  color: #ffb4a8;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0.2rem 0.35rem;
+}
+
+.revokeBtn:hover {
+  text-decoration: underline;
+}
+
+.inviteForm {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 0.9rem;
+}
+
+.inviteControls {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.inviteControls label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: rgba(232, 244, 242, 0.7);
+}
+
+.inviteControls select,
+.inviteControls input {
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.25);
+  color: #e8f4f2;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.875rem;
+}
+
+.messageField {
+  min-width: 0;
+}
+
+.staffList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.staffRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.55rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.inviteBtn {
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  background: #3db89a;
+  color: #06241c;
+  font-weight: 650;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.inviteBtn:hover:not(:disabled) {
+  background: #4dceb0;
+}
+
+.inviteBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.muted {
+  color: rgba(232, 244, 242, 0.55);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.clinicHero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem 1.6rem;
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse at 12% 20%, rgba(61, 184, 154, 0.28), transparent 45%),
+    radial-gradient(ellipse at 90% 10%, rgba(90, 140, 200, 0.22), transparent 40%),
+    linear-gradient(145deg, #0d1f24, #132c33 55%, #1a2430);
+  color: #eef7f5;
+  border: 1px solid rgba(120, 200, 190, 0.18);
+}
+
+.clinicHero h1 {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.45rem, 2.4vw, 1.9rem);
+  font-weight: 700;
+}
+
+.clinicHero p {
+  margin: 0;
+  max-width: 36rem;
+  color: rgba(238, 247, 245, 0.75);
+  font-size: 0.95rem;
+}
+
+.inviteBanner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+  padding: 0.95rem 1.1rem;
+  border-radius: 14px;
+  background: linear-gradient(90deg, rgba(61, 184, 154, 0.18), rgba(70, 130, 200, 0.16));
+  border: 1px solid rgba(61, 184, 154, 0.35);
+}
+
+.inviteBanner strong {
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.inviteBannerActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.acceptBtn,
+.declineBtn,
+.joinClinicBtn {
+  border: none;
+  border-radius: 10px;
+  padding: 0.55rem 0.95rem;
+  font-weight: 650;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.acceptBtn,
+.joinClinicBtn {
+  background: #3db89a;
+  color: #06241c;
+}
+
+.declineBtn {
+  background: transparent;
+  color: #ffb4a8;
+  border: 1px solid rgba(255, 180, 168, 0.45);
+}
+
+.pricingPanel {
+  margin-bottom: 1.25rem;
+  padding: 1.25rem 1.35rem;
+  border-radius: 16px;
+  background: linear-gradient(165deg, #1a2430 0%, #16303a 55%, #0f2a2a 100%);
+  color: #e8f4f2;
+  border: 1px solid rgba(120, 200, 190, 0.22);
+}
+
+.pricingForm {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr auto;
+  gap: 0.75rem;
+  align-items: end;
+  margin-top: 0.75rem;
+}
+
+.pricingForm label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: rgba(232, 244, 242, 0.7);
+}
+
+.pricingForm input[type='text'],
+.pricingForm input[type='number'] {
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.25);
+  color: #e8f4f2;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.95rem;
+}
+
+.pricingActive {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.45rem !important;
+  padding-bottom: 0.55rem;
+}
+
+@media (max-width: 720px) {
+  .inviteControls {
+    grid-template-columns: 1fr;
+  }
+
+  .pricingForm {
+    grid-template-columns: 1fr;
+  }
+}
+

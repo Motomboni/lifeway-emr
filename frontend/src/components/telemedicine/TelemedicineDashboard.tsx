@@ -1,4 +1,5 @@
 /**
+ * @deprecated Use TelemedicinePage (`/telemedicine`) or TelemedicineRoomPage instead.
  * Telemedicine Dashboard
  *
  * Doctor & patient: "Start Video Consult" and "Join Video Consult".
@@ -62,7 +63,7 @@ export default function TelemedicineDashboard({
       setCreating(true);
       try {
         const result = await createSessionFromAppointment(appointmentId, {
-          recording_enabled: false,
+          recording_enabled: true,
         });
         const link = (result as any).meeting_link;
         if (link) {

@@ -10,15 +10,19 @@
  * - GET /api/v1/telemedicine/{id}/recording/ - Stream recording (proxy, requires auth)
  * - POST /api/v1/telemedicine/token/ - Get access token
  * - POST /api/v1/telemedicine/{id}/leave/ - Leave session
+ * - Virtual clinic staff invites
  */
 import { apiRequest } from '../utils/apiClient';
 import {
   TelemedicineSession,
   TelemedicineSessionCreate,
   TelemedicineAccessToken,
+  TelemedicineInvitableStaff,
+  TelemedicineInviteRequest,
+  TelemedicineParticipant,
 } from '../types/telemedicine';
 
-const API_BASE = process.env.REACT_APP_API_URL || '/api/v1';
+const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
 /**
  * Fetch telemedicine sessions
@@ -97,6 +101,20 @@ export async function requestTelemedicineTranscription(
   );
 }
 
+/** Save live browser speech-to-text captured during a video call */
+export async function saveLiveTelemedicineTranscript(
+  sessionId: number,
+  transcript: string,
+): Promise<TelemedicineSession> {
+  return apiRequest<TelemedicineSession>(
+    `/telemedicine/${sessionId}/save-live-transcript/`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ transcript }),
+    },
+  );
+}
+
 /**
  * Get Twilio access token for joining a session
  */
@@ -142,7 +160,7 @@ export async function createSessionFromAppointment(
       method: 'POST',
       body: JSON.stringify({
         appointment_id: appointmentId,
-        recording_enabled: options?.recording_enabled ?? false,
+        recording_enabled: options?.recording_enabled ?? true,
       }),
     }
   );
@@ -158,4 +176,84 @@ export async function getTelemedicineJoinLink(
   return apiRequest<{ meeting_link: string; session_id: number; access_token?: string; room_name?: string }>(
     `/telemedicine/${sessionId}/join/`
   );
+}
+
+/** List staff who can be invited into a virtual clinic room */
+export async function fetchInvitableStaff(
+  sessionId: number,
+  role?: string,
+): Promise<TelemedicineInvitableStaff[]> {
+  const params = role ? `?role=${encodeURIComponent(role)}` : '';
+  return apiRequest<TelemedicineInvitableStaff[]>(
+    `/telemedicine/${sessionId}/invitable-staff/${params}`,
+  );
+}
+
+/** Invite clinical staff into the virtual clinic */
+export async function inviteTelemedicineStaff(
+  sessionId: number,
+  data: TelemedicineInviteRequest,
+): Promise<TelemedicineParticipant> {
+  return apiRequest<TelemedicineParticipant>(`/telemedicine/${sessionId}/invite/`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+/** Revoke a staff invite */
+export async function revokeTelemedicineInvite(
+  sessionId: number,
+  participantId: number,
+): Promise<TelemedicineParticipant> {
+  return apiRequest<TelemedicineParticipant>(
+    `/telemedicine/${sessionId}/invites/${participantId}/revoke/`,
+    { method: 'POST' },
+  );
+}
+
+/** Accept or decline a virtual clinic invite */
+export async function respondTelemedicineInvite(
+  sessionId: number,
+  accept: boolean,
+): Promise<TelemedicineParticipant> {
+  return apiRequest<TelemedicineParticipant>(
+    `/telemedicine/${sessionId}/respond-invite/`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ accept }),
+    },
+  );
+}
+
+export interface TelemedicinePricing {
+  configured: boolean;
+  can_edit?: boolean;
+  created?: boolean;
+  service_id?: number;
+  service_code?: string;
+  name?: string;
+  amount?: string;
+  currency?: string;
+  is_active?: boolean;
+  description?: string;
+  updated_at?: string | null;
+  detail?: string;
+}
+
+/** Get telemedicine consultation price */
+export async function fetchTelemedicinePricing(): Promise<TelemedicinePricing> {
+  return apiRequest<TelemedicinePricing>('/telemedicine/pricing/');
+}
+
+/** Admin: set telemedicine consultation price */
+export async function updateTelemedicinePricing(data: {
+  amount: string | number;
+  name?: string;
+  is_active?: boolean;
+  description?: string;
+}): Promise<TelemedicinePricing> {
+  return apiRequest<TelemedicinePricing>('/telemedicine/pricing/', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
 }

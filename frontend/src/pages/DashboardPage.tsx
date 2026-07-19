@@ -7,11 +7,8 @@
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import {
-  fetchVisits,
-  fetchVisitCount,
-  getVisitListResults,
-} from '../api/visits';
+import { useRolePermissions } from '../hooks/useRolePermissions';
+import { fetchVisits, PaginatedResponse } from '../api/visits';
 import { Visit } from '../types/visit';
 import { getPendingVerificationPatients } from '../api/patient';
 import { useToast } from '../hooks/useToast';
@@ -20,9 +17,6 @@ import NotificationBell from '../components/common/NotificationBell';
 import ThemeToggle from '../components/common/ThemeToggle';
 import Logo from '../components/common/Logo';
 import { useDefaultKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
-import { formatDoctorDisplayName } from '../utils/doctorDisplay';
-import { formatRoleLabel } from '../utils/roleContext';
-import AdminRoleSwitcher from '../components/admin/AdminRoleSwitcher';
 import styles from '../styles/Dashboard.module.css';
 
 // Visit Search Component for Nurse Dashboard
@@ -90,7 +84,7 @@ const VisitSearchSection = memo(function VisitSearchSection({ onVisitSelect, loa
     }
 
     setIsSearching(true);
-    
+
     // Use setTimeout to allow UI to update
     setTimeout(() => {
       const filtered = filterVisits(query, allVisits);
@@ -217,7 +211,8 @@ const VisitSearchSection = memo(function VisitSearchSection({ onVisitSelect, loa
 });
 
 export default function DashboardPage() {
-  const { user, logout, isAdmin, isViewingAsRole } = useAuth();
+  const { user, logout } = useAuth();
+  const { isAdmin, isSuperuser } = useRolePermissions();
   const navigate = useNavigate();
   const location = useLocation();
   const { showError } = useToast();
@@ -231,9 +226,6 @@ export default function DashboardPage() {
     pendingVerifications: 0,
   });
   const [loading, setLoading] = useState(true);
-  const userDisplayName = user
-    ? (user.role === 'DOCTOR' ? formatDoctorDisplayName(user) : `${user.first_name} ${user.last_name}`.trim())
-    : '';
 
   // Enable keyboard shortcuts
   useDefaultKeyboardShortcuts();
@@ -241,22 +233,11 @@ export default function DashboardPage() {
   const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
+      const response = await fetchVisits();
+      const allVisits = Array.isArray(response) ? response : (response as PaginatedResponse<Visit>).results;
 
-      const [
-        totalVisits,
-        openVisits,
-        unpaidCount,
-        partialCount,
-        insurancePendingCount,
-        recentResponse,
-      ] = await Promise.all([
-        fetchVisitCount(),
-        fetchVisitCount({ status: 'OPEN' }),
-        fetchVisitCount({ payment_status: 'UNPAID' }),
-        fetchVisitCount({ payment_status: 'PARTIALLY_PAID' }),
-        fetchVisitCount({ payment_status: 'INSURANCE_PENDING' }),
-        fetchVisits({ page: 1, page_size: 5 }),
-      ]);
+      const openVisits = allVisits.filter((v: Visit) => v.status === 'OPEN');
+      const pendingPayments = allVisits.filter((v: Visit) => v.payment_status === 'UNPAID' || v.payment_status === 'PARTIALLY_PAID' || v.payment_status === 'INSURANCE_PENDING');
 
       // Fetch pending verifications for receptionists
       let pendingVerifications = 0;
@@ -271,14 +252,18 @@ export default function DashboardPage() {
       }
 
       const newStats = {
-        totalVisits,
-        openVisits,
-        pendingPayments: unpaidCount + partialCount + insurancePendingCount,
+        totalVisits: allVisits.length,
+        openVisits: openVisits.length,
+        pendingPayments: pendingPayments.length,
         pendingVerifications,
       };
       setStats(newStats);
 
-      setRecentVisits(getVisitListResults(recentResponse));
+      // Get 5 most recent visits
+      const recent = allVisits
+        .sort((a: Visit, b: Visit) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 5);
+      setRecentVisits(recent);
     } catch (error) {
       console.error('📊 Dashboard: Error loading data:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to load dashboard data';
@@ -299,7 +284,7 @@ export default function DashboardPage() {
     const now = Date.now();
     const lastLoadTime = lastLoadTimeRef.current;
     const timeSinceLastLoad = lastLoadTime === 0 ? Infinity : now - lastLoadTime;
-    
+
     // Reload if it's been more than 500ms since last load (prevents rapid duplicate calls)
     // This ensures fresh data on every navigation to dashboard
     if (timeSinceLastLoad > 500) {
@@ -313,7 +298,7 @@ export default function DashboardPage() {
         pendingVerifications: 0,
       });
       setRecentVisits([]);
-      
+
       // Load data
       loadDashboardData();
       lastLoadTimeRef.current = now;
@@ -332,7 +317,7 @@ export default function DashboardPage() {
           <div className={styles.dashboardContent}>
             <div className={styles.dashboardHeader}>
               <h2>Doctor Dashboard</h2>
-              <p>Welcome back, {userDisplayName}</p>
+              <p>Welcome back, Dr. {user?.first_name} {user?.last_name}</p>
             </div>
 
             <div className={styles.statsGrid}>
@@ -357,100 +342,152 @@ export default function DashboardPage() {
                 <h3>Quick Actions</h3>
               </div>
               <div className={styles.actionCards}>
-                <div 
+                <div
                   className={styles.actionCard}
+                  data-guide-id="dashboard-open-visits"
                   onClick={() => navigate('/visits')}
                 >
                   <h3>View All Visits</h3>
                   <p>View and manage patient visits</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/inpatients')}
                 >
                   <h3>Inpatients</h3>
                   <p>View all currently admitted patients</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/appointments')}
                 >
-                  <h3>My Appointments</h3>
-                  <p>View and manage your appointments</p>
+                  <h3>Schedule Appointment</h3>
+                  <p>Book your own appointments — visible to reception</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/telemedicine')}
                 >
-                  <h3>📹 Telemedicine</h3>
-                  <p>Video consultations with patients</p>
+                  <h3>📹 Virtual Clinic</h3>
+                  <p>Video visits — invite nurses & specialists into the room</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
-                  onClick={() => navigate('/visits/new')}
+                  onClick={() => navigate('/antenatal')}
                 >
-                  <h3>New Visit</h3>
-                  <p>Create a new patient visit</p>
+                  <h3>🤰 Antenatal Clinic</h3>
+                  <p>Manage antenatal records and visits</p>
                 </div>
-                {user?.is_superuser && (
-                  <div 
-                    className={styles.actionCard}
-                    onClick={() => navigate('/staff-approval')}
-                  >
-                    <h3>Staff Approval</h3>
-                    <p>Approve registered staff before they can log in</p>
-                  </div>
-                )}
-                {user?.is_superuser && (
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/clinical/immunizations')}
+                >
+                  <h3>💉 Immunization Schedule</h3>
+                  <p>Record and track EPI vaccinations</p>
+                </div>
+                {isAdmin && (
                   <>
-                    <div 
+                    {isSuperuser && (
+                      <div
+                        className={styles.actionCard}
+                        onClick={() => navigate('/staff-approval')}
+                      >
+                        <h3>Staff Approval</h3>
+                        <p>Approve registered staff before they can log in</p>
+                      </div>
+                    )}
+                    <div
                       className={styles.actionCard}
                       onClick={() => navigate('/audit-logs')}
                     >
                       <h3>Audit Logs</h3>
                       <p>View system activity logs</p>
                     </div>
-                    <div 
+                    <div
                       className={styles.actionCard}
                       onClick={() => navigate('/health')}
                     >
                       <h3>System Health</h3>
                       <p>Monitor system status and health</p>
                     </div>
-                    <div 
+                    <div
                       className={styles.actionCard}
                       onClick={() => navigate('/reports')}
                     >
                       <h3>Reports & Analytics</h3>
                       <p>View comprehensive reports and analytics</p>
                     </div>
-                    <div 
-                      className={styles.actionCard}
-                      onClick={() => navigate('/backups')}
-                    >
-                      <h3>Backup & Restore</h3>
-                      <p>Manage data backups and restores</p>
-                    </div>
-                    <div 
+                    {isSuperuser && (
+                      <div
+                        className={styles.actionCard}
+                        onClick={() => navigate('/backups')}
+                      >
+                        <h3>Backup & Restore</h3>
+                        <p>Manage data backups and restores</p>
+                      </div>
+                    )}
+                    <div
                       className={styles.actionCard}
                       onClick={() => navigate('/service-catalog')}
                     >
                       <h3>Service Catalog</h3>
                       <p>Add and manage billable services (e.g. Telemedicine)</p>
                     </div>
-                    <div 
-                      className={styles.actionCard}
-                      onClick={() => navigate('/wards-beds')}
-                    >
-                      <h3>Wards & beds</h3>
-                      <p>Manage wards and beds for admission (Admit Patient form)</p>
-                    </div>
-                    <div 
+                    <div
                       className={styles.actionCard}
                       onClick={() => navigate('/reconciliation')}
                     >
                       <h3>End-of-Day Reconciliation</h3>
                       <p>Daily revenue reconciliation and closure</p>
+                    </div>
+                    <div
+                      className={styles.actionCard}
+                      onClick={() => navigate('/billing/revenue-leaks')}
+                    >
+                      <h3>Revenue Leak Detection</h3>
+                      <p>Find unbilled completed services</p>
+                    </div>
+                    <div
+                      className={styles.actionCard}
+                      onClick={() => navigate('/billing/nhia-compliance')}
+                    >
+                      <h3>NHIA Compliance</h3>
+                      <p>Claim readiness, NHID coverage, export packs</p>
+                    </div>
+                    <div
+                      className={styles.actionCard}
+                      onClick={() => navigate('/billing/payment-reconciliation')}
+                    >
+                      <h3>Bank / USSD Reconciliation</h3>
+                      <p>Match transfers and USSD payments to visits</p>
+                    </div>
+                    <div
+                      className={styles.actionCard}
+                      onClick={() => navigate('/pharmacy/nafdac-formulary')}
+                    >
+                      <h3>NAFDAC Formulary</h3>
+                      <p>Drug reference with NHIA tariff alignment</p>
+                    </div>
+                    <div
+                      className={styles.actionCard}
+                      onClick={() => navigate('/clinical/immunizations')}
+                    >
+                      <h3>Immunization Schedule</h3>
+                      <p>Nigeria EPI vaccination records</p>
+                    </div>
+                    <div
+                      className={styles.actionCard}
+                      onClick={() => navigate('/offline/queue')}
+                    >
+                      <h3>Offline Clinic Queue</h3>
+                      <p>Sync actions captured during low connectivity</p>
+                    </div>
+                    <div
+                      className={styles.actionCard}
+                      onClick={() => navigate('/admin/integrations')}
+                    >
+                      <h3>Integration Hubs</h3>
+                      <p>NHIA portal, e-Rx, and lab exchange settings</p>
                     </div>
                   </>
                 )}
@@ -460,7 +497,7 @@ export default function DashboardPage() {
             <div className={styles.section}>
               <div className={styles.sectionHeader}>
                 <h3>Recent Visits</h3>
-                <button 
+                <button
                   className={styles.viewAllButton}
                   onClick={() => navigate('/visits')}
                 >
@@ -528,30 +565,66 @@ export default function DashboardPage() {
                 <h3>Quick Actions</h3>
               </div>
               <div className={styles.actionCards}>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/visits')}
                 >
                   <h3>📋 View All Visits</h3>
                   <p>Browse and access all patient visits</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/visits?status=OPEN&payment_status=CLEARED')}
                 >
                   <h3>🏥 Active Visits</h3>
                   <p>View open visits ready for nursing care</p>
                 </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/telemedicine')}
+                >
+                  <h3>Virtual Clinic</h3>
+                  <p>Join telemedicine visits when doctors invite you</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/appointments')}
+                >
+                  <h3>📅 Appointments</h3>
+                  <p>View scheduled appointments</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/antenatal')}
+                >
+                  <h3>🤰 Antenatal Clinic</h3>
+                  <p>View antenatal records and visits</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/clinical/immunizations')}
+                >
+                  <h3>💉 Immunization Schedule</h3>
+                  <p>Record and track EPI vaccinations</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/offline/queue')}
+                >
+                  <h3>📴 Offline Queue</h3>
+                  <p>Sync nursing actions from low-connectivity sessions</p>
+                </div>
               </div>
             </div>
 
-            <div className={styles.section}>
-              <div className={styles.sectionHeader}>
-                <h3>Nursing Care Features</h3>
+            <div className={`${styles.section} ${styles.nursingCareSection}`}>
+              <div className="nursing-care-title-bar">
+                <h3 className="nursing-care-features-title">Nursing Care Features</h3>
               </div>
               <div className={styles.infoBox}>
                 <p><strong>As a Nurse, you can:</strong></p>
                 <ul>
+                  <li>🎤 Voice dictation on notes and documentation fields (English + Nigerian languages)</li>
                   <li>📊 Record vital signs (temperature, BP, heart rate, etc.)</li>
                   <li>📝 Create nursing notes (admission, shift handover, procedures, etc.)</li>
                   <li>💊 Administer medications from existing prescriptions</li>
@@ -559,7 +632,7 @@ export default function DashboardPage() {
                   <li>📚 Provide patient education</li>
                 </ul>
                 <p className={styles.helpText}>
-                  <strong>Note:</strong> You can only perform actions on visits that are <strong>OPEN</strong> and have <strong>payment CLEARED</strong>. 
+                  <strong>Note:</strong> You can only perform actions on visits that are <strong>OPEN</strong> and have <strong>payment CLEARED</strong>.
                   Click on any open visit to access the nursing care interface.
                 </p>
               </div>
@@ -569,7 +642,7 @@ export default function DashboardPage() {
               <div className={styles.sectionHeader}>
                 <h3>Search Visits</h3>
               </div>
-              <VisitSearchSection 
+              <VisitSearchSection
                 onVisitSelect={(visitId) => navigate(`/visits/${visitId}/nursing`)}
                 loading={loading}
               />
@@ -615,56 +688,58 @@ export default function DashboardPage() {
                 <h3>Quick Actions</h3>
               </div>
               <div className={styles.actionCards}>
-                <div 
+                <div
                   className={styles.actionCard}
+                  data-guide-id="register-patient"
                   onClick={() => navigate('/patients/register')}
                 >
                   <h3>Patient Registration</h3>
                   <p>Register new patients</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/patients')}
                 >
                   <h3>Patient Management</h3>
                   <p>Search and manage patients</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/appointments')}
                 >
                   <h3>Appointments</h3>
                   <p>Schedule and manage appointments</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
+                  data-guide-id="dashboard-create-visit"
                   onClick={() => navigate('/visits/new')}
                 >
                   <h3>Create Visit</h3>
                   <p>Create a new visit for a patient</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
-                  onClick={() => navigate('/payments')}
+                  onClick={() => navigate('/visits')}
                 >
                   <h3>Billing & Payments</h3>
-                  <p>Review migrated and current payment records</p>
+                  <p>Access visit-scoped billing from visit details</p>
                 </div>
-                <div 
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/wallet')}
+                >
+                  <h3>💳 Patient Wallets</h3>
+                  <p>Look up patient wallet balances and transactions</p>
+                </div>
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/billing/pending-queue')}
                 >
                   <h3>Pending Queue</h3>
                   <p>Central billing queue – collect post-consultation payments</p>
                 </div>
-                <div 
-                  className={styles.actionCard}
-                  onClick={() => navigate('/billing/deferred-payments')}
-                >
-                  <h3>Deferred Payments</h3>
-                  <p>Settle LIFEWAY flexible-payment services (pay later)</p>
-                </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/patients/verification')}
                 >
@@ -676,12 +751,26 @@ export default function DashboardPage() {
                   </h3>
                   <p>Verify patient portal accounts</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/reconciliation')}
                 >
                   <h3>End-of-Day Reconciliation</h3>
                   <p>Daily revenue reconciliation and closure</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/billing/payment-reconciliation')}
+                >
+                  <h3>Bank / USSD Reconciliation</h3>
+                  <p>Record and match bank transfers and USSD payments</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/offline/queue')}
+                >
+                  <h3>Offline Clinic Queue</h3>
+                  <p>Sync billing actions from low-connectivity sessions</p>
                 </div>
               </div>
             </div>
@@ -721,7 +810,7 @@ export default function DashboardPage() {
         return (
           <div className={styles.dashboardContent}>
             <div className={styles.dashboardHeader}>
-              <h2>Lab Technician Dashboard</h2>
+              <h2>Lab Scientist Dashboard</h2>
               <p>Welcome back, {user?.first_name}</p>
             </div>
 
@@ -730,7 +819,7 @@ export default function DashboardPage() {
                 <h3>Quick Actions</h3>
               </div>
               <div className={styles.actionCards}>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/lab-orders')}
                 >
@@ -754,7 +843,7 @@ export default function DashboardPage() {
                 <h3>Quick Actions</h3>
               </div>
               <div className={styles.actionCards}>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/radiology-orders')}
                 >
@@ -778,19 +867,26 @@ export default function DashboardPage() {
                 <h3>Quick Actions</h3>
               </div>
               <div className={styles.actionCards}>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/prescriptions')}
                 >
                   <h3>Prescriptions</h3>
                   <p>View and dispense prescriptions</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/drugs')}
                 >
                   <h3>Drug Catalog & Inventory</h3>
                   <p>Manage drugs and stock levels in one place</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/pharmacy/nafdac-formulary')}
+                >
+                  <h3>NAFDAC Formulary</h3>
+                  <p>Reference registered products and NHIA tariff codes</p>
                 </div>
               </div>
             </div>
@@ -809,46 +905,54 @@ export default function DashboardPage() {
                 <h3>Quick Actions</h3>
               </div>
               <div className={styles.actionCards}>
-                <div 
+                <div
                   className={styles.actionCard}
-                  onClick={() => navigate('/patient-portal')}
+                  onClick={() => navigate('/patient-portal/dashboard')}
                 >
                   <h3>My Health Records</h3>
                   <p>View your medical history and records</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/patient-portal/appointments')}
                 >
                   <h3>My Appointments</h3>
                   <p>View and manage your appointments</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/patient-portal/prescriptions')}
                 >
                   <h3>My Prescriptions</h3>
                   <p>View your prescriptions</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/patient-portal/lab-results')}
                 >
                   <h3>Lab Results</h3>
                   <p>View your lab test results</p>
                 </div>
-                <div 
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/patient-portal/immunizations')}
+                >
+                  <h3>Immunizations</h3>
+                  <p>View your vaccination schedule</p>
+                </div>
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/wallet')}
                 >
                   <h3>💰 My Wallet</h3>
                   <p>View balance and top up wallet</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/patient-portal/telemedicine')}
                 >
-                  <h3>📹 Telemedicine</h3>
+                  <h3>📹 Virtual Clinic</h3>
+                  <p>Video visits — invite nurses & specialists into the room</p>
                   <p>Join video consultations</p>
                 </div>
               </div>
@@ -861,9 +965,6 @@ export default function DashboardPage() {
             <div className={styles.dashboardHeader}>
               <h2>Admin Dashboard</h2>
               <p>Welcome back, {user?.first_name} {user?.last_name}</p>
-              <p className={styles.adminHint}>
-                Use the bar at the top of the screen to test as Receptionist, Doctor, Nurse, Lab Scientist, and other roles.
-              </p>
             </div>
 
             <div className={styles.statsGrid}>
@@ -901,79 +1002,121 @@ export default function DashboardPage() {
               <div className={styles.sectionHeader}>
                 <h3>Quick Actions</h3>
               </div>
-                <div className={styles.actionCards}>
-                  <div 
-                    className={styles.actionCard}
-                    onClick={() => navigate('/patients/register')}
-                  >
-                    <h3>Patient Registration</h3>
-                    <p>Register new patients</p>
-                  </div>
-                  <div 
-                    className={styles.actionCard}
-                    onClick={() => navigate('/patients')}
-                  >
-                    <h3>Patient Management</h3>
-                    <p>View and manage all patients</p>
-                  </div>
-                  <div 
-                    className={styles.actionCard}
-                    onClick={() => navigate('/visits')}
-                  >
-                    <h3>Visit Management</h3>
-                    <p>View and manage all visits</p>
-                  </div>
-                <div 
+              <div className={styles.actionCards}>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/patients/register')}
+                >
+                  <h3>Patient Registration</h3>
+                  <p>Register new patients</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/patients')}
+                >
+                  <h3>Patient Management</h3>
+                  <p>View and manage all patients</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/visits')}
+                >
+                  <h3>Visit Management</h3>
+                  <p>View and manage all visits</p>
+                </div>
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/reports')}
                 >
                   <h3>Reports & Analytics</h3>
                   <p>View comprehensive reports and analytics</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/billing/revenue-leaks')}
                 >
                   <h3>Revenue Leak Detection</h3>
                   <p>Monitor and resolve revenue leaks</p>
                 </div>
-                <div 
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/billing/nhia-compliance')}
+                >
+                  <h3>NHIA Compliance</h3>
+                  <p>Claim readiness and NHIA export packs</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/billing/payment-reconciliation')}
+                >
+                  <h3>Bank / USSD Reconciliation</h3>
+                  <p>Match incoming transfers to visit payments</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/pharmacy/nafdac-formulary')}
+                >
+                  <h3>NAFDAC Formulary</h3>
+                  <p>Drug reference with NHIA tariff alignment</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/clinical/immunizations')}
+                >
+                  <h3>Immunization Schedule</h3>
+                  <p>Nigeria EPI vaccination records</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/offline/queue')}
+                >
+                  <h3>Offline Clinic Queue</h3>
+                  <p>Sync actions from low-connectivity sessions</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/admin/integrations')}
+                >
+                  <h3>Integration Hubs</h3>
+                  <p>NHIA portal, e-Rx, and lab exchange stubs</p>
+                </div>
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/reconciliation')}
                 >
                   <h3>End-of-Day Reconciliation</h3>
                   <p>Daily revenue reconciliation and closure</p>
                 </div>
-                <div 
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/telemedicine')}
+                >
+                  <h3>Telemedicine Pricing</h3>
+                  <p>Set the Virtual Clinic consultation fee</p>
+                </div>
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/service-catalog')}
                 >
                   <h3>Service Catalog</h3>
-                  <p>Add and manage billable services (e.g. Telemedicine)</p>
+                  <p>Add and manage all billable services</p>
                 </div>
-                <div 
-                  className={styles.actionCard}
-                  onClick={() => navigate('/wards-beds')}
-                >
-                  <h3>Wards & beds</h3>
-                  <p>Manage wards and beds for admission (Admit Patient form)</p>
-                </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/radiology/upload-status')}
                 >
                   <h3>Radiology Upload Status</h3>
                   <p>Monitor radiology image uploads</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/appointments')}
                 >
                   <h3>Appointments</h3>
                   <p>Schedule and manage appointments</p>
                 </div>
-                {(user?.is_superuser || user?.role === 'ADMIN') && (
-                  <div 
+                {isAdmin && (
+                  <div
                     className={styles.actionCard}
                     onClick={() => navigate('/staff-approval')}
                   >
@@ -981,23 +1124,23 @@ export default function DashboardPage() {
                     <p>Approve registered staff before they can log in</p>
                   </div>
                 )}
-                {user?.is_superuser && (
+                {isSuperuser && (
                   <>
-                    <div 
+                    <div
                       className={styles.actionCard}
                       onClick={() => navigate('/audit-logs')}
                     >
                       <h3>Audit Logs</h3>
                       <p>View system activity logs</p>
                     </div>
-                    <div 
+                    <div
                       className={styles.actionCard}
                       onClick={() => navigate('/backups')}
                     >
                       <h3>Backup & Restore</h3>
                       <p>Manage data backups and restores</p>
                     </div>
-                    <div 
+                    <div
                       className={styles.actionCard}
                       onClick={() => navigate('/health')}
                     >
@@ -1049,7 +1192,7 @@ export default function DashboardPage() {
           <div className={styles.dashboardContent}>
             <div className={styles.dashboardHeader}>
               <h2>IVF Specialist Dashboard</h2>
-              <p>Welcome back, {userDisplayName}</p>
+              <p>Welcome back, Dr. {user?.first_name} {user?.last_name}</p>
             </div>
 
             <div className={styles.statsGrid}>
@@ -1067,35 +1210,35 @@ export default function DashboardPage() {
                 <h3>Quick Actions</h3>
               </div>
               <div className={styles.actionCards}>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/ivf')}
                 >
                   <h3>🔬 IVF Dashboard</h3>
                   <p>View IVF cycles and statistics</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/ivf/cycles')}
                 >
                   <h3>📋 All IVF Cycles</h3>
                   <p>Manage patient IVF cycles</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/ivf/cycles/new')}
                 >
                   <h3>➕ New IVF Cycle</h3>
                   <p>Start a new IVF treatment cycle</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/ivf/visits')}
                 >
                   <h3>📅 IVF Patient Visits</h3>
                   <p>View visits for IVF patients only</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/ivf/patients')}
                 >
@@ -1130,33 +1273,40 @@ export default function DashboardPage() {
                 <h3>Quick Actions</h3>
               </div>
               <div className={styles.actionCards}>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/ivf')}
                 >
                   <h3>🔬 IVF Dashboard</h3>
                   <p>View IVF cycles and statistics</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/ivf/cycles')}
                 >
                   <h3>🧬 Active Cycles</h3>
                   <p>View cycles requiring lab work</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
                   onClick={() => navigate('/patients')}
                 >
                   <h3>👥 Patient Management</h3>
                   <p>View and manage patients</p>
                 </div>
-                <div 
+                <div
                   className={styles.actionCard}
-                  onClick={() => navigate('/lab-orders')}
+                  onClick={() => navigate('/ivf/sperm-analyses')}
                 >
-                  <h3>🧪 Lab Orders</h3>
-                  <p>View laboratory orders</p>
+                  <h3>🧪 Sperm Analyses</h3>
+                  <p>Record and review andrology lab work</p>
+                </div>
+                <div
+                  className={styles.actionCard}
+                  onClick={() => navigate('/ivf/embryo-inventory')}
+                >
+                  <h3>🧫 Embryo Inventory</h3>
+                  <p>Track stored embryos and specimens</p>
                 </div>
               </div>
             </div>
@@ -1166,8 +1316,33 @@ export default function DashboardPage() {
       default:
         return (
           <div className={styles.dashboardContent}>
-            <h2>Dashboard</h2>
-            <p>Welcome to Lifeway Medical Centre Ltd</p>
+            <div className={styles.dashboardHeader}>
+              <h2>Dashboard</h2>
+              <p>Welcome back, {user?.first_name} {user?.last_name}</p>
+            </div>
+            {isAdmin && (
+              <div className={styles.section}>
+                <div className={styles.sectionHeader}>
+                  <h3>Admin Actions</h3>
+                </div>
+                <div className={styles.actionCards}>
+                  <div
+                    className={styles.actionCard}
+                    onClick={() => navigate('/staff-approval')}
+                  >
+                    <h3>🤝 Staff Approval</h3>
+                    <p>Approve incoming staff registrations</p>
+                  </div>
+                  <div
+                    className={styles.actionCard}
+                    onClick={() => navigate('/audit-logs')}
+                  >
+                    <h3>🛡️ Audit Logs</h3>
+                    <p>System security and access logs</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
     }
@@ -1178,29 +1353,10 @@ export default function DashboardPage() {
       <header className={styles.dashboardHeader}>
         <div className={styles.headerContent}>
           <Logo size="medium" showText={false} />
-          <h1>Lifeway Medical Centre Ltd</h1>
           <div className={styles.userInfo}>
-            {isAdmin && !isViewingAsRole && (
-              <div className={styles.headerRoleSwitcher}>
-                <AdminRoleSwitcher compact variant="light" />
-              </div>
-            )}
             <ThemeToggle />
             <NotificationBell />
-            <span>
-              {userDisplayName} ({formatRoleLabel(user?.role)}
-              {user?.viewing_as_role && user?.actual_role
-                ? ` · Admin`
-                : ''}
-              )
-            </span>
-            <button
-              type="button"
-              className={styles.accountButton}
-              onClick={() => navigate('/account')}
-            >
-              Account Settings
-            </button>
+            <span>{user?.first_name} {user?.last_name} ({user?.role})</span>
             <button onClick={handleLogout} className={styles.logoutButton}>
               Logout
             </button>

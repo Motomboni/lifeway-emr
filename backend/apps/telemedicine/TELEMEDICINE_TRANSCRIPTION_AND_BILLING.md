@@ -13,14 +13,27 @@ Completed telemedicine sessions that have **recording enabled** can be transcrib
 
 ### Enabling automatic transcription (optional)
 
-To transcribe using **OpenAI Whisper**:
+Choose a provider via `TRANSCRIPTION_PROVIDER`:
+
+#### Option A — OpenAI Whisper API (cloud)
 
 1. Install: `pip install openai requests`
 2. Set in your environment or Django settings:
+   - `TRANSCRIPTION_PROVIDER=openai` (default)
    - `OPENAI_API_KEY=sk-...` (or `TRANSCRIPTION_API_KEY`)
-3. Ensure the session has a `recording_url`. Twilio recording URLs may require authentication; if transcription fails, consider downloading the recording server-side with Twilio credentials and passing the file to Whisper.
+3. Ensure the session has a `recording_url`. Twilio recording URLs may require authentication; the backend downloads recordings server-side with Twilio credentials.
 
-If no API key is set, clicking "Transcribe recording" will set status to **PENDING**; you can integrate another provider (e.g. Deepgram, AWS Transcribe) in `apps/telemedicine/transcription.py`.
+#### Option B — faster-whisper (local, no API key)
+
+1. Install: `pip install faster-whisper requests`
+2. Install **ffmpeg** and ensure it is on your `PATH` (required for Twilio `.mp4` recordings).
+3. Set in your environment:
+   - `TRANSCRIPTION_PROVIDER=faster-whisper`
+   - `FASTER_WHISPER_MODEL=base` (or `small`, `medium`, etc.)
+   - `FASTER_WHISPER_DEVICE=cpu` (or `cuda` if GPU available)
+   - Optional: `FASTER_WHISPER_COMPUTE_TYPE=int8`, `FASTER_WHISPER_LANGUAGE=en`
+
+If no provider is configured, clicking "Transcribe recording" will set status to **PENDING**.
 
 ---
 

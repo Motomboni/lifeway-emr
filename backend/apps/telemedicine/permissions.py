@@ -3,56 +3,59 @@ Telemedicine Permissions.
 
 Per EMR Rules:
 - Doctor: Can create and manage telemedicine sessions
-- Patient access: Via visit context
+- Patient / invited staff: Join via visit / invite context
 - All sessions must be visit-scoped
 """
+
 from rest_framework import permissions
+
+from .access import user_can_join_session, user_can_view_session
 
 
 class CanManageTelemedicine(permissions.BasePermission):
     """
     Permission: Only Doctors can create and manage telemedicine sessions.
     """
-    
+
     def has_permission(self, request, view):
         """Check if user is a doctor."""
         if not request.user or not request.user.is_authenticated:
             return False
-        
-        user_role = getattr(request.user, 'role', None)
+
+        user_role = getattr(request.user, "role", None)
         if not user_role:
-            user_role = getattr(request.user, 'get_role', lambda: None)()
-        
-        return user_role == 'DOCTOR'
+            user_role = getattr(request.user, "get_role", lambda: None)()
+
+        return user_role == "DOCTOR"
+
+
+class CanManageTelemedicinePricing(permissions.BasePermission):
+    """Admin (or staff) can set telemedicine consultation price."""
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if getattr(request.user, "is_staff", False) or getattr(
+            request.user, "is_superuser", False
+        ):
+            return True
+        user_role = getattr(request.user, "role", None)
+        if not user_role:
+            user_role = getattr(request.user, "get_role", lambda: None)()
+        return user_role == "ADMIN"
 
 
 class CanJoinTelemedicineSession(permissions.BasePermission):
     """
-    Permission: Doctor or patient can join their own telemedicine session.
+    Permission: Host doctor, patient, or actively invited staff can join.
     """
-    
+
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated)
+
     def has_object_permission(self, request, view, obj):
-        """Check if user can join this session."""
         if not request.user or not request.user.is_authenticated:
             return False
-        
-        user_role = getattr(request.user, 'role', None)
-        if not user_role:
-            user_role = getattr(request.user, 'get_role', lambda: None)()
-        
-        # Doctor can join if they are the assigned doctor
-        if user_role == 'DOCTOR':
-            return obj.doctor == request.user
-        
-        # Patient can join if they are the patient for this session's visit
-        if user_role == 'PATIENT':
-            # Get patient from user
-            try:
-                from apps.patients.models import Patient
-                patient = Patient.objects.get(user=request.user, is_active=True)
-                # Check if this session's patient matches the logged-in patient
-                return obj.patient == patient
-            except Patient.DoesNotExist:
-                return False
-        
-        return False
+        if view.action in ("get_recording",):
+            return user_can_view_session(request.user, obj)
+        return user_can_join_session(request.user, obj)
