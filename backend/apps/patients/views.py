@@ -7,284 +7,298 @@ Per EMR Rules:
 - No standalone patient endpoints (patients are accessed via visits)
 - Search functionality for finding existing patients
 """
-from rest_framework import viewsets, status, permissions
+
+from django.contrib.auth import get_user_model
+from django.db import IntegrityError, transaction
+from django.db.models import Q
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.response import Response
 from rest_framework.exceptions import (
     PermissionDenied,
+)
+from rest_framework.exceptions import (
     ValidationError as DRFValidationError,
 )
-from django.db.models import Q
-from django.shortcuts import get_object_or_404
-from django.db import transaction, IntegrityError
-from django.contrib.auth import get_user_model
+from rest_framework.response import Response
 
 User = get_user_model()
 
+from core.audit import AuditLog
+from core.permissions import with_tenant_permissions
+from core.superuser_purge import (
+    can_superuser_hard_delete,
+    log_superuser_delete,
+    superuser_purge_context,
+)
+
 from .models import Patient
+from .permissions import (
+    CanDeletePatient,
+    CanManagePatients,
+    CanRegisterPatient,
+    CanSearchPatient,
+    CanViewPatient,
+)
 from .serializers import (
-    PatientSerializer,
     PatientCreateSerializer,
     PatientSearchSerializer,
+    PatientSerializer,
     PatientVerificationSerializer,
 )
-from .permissions import CanRegisterPatient, CanSearchPatient, CanDeletePatient
-from core.audit import AuditLog
-
-
-class PatientPagination(PageNumberPagination):
-    page_size = 20
-    page_size_query_param = 'page_size'
-    max_page_size = 200
 
 
 class PatientViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Patient management.
-    
+
     Endpoint: /api/v1/patients/
-    
+
     Rules enforced:
     - Receptionist: Can create and search patients
     - Other roles: Can view patient data (read-only)
     - All patient data is PHI - must be protected
     - Audit logging for all actions
     """
-    
+
     queryset = Patient.objects.filter(is_active=True)
-    pagination_class = PatientPagination
-    
+
     def get_serializer_class(self):
         """
         Return appropriate serializer based on action.
-        
+
         - Create: PatientCreateSerializer
         - List/Search: PatientSearchSerializer (data minimization)
         - Pending Verification: PatientVerificationSerializer
         - Retrieve/Update: PatientSerializer (full data)
         """
-        if self.action == 'create':
+        if self.action == "create":
             return PatientCreateSerializer
-        elif self.action == 'list' or self.action == 'search':
+        elif self.action == "list" or self.action == "search":
             return PatientSearchSerializer
-        elif self.action == 'pending_verification':
+        elif self.action == "pending_verification":
             return PatientVerificationSerializer
         else:
             return PatientSerializer
-    
+
     def get_permissions(self):
         """
         Return appropriate permissions based on action.
-        
+
         - Create: Receptionist only
         - List/Search: Receptionist and clinical staff
         - Destroy: Admin, Receptionist, or Superuser (archive/soft-delete)
         - Retrieve/Update: Authenticated users (read-only for non-receptionist)
         """
-        if self.action == 'create':
-            permission_classes = [CanRegisterPatient]
-        elif self.action == 'list' or self.action == 'search':
-            permission_classes = [CanSearchPatient]
-        elif self.action == 'destroy':
-            permission_classes = [CanDeletePatient]
-        else:
-            # Retrieve, update - authenticated users can view
-            permission_classes = [permissions.IsAuthenticated]
-        
-        return [permission() for permission in permission_classes]
-    
+        if self.action == "create":
+            return with_tenant_permissions(CanRegisterPatient)
+        elif self.action in ("list", "search"):
+            return with_tenant_permissions(CanSearchPatient)
+        elif self.action == "retrieve":
+            return with_tenant_permissions(CanViewPatient)
+        elif self.action in ("update", "partial_update"):
+            return with_tenant_permissions(CanManagePatients)
+        elif self.action == "destroy":
+            return with_tenant_permissions(CanDeletePatient)
+        return with_tenant_permissions(CanViewPatient)
+
     def get_queryset(self):
         """
         Get patients queryset.
         Filter by is_active=True by default.
+        Multi-tenant: filter by request.organization when set.
         """
-        include_inactive = self.request.query_params.get('include_inactive', '').lower()
-        show_inactive = include_inactive in {'1', 'true', 'yes'} or self.action in {
-            'retrieve',
-            'update',
-            'partial_update',
-            'destroy',
-            'create_portal',
-            'toggle_portal',
-        }
-        queryset = Patient.objects.all() if show_inactive else Patient.objects.filter(is_active=True)
-        
+        queryset = Patient.objects.filter(is_active=True)
+
+        # Multi-tenant: scope to current organization
+        if hasattr(self.request, "organization") and self.request.organization:
+            queryset = queryset.filter(organization=self.request.organization)
+
         # Add search filtering if search query provided
-        search_query = self.request.query_params.get('search', None)
+        search_query = self.request.query_params.get("search", None)
         if search_query:
             queryset = queryset.filter(
-                Q(first_name__icontains=search_query) |
-                Q(last_name__icontains=search_query) |
-                Q(patient_id__icontains=search_query) |
-                Q(national_id__icontains=search_query) |
-                Q(national_health_id__icontains=search_query) |
-                Q(phone__icontains=search_query)
+                Q(first_name__icontains=search_query)
+                | Q(last_name__icontains=search_query)
+                | Q(patient_id__icontains=search_query)
+                | Q(national_id__icontains=search_query)
+                | Q(phone__icontains=search_query)
             )
-        
-        return queryset.order_by('-created_at')
-    
+
+        return queryset.order_by("-created_at")
+
     def create(self, request, *args, **kwargs):
         """
         Create patient with optional portal account creation.
-        
+
         Enhanced response includes:
         - Success message
         - Patient data
         - Portal creation status
         - Temporary credentials (if portal created)
-        
+
         Transaction-safe: All operations wrapped in atomic transaction.
         The serializer handles the transaction, this method formats the response.
         """
         import logging
+
         logger = logging.getLogger(__name__)
-        
+
         serializer = self.get_serializer(data=request.data)
-        
+
         try:
             # Validate input data
             serializer.is_valid(raise_exception=True)
-            
+
             # Wrap in transaction.atomic to ensure atomicity at view level too
             with transaction.atomic():
                 # Perform creation (calls serializer.create() which has its own transaction)
                 patient = self.perform_create(serializer)
-            
+
             # Get serialized data (includes portal_created and temporary_password)
             response_data = serializer.data
-            
+
             # Build enhanced response
             result = {
-                'success': True,
-                'message': 'Patient registered successfully',
-                'patient': response_data,
+                "success": True,
+                "message": "Patient registered successfully",
+                "patient": response_data,
             }
-            
+
             # Add portal credentials if portal was created
-            if response_data.get('portal_created', False):
-                result['portal_created'] = True
-                result['portal_credentials'] = {
-                    'username': response_data.get('email', request.data.get('portal_email')),
-                    'temporary_password': response_data.get('temporary_password'),
-                    'login_url': '/patient-portal/login'
+            if response_data.get("portal_created", False):
+                result["portal_created"] = True
+                result["portal_credentials"] = {
+                    "username": response_data.get(
+                        "email", request.data.get("portal_email")
+                    ),
+                    "temporary_password": response_data.get("temporary_password"),
+                    "login_url": "/patient-portal/login",
                 }
-                result['message'] = 'Patient registered successfully with portal account'
-                
+                result["message"] = (
+                    "Patient registered successfully with portal account"
+                )
+
                 # Log portal account creation
                 logger.info(
                     f"Patient portal account created: Patient ID {patient.id}, "
                     f"Username {response_data.get('email', request.data.get('portal_email'))}"
                 )
             else:
-                result['portal_created'] = False
-            
+                result["portal_created"] = False
+
             return Response(result, status=status.HTTP_201_CREATED)
-            
+
         except IntegrityError as e:
             # Handle database integrity errors (e.g., duplicate email)
             logger.error(f"Database integrity error: {str(e)}", exc_info=True)
-            
+
             error_message = str(e).lower()
-            if 'unique constraint' in error_message or 'duplicate' in error_message:
-                if 'username' in error_message or 'email' in error_message:
+            if "unique constraint" in error_message or "duplicate" in error_message:
+                if "username" in error_message or "email" in error_message:
                     return Response(
                         {
-                            'success': False,
-                            'error': 'A portal account with this email already exists.',
-                            'detail': 'Please use a different email address for the patient portal.'
+                            "success": False,
+                            "error": "A portal account with this email already exists.",
+                            "detail": "Please use a different email address for the patient portal.",
                         },
-                        status=status.HTTP_400_BAD_REQUEST
+                        status=status.HTTP_400_BAD_REQUEST,
                     )
-                elif 'national_id' in error_message:
+                elif "national_id" in error_message:
                     return Response(
                         {
-                            'success': False,
-                            'error': 'A patient with this national ID already exists.',
-                            'detail': 'Please verify the national ID or search for existing patient.'
+                            "success": False,
+                            "error": "A patient with this national ID already exists.",
+                            "detail": "Please verify the national ID or search for existing patient.",
+                            "national_id": [
+                                "A patient with this national ID already exists."
+                            ],
                         },
-                        status=status.HTTP_400_BAD_REQUEST
+                        status=status.HTTP_400_BAD_REQUEST,
                     )
                 else:
                     return Response(
                         {
-                            'success': False,
-                            'error': 'A patient with these details already exists.',
-                            'detail': str(e)
+                            "success": False,
+                            "error": "A patient with these details already exists.",
+                            "detail": str(e),
                         },
-                        status=status.HTTP_400_BAD_REQUEST
+                        status=status.HTTP_400_BAD_REQUEST,
                     )
-            
+
             # Generic integrity error
             return Response(
                 {
-                    'success': False,
-                    'error': 'Database constraint violation.',
-                    'detail': str(e)
+                    "success": False,
+                    "error": "Database constraint violation.",
+                    "detail": str(e),
                 },
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
-            
+
         except DRFValidationError as e:
             # Handle validation errors from serializer
             logger.warning(f"Validation error during patient creation: {str(e)}")
-            return Response(
-                {
-                    'success': False,
-                    'error': 'Validation failed',
-                    'detail': str(e.detail) if hasattr(e, 'detail') else str(e)
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-            
+            payload = {"success": False, "error": "Validation failed"}
+            detail = e.detail if hasattr(e, "detail") else str(e)
+            if isinstance(detail, dict):
+                payload.update(detail)
+            elif isinstance(detail, list):
+                payload["non_field_errors"] = detail
+            else:
+                payload["detail"] = str(detail)
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+
         except Exception as e:
             # Handle unexpected errors
             logger.error(f"Unexpected error creating patient: {str(e)}", exc_info=True)
             import traceback
+
             logger.error(f"Traceback: {traceback.format_exc()}")
-            
+
             return Response(
                 {
-                    'success': False,
-                    'error': 'Failed to create patient',
-                    'detail': str(e)
+                    "success": False,
+                    "error": "Failed to create patient",
+                    "detail": str(e),
                 },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-    
+
     def perform_create(self, serializer):
         """
         Create patient with audit logging.
-        
+
         Rules:
         1. Only Receptionist can create (enforced by CanRegisterPatient)
         2. patient_id auto-generated if not provided
         3. Audit log created
         4. Portal account created if requested (handled by serializer)
-        
+
         Note: The serializer.save() call handles the atomic transaction
         for patient + portal user creation.
         """
         # Save patient (serializer handles portal creation internally)
         patient = serializer.save()
-        
+
         # REQUIRED VIEWSET ENFORCEMENT: Audit log
-        user_role = getattr(self.request.user, 'role', None) or \
-                   getattr(self.request.user, 'get_role', lambda: None)()
-        
+        user_role = (
+            getattr(self.request.user, "role", None)
+            or getattr(self.request.user, "get_role", lambda: None)()
+        )
+
         # Ensure user_role is a string (required by AuditLog model)
         if not user_role:
-            user_role = 'UNKNOWN'
-        
+            user_role = "UNKNOWN"
+
         # Build audit metadata
-        audit_metadata = {'patient_id': patient.patient_id}
-        
+        audit_metadata = {"patient_id": patient.patient_id}
+
         # Add portal creation info to audit log
-        if hasattr(patient, 'portal_created') and patient.portal_created:
-            audit_metadata['portal_account_created'] = True
-            if hasattr(patient, 'portal_user'):
-                audit_metadata['portal_username'] = patient.portal_user.username
-        
+        if hasattr(patient, "portal_created") and patient.portal_created:
+            audit_metadata["portal_account_created"] = True
+            if hasattr(patient, "portal_user"):
+                audit_metadata["portal_username"] = patient.portal_user.username
+
         AuditLog.log(
             user=self.request.user,
             role=user_role,
@@ -293,29 +307,31 @@ class PatientViewSet(viewsets.ModelViewSet):
             resource_type="patient",
             resource_id=patient.id,
             request=self.request,
-            metadata=audit_metadata
+            metadata=audit_metadata,
         )
-        
+
         return patient
-    
+
     def perform_update(self, serializer):
         """
         Update patient with audit logging.
-        
+
         Rules:
         1. Only Receptionist should update (enforced by permissions if needed)
         2. Audit log created
         """
         patient = serializer.save()
-        
+
         # Audit log
-        user_role = getattr(self.request.user, 'role', None) or \
-                   getattr(self.request.user, 'get_role', lambda: None)()
-        
+        user_role = (
+            getattr(self.request.user, "role", None)
+            or getattr(self.request.user, "get_role", lambda: None)()
+        )
+
         # Ensure user_role is a string (required by AuditLog model)
         if not user_role:
-            user_role = 'UNKNOWN'
-        
+            user_role = "UNKNOWN"
+
         AuditLog.log(
             user=self.request.user,
             role=user_role,
@@ -323,47 +339,45 @@ class PatientViewSet(viewsets.ModelViewSet):
             visit_id=None,
             resource_type="patient",
             resource_id=patient.id,
-            request=self.request
+            request=self.request,
         )
-        
+
         return patient
-    
-    @action(detail=False, methods=['get'], url_path='search')
+
+    @action(detail=False, methods=["get"], url_path="search")
     def search(self, request):
         """
         Search patients by name, patient_id, national_id, or phone.
-        
+
         GET /api/v1/patients/search/?q=search_term
-        
+
         Returns minimal patient data (data minimization).
         """
-        search_term = request.query_params.get('q', '').strip()
-        
+        search_term = request.query_params.get("q", "").strip()
+
         if not search_term:
             return Response(
-                {'detail': 'Search query parameter "q" is required.'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"detail": 'Search query parameter "q" is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
-        include_inactive = request.query_params.get('include_inactive', '').lower()
-        base_queryset = Patient.objects.all() if include_inactive in {'1', 'true', 'yes'} else Patient.objects.filter(is_active=True)
 
-        # Search in multiple fields, including migration-era patient identifiers.
-        queryset = base_queryset.filter(
-            Q(first_name__icontains=search_term) |
-            Q(last_name__icontains=search_term) |
-            Q(patient_id__icontains=search_term) |
-            Q(national_id__icontains=search_term) |
-            Q(national_health_id__icontains=search_term) |
-            Q(phone__icontains=search_term)
+        # Search in multiple fields
+        queryset = Patient.objects.filter(is_active=True).filter(
+            Q(first_name__icontains=search_term)
+            | Q(last_name__icontains=search_term)
+            | Q(patient_id__icontains=search_term)
+            | Q(national_id__icontains=search_term)
+            | Q(phone__icontains=search_term)
         )[:20]  # Limit to 20 results
-        
+
         serializer = self.get_serializer(queryset, many=True)
-        
+
         # Audit log
-        user_role = getattr(request.user, 'role', None) or \
-                   getattr(request.user, 'get_role', lambda: None)()
-        
+        user_role = (
+            getattr(request.user, "role", None)
+            or getattr(request.user, "get_role", lambda: None)()
+        )
+
         AuditLog.log(
             user=request.user,
             role=user_role,
@@ -372,32 +386,38 @@ class PatientViewSet(viewsets.ModelViewSet):
             resource_type="patient",
             resource_id=None,
             request=request,
-            metadata={'search_term': search_term}
+            metadata={"search_term": search_term},
         )
-        
+
         return Response(serializer.data)
-    
+
     def destroy(self, request, *args, **kwargs):
         """
         Soft delete patient (compliance requirement).
-        
-        Per EMR rules, patients cannot be hard-deleted.
-        Use soft-delete (is_active=False) instead.
+        Superusers may permanently delete for test-data cleanup.
         """
         patient = self.get_object()
-        
+
+        if can_superuser_hard_delete(request.user):
+            with superuser_purge_context(user=request.user):
+                log_superuser_delete(request.user, patient, "patient")
+                patient.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
         # Soft delete
         patient.is_active = False
         patient.save()
-        
+
         # Audit log
-        user_role = getattr(request.user, 'role', None) or \
-                   getattr(request.user, 'get_role', lambda: None)()
-        
+        user_role = (
+            getattr(request.user, "role", None)
+            or getattr(request.user, "get_role", lambda: None)()
+        )
+
         # Ensure user_role is a string (required by AuditLog model)
         if not user_role:
-            user_role = 'UNKNOWN'
-        
+            user_role = "UNKNOWN"
+
         AuditLog.log(
             user=request.user,
             role=user_role,
@@ -405,21 +425,21 @@ class PatientViewSet(viewsets.ModelViewSet):
             visit_id=None,
             resource_type="patient",
             resource_id=patient.id,
-            request=request
+            request=request,
         )
-        
+
         return Response(
-            {'detail': 'Patient record archived successfully.'},
-            status=status.HTTP_200_OK
+            {"detail": "Patient record archived successfully."},
+            status=status.HTTP_200_OK,
         )
-    
-    @action(detail=True, methods=['post'], url_path='verify')
+
+    @action(detail=True, methods=["post"], url_path="verify")
     def verify(self, request, pk=None):
         """
         Verify a patient account (Receptionist only).
-        
+
         POST /api/v1/patients/{id}/verify/
-        
+
         Rules:
         - Only Receptionist can verify patient accounts
         - Patient must have a linked user account
@@ -427,35 +447,38 @@ class PatientViewSet(viewsets.ModelViewSet):
         - Audit log created
         """
         # Check if user is Receptionist
-        user_role = getattr(request.user, 'role', None) or \
-                   getattr(request.user, 'get_role', lambda: None)()
-        
-        if user_role != 'RECEPTIONIST':
+        user_role = (
+            getattr(request.user, "role", None)
+            or getattr(request.user, "get_role", lambda: None)()
+        )
+
+        if user_role != "RECEPTIONIST":
             raise PermissionDenied("Only receptionists can verify patient accounts.")
-        
+
         patient = self.get_object()
-        
+
         # Check if patient has a linked user account
         if not patient.user:
             return Response(
-                {'detail': 'Patient does not have a linked user account.'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Patient does not have a linked user account."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         # Check if already verified
         if patient.is_verified:
             return Response(
-                {'detail': 'Patient account is already verified.'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Patient account is already verified."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         # Verify the patient account
         from django.utils import timezone
+
         patient.is_verified = True
         patient.verified_by = request.user
         patient.verified_at = timezone.now()
         patient.save()
-        
+
         # Audit log
         AuditLog.log(
             user=request.user,
@@ -465,50 +488,61 @@ class PatientViewSet(viewsets.ModelViewSet):
             resource_type="patient",
             resource_id=patient.id,
             request=request,
-            metadata={'patient_user_id': patient.user.id}
+            metadata={"patient_user_id": patient.user.id},
         )
-        
+
         # Send email notification to patient
         try:
             from apps.notifications.utils import send_patient_verification_notification
+
             send_patient_verification_notification(patient, request.user)
         except Exception as e:
             # Log error but don't fail the verification
             import logging
+
             logger = logging.getLogger(__name__)
-            logger.error(f"Failed to send verification email to patient {patient.id}: {str(e)}")
-        
+            logger.error(
+                f"Failed to send verification email to patient {patient.id}: {str(e)}"
+            )
+
         serializer = self.get_serializer(patient)
-        return Response({
-            'detail': 'Patient account verified successfully.',
-            'patient': serializer.data
-        }, status=status.HTTP_200_OK)
-    
-    @action(detail=False, methods=['get'], url_path='pending-verification')
+        return Response(
+            {
+                "detail": "Patient account verified successfully.",
+                "patient": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=False, methods=["get"], url_path="pending-verification")
     def pending_verification(self, request):
         """
         Get list of patients pending verification (Receptionist only).
-        
+
         GET /api/v1/patients/pending-verification/
-        
+
         Returns patients with user accounts that are not yet verified.
         """
         # Check if user is Receptionist
-        user_role = getattr(request.user, 'role', None) or \
-                   getattr(request.user, 'get_role', lambda: None)()
-        
-        if user_role != 'RECEPTIONIST':
+        user_role = (
+            getattr(request.user, "role", None)
+            or getattr(request.user, "get_role", lambda: None)()
+        )
+
+        if user_role != "RECEPTIONIST":
             raise PermissionDenied("Only receptionists can view pending verifications.")
-        
+
         # Get patients with user accounts that are not verified
-        queryset = Patient.objects.filter(
-            is_active=True,
-            user__isnull=False,
-            is_verified=False
-        ).select_related('user').order_by('-created_at')
-        
+        queryset = (
+            Patient.objects.filter(
+                is_active=True, user__isnull=False, is_verified=False
+            )
+            .select_related("user")
+            .order_by("-created_at")
+        )
+
         serializer = self.get_serializer(queryset, many=True)
-        
+
         # Audit log
         AuditLog.log(
             user=request.user,
@@ -517,24 +551,24 @@ class PatientViewSet(viewsets.ModelViewSet):
             visit_id=None,
             resource_type="patient",
             resource_id=None,
-            request=request
+            request=request,
         )
-        
+
         return Response(serializer.data)
-    
-    @action(detail=True, methods=['post'], url_path='create-portal')
+
+    @action(detail=True, methods=["post"], url_path="create-portal")
     def create_portal(self, request, pk=None):
         """
         Create portal account for existing patient.
-        
+
         POST /api/v1/patients/{id}/create-portal/
-        
+
         Request Body:
         {
             "email": "patient@example.com",
             "phone": "0712345678"  // optional
         }
-        
+
         Response:
         {
             "success": true,
@@ -545,7 +579,7 @@ class PatientViewSet(viewsets.ModelViewSet):
                 "login_url": "/patient-portal/login"
             }
         }
-        
+
         Rules:
         - Only Receptionist or Admin can create portal accounts
         - Patient must not already have a portal account
@@ -556,108 +590,113 @@ class PatientViewSet(viewsets.ModelViewSet):
         """
         import logging
         import secrets
-        
+
         logger = logging.getLogger(__name__)
-        
+
         # Check permissions
-        user_role = getattr(request.user, 'role', None)
-        if user_role not in ['RECEPTIONIST', 'ADMIN']:
-            raise PermissionDenied("Only receptionists and administrators can create portal accounts.")
-        
+        user_role = getattr(request.user, "role", None)
+        if user_role not in ["RECEPTIONIST", "ADMIN"]:
+            raise PermissionDenied(
+                "Only receptionists and administrators can create portal accounts."
+            )
+
         # Get patient
         patient = self.get_object()
-        
+
         # Validate input
-        email = request.data.get('email', '').strip()
-        phone = request.data.get('phone', '').strip()
-        
+        email = request.data.get("email", "").strip()
+        phone = request.data.get("phone", "").strip()
+
         if not email:
             return Response(
                 {
-                    'success': False,
-                    'error': 'Email is required',
-                    'detail': 'Please provide a valid email address for the portal account.'
+                    "success": False,
+                    "error": "Email is required",
+                    "detail": "Please provide a valid email address for the portal account.",
                 },
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         # Validate email format
         import re
-        email_regex = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+
+        email_regex = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
         if not re.match(email_regex, email):
             return Response(
                 {
-                    'success': False,
-                    'error': 'Invalid email format',
-                    'detail': 'Please provide a valid email address.'
+                    "success": False,
+                    "error": "Invalid email format",
+                    "detail": "Please provide a valid email address.",
                 },
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         # Check if patient already has a portal account
-        if hasattr(patient, 'portal_user') and patient.portal_user:
+        if hasattr(patient, "portal_user") and patient.portal_user:
             return Response(
                 {
-                    'success': False,
-                    'error': 'Portal account already exists',
-                    'detail': f'This patient already has a portal account with username: {patient.portal_user.username}',
-                    'existing_username': patient.portal_user.username
+                    "success": False,
+                    "error": "Portal account already exists",
+                    "detail": f"This patient already has a portal account with username: {patient.portal_user.username}",
+                    "existing_username": patient.portal_user.username,
                 },
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         # Check if email is already used by another user
         if User.objects.filter(username=email).exists():
             return Response(
                 {
-                    'success': False,
-                    'error': 'Email already in use',
-                    'detail': 'A portal account with this email already exists. Please use a different email.'
+                    "success": False,
+                    "error": "Email already in use",
+                    "detail": "A portal account with this email already exists. Please use a different email.",
                 },
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         # Create portal account in atomic transaction
         try:
             with transaction.atomic():
                 # Generate secure temporary password
                 temporary_password = secrets.token_urlsafe(12)[:12]
-                
+
                 # Create user account with PATIENT role
                 portal_user = User.objects.create_user(
                     username=email,
                     email=email,
                     password=temporary_password,
-                    role='PATIENT',
+                    role="PATIENT",
                     patient=patient,
                     first_name=patient.first_name,
                     last_name=patient.last_name,
-                    is_active=True
+                    is_active=True,
                 )
-                
+
                 # Enable portal on patient record
                 patient.portal_enabled = True
-                patient.save(update_fields=['portal_enabled'])
-                
+                patient.save(update_fields=["portal_enabled"])
+
                 logger.info(
                     f"Portal account created for existing patient {patient.id} "
                     f"(username: {email}) by {request.user.username}"
                 )
-                
+
                 # Send notification (optional)
                 try:
-                    from apps.patients.portal_notifications import notify_new_portal_account
-                    
+                    from apps.patients.portal_notifications import (
+                        notify_new_portal_account,
+                    )
+
                     notify_new_portal_account(
                         patient=patient,
                         username=email,
                         temporary_password=temporary_password,
-                        phone=phone if phone else None
+                        phone=phone if phone else None,
                     )
                 except Exception as e:
                     # Don't fail if notification fails
                     logger.warning(f"Failed to prepare portal notification: {e}")
-                
+
                 # Audit log
                 AuditLog.log(
                     user=request.user,
@@ -668,69 +707,72 @@ class PatientViewSet(viewsets.ModelViewSet):
                     resource_id=patient.id,
                     request=request,
                     metadata={
-                        'patient_id': patient.patient_id,
-                        'portal_username': email,
-                        'portal_user_id': portal_user.id
-                    }
+                        "patient_id": patient.patient_id,
+                        "portal_username": email,
+                        "portal_user_id": portal_user.id,
+                    },
                 )
-                
+
                 # Return success with credentials
                 return Response(
                     {
-                        'success': True,
-                        'message': 'Portal account created successfully',
-                        'credentials': {
-                            'username': email,
-                            'temporary_password': temporary_password,
-                            'login_url': '/patient-portal/login'
+                        "success": True,
+                        "message": "Portal account created successfully",
+                        "credentials": {
+                            "username": email,
+                            "temporary_password": temporary_password,
+                            "login_url": "/patient-portal/login",
                         },
-                        'patient': {
-                            'id': patient.id,
-                            'patient_id': patient.patient_id,
-                            'name': patient.get_full_name(),
-                            'portal_enabled': patient.portal_enabled
-                        }
+                        "patient": {
+                            "id": patient.id,
+                            "patient_id": patient.patient_id,
+                            "name": patient.get_full_name(),
+                            "portal_enabled": patient.portal_enabled,
+                        },
                     },
-                    status=status.HTTP_201_CREATED
+                    status=status.HTTP_201_CREATED,
                 )
-                
+
         except IntegrityError as e:
-            logger.error(f"Database integrity error creating portal: {str(e)}", exc_info=True)
+            logger.error(
+                f"Database integrity error creating portal: {str(e)}", exc_info=True
+            )
             return Response(
                 {
-                    'success': False,
-                    'error': 'Database error',
-                    'detail': 'Failed to create portal account due to database constraint. Email may already be in use.'
+                    "success": False,
+                    "error": "Database error",
+                    "detail": "Failed to create portal account due to database constraint. Email may already be in use.",
                 },
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
-            
+
         except Exception as e:
             logger.error(f"Error creating portal account: {str(e)}", exc_info=True)
             import traceback
+
             logger.error(f"Traceback: {traceback.format_exc()}")
-            
+
             return Response(
                 {
-                    'success': False,
-                    'error': 'Failed to create portal account',
-                    'detail': str(e)
+                    "success": False,
+                    "error": "Failed to create portal account",
+                    "detail": str(e),
                 },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-    
-    @action(detail=True, methods=['post'], url_path='toggle-portal')
+
+    @action(detail=True, methods=["post"], url_path="toggle-portal")
     def toggle_portal(self, request, pk=None):
         """
         Enable or disable patient portal access (Admin only).
-        
+
         POST /api/v1/patients/{id}/toggle-portal/
-        
+
         Request Body:
         {
             "enabled": true  // or false
         }
-        
+
         Response:
         {
             "success": true,
@@ -738,7 +780,7 @@ class PatientViewSet(viewsets.ModelViewSet):
             "portal_enabled": true,
             "portal_user_active": true
         }
-        
+
         Behavior:
         - If disabling: Sets patient.portal_enabled=False AND user.is_active=False
         - If enabling: Sets patient.portal_enabled=True AND user.is_active=True
@@ -746,60 +788,64 @@ class PatientViewSet(viewsets.ModelViewSet):
         - Atomic transaction ensures consistency
         """
         import logging
-        
+
         logger = logging.getLogger(__name__)
-        
+
         # Check permissions - Only ADMIN
-        user_role = getattr(request.user, 'role', None)
-        if user_role != 'ADMIN':
-            raise PermissionDenied("Only administrators can enable/disable patient portal access.")
-        
+        user_role = getattr(request.user, "role", None)
+        if user_role != "ADMIN":
+            raise PermissionDenied(
+                "Only administrators can enable/disable patient portal access."
+            )
+
         patient = self.get_object()
-        enabled = request.data.get('enabled')
-        
+        enabled = request.data.get("enabled")
+
         if enabled is None:
             return Response(
-                {'success': False, 'error': 'Missing "enabled" parameter'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"success": False, "error": 'Missing "enabled" parameter'},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         enabled = bool(enabled)
-        
+
         # Check if already in desired state
         if patient.portal_enabled == enabled:
-            state_text = 'enabled' if enabled else 'disabled'
+            state_text = "enabled" if enabled else "disabled"
             return Response(
                 {
-                    'success': True,
-                    'message': f'Portal is already {state_text}',
-                    'portal_enabled': patient.portal_enabled,
-                    'no_change': True
+                    "success": True,
+                    "message": f"Portal is already {state_text}",
+                    "portal_enabled": patient.portal_enabled,
+                    "no_change": True,
                 },
-                status=status.HTTP_200_OK
+                status=status.HTTP_200_OK,
             )
-        
+
         # Toggle portal access atomically
         try:
             with transaction.atomic():
                 # Update patient.portal_enabled
                 patient.portal_enabled = enabled
-                patient.save(update_fields=['portal_enabled'])
-                
+                patient.save(update_fields=["portal_enabled"])
+
                 # Update linked user.is_active (if portal user exists)
                 portal_user_active = None
-                if hasattr(patient, 'portal_user') and patient.portal_user:
+                if hasattr(patient, "portal_user") and patient.portal_user:
                     patient.portal_user.is_active = enabled
-                    patient.portal_user.save(update_fields=['is_active'])
+                    patient.portal_user.save(update_fields=["is_active"])
                     portal_user_active = enabled
-                    
+
                     logger.info(
                         f"Portal user {patient.portal_user.username} "
                         f"{'activated' if enabled else 'deactivated'}"
                     )
-                
-                action_text = 'enabled' if enabled else 'disabled'
-                logger.info(f"Portal {action_text} for patient {patient.id} by {request.user.username}")
-                
+
+                action_text = "enabled" if enabled else "disabled"
+                logger.info(
+                    f"Portal {action_text} for patient {patient.id} by {request.user.username}"
+                )
+
                 # Audit log
                 AuditLog.log(
                     user=request.user,
@@ -810,25 +856,78 @@ class PatientViewSet(viewsets.ModelViewSet):
                     resource_id=patient.id,
                     request=request,
                     metadata={
-                        'patient_id': patient.patient_id,
-                        'portal_enabled': enabled,
-                        'portal_user_active': portal_user_active
-                    }
+                        "patient_id": patient.patient_id,
+                        "portal_enabled": enabled,
+                        "portal_user_active": portal_user_active,
+                    },
                 )
-                
+
                 return Response(
                     {
-                        'success': True,
-                        'message': f'Portal access {action_text} successfully',
-                        'portal_enabled': patient.portal_enabled,
-                        'portal_user_active': portal_user_active
+                        "success": True,
+                        "message": f"Portal access {action_text} successfully",
+                        "portal_enabled": patient.portal_enabled,
+                        "portal_user_active": portal_user_active,
                     },
-                    status=status.HTTP_200_OK
+                    status=status.HTTP_200_OK,
                 )
-                
+
         except Exception as e:
             logger.error(f"Error toggling portal: {e}", exc_info=True)
             return Response(
-                {'success': False, 'error': 'Failed to toggle portal access'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"success": False, "error": "Failed to toggle portal access"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @action(detail=True, methods=["get"], url_path="export-pdf")
+    def export_pdf(self, request, pk=None):
+        """
+        Export patient's medical history as PDF.
+        """
+        from apps.patients.pdf_export import MedicalHistoryPDFService, WEASYPRINT_AVAILABLE
+        from django.http import HttpResponse
+        
+        if not WEASYPRINT_AVAILABLE:
+            return Response(
+                {"detail": "PDF generation service is currently unavailable."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+            
+        patient = self.get_object()
+        
+        try:
+            pdf_bytes = MedicalHistoryPDFService.generate_pdf(patient)
+            
+            # Audit log
+            user_role = getattr(request.user, "role", None) or getattr(request.user, "get_role", lambda: "UNKNOWN")()
+            AuditLog.log(
+                user=request.user,
+                role=user_role,
+                action="MEDICAL_HISTORY_EXPORT_PDF",
+                visit_id=None,
+                resource_type="patient",
+                resource_id=patient.id,
+                request=request,
+            )
+            
+            # Setup response
+            response = HttpResponse(pdf_bytes, content_type='application/pdf')
+            # Sanitize patient name for filename
+            safe_name = "".join([c if c.isalnum() else "_" for c in patient.get_full_name()])
+            filename = f"medical_history_{safe_name}.pdf"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+            
+        except ImportError as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error generating PDF for patient {patient.id}: {e}", exc_info=True)
+            return Response(
+                {"detail": "An error occurred while generating the PDF."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

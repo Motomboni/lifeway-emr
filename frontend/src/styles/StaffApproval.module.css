@@ -33,21 +33,23 @@
   border-radius: 0.5rem;
   cursor: pointer;
   font-size: 0.95rem;
-  color: var(--text-secondary);
+  color: var(--nav-tab-inactive-color, var(--text-secondary));
 }
 
 .tab:hover {
   background: var(--background-secondary);
+  color: var(--nav-tab-inactive-hover, var(--primary));
 }
 
 .tabActive {
   padding: 0.5rem 1rem;
-  background: var(--primary-color);
-  color: white;
-  border: 1px solid var(--primary-color);
+  background: var(--nav-tab-active-bg, var(--glass-bg-strong));
+  color: var(--nav-tab-active-color, var(--page-title-color));
+  border: 2px solid var(--nav-tab-active-border, var(--primary));
   border-radius: 0.5rem;
   cursor: pointer;
   font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .inactiveBadge {

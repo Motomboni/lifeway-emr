@@ -4,7 +4,7 @@
  * Service Catalog flow only: GET /visits/{visitId}/radiology/ (RadiologyRequest).
  * Doctor: create orders. Radiology Tech: post report via PATCH. No legacy RadiologyResult.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRadiologyOrders } from '../../hooks/useRadiologyOrders';
 import { updateRadiologyReport, draftRadiologyReport } from '../../api/radiology';
 import { useToast } from '../../hooks/useToast';
@@ -14,6 +14,7 @@ import styles from '../../styles/ConsultationWorkspace.module.css';
 interface RadiologyInlineProps {
   visitId: string;
   consultationId?: number;
+  ensureConsultation?: () => Promise<number>;
 }
 
 const IMAGING_TYPES: { value: 'XRAY' | 'CT' | 'MRI' | 'US'; label: string }[] = [
@@ -23,7 +24,7 @@ const IMAGING_TYPES: { value: 'XRAY' | 'CT' | 'MRI' | 'US'; label: string }[] = 
   { value: 'US', label: 'Ultrasound' },
 ];
 
-export default function RadiologyInline({ visitId, consultationId }: RadiologyInlineProps) {
+export default function RadiologyInline({ visitId, consultationId, ensureConsultation }: RadiologyInlineProps) {
   const { user } = useAuth();
   const {
     radiologyOrders,
@@ -45,9 +46,39 @@ export default function RadiologyInline({ visitId, consultationId }: RadiologyIn
   const [newResultReport, setNewResultReport] = useState<Record<number, string>>({});
   const [newResultImageCount, setNewResultImageCount] = useState<Record<number, number>>({});
   const [draftingReportFor, setDraftingReportFor] = useState<number | null>(null);
+  const [effectiveConsultationId, setEffectiveConsultationId] = useState<number | undefined>(consultationId);
+  const [ensuringConsultation, setEnsuringConsultation] = useState(false);
+  const isDoctor = user?.role === 'DOCTOR';
+
+  useEffect(() => {
+    if (consultationId) {
+      setEffectiveConsultationId(consultationId);
+    }
+  }, [consultationId]);
+
+  const resolveConsultationId = async (): Promise<number | null> => {
+    if (effectiveConsultationId) {
+      return effectiveConsultationId;
+    }
+    if (!ensureConsultation) {
+      return null;
+    }
+    setEnsuringConsultation(true);
+    try {
+      const id = await ensureConsultation();
+      setEffectiveConsultationId(id);
+      return id;
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Failed to start consultation');
+      return null;
+    } finally {
+      setEnsuringConsultation(false);
+    }
+  };
 
   const handleCreateOrder = async () => {
-    if (!consultationId) {
+    const orderConsultationId = await resolveConsultationId();
+    if (!orderConsultationId) {
       showError('Consultation is required to create radiology orders');
       return;
     }
@@ -64,7 +95,7 @@ export default function RadiologyInline({ visitId, consultationId }: RadiologyIn
 
     try {
       await createRadiologyOrder(visitId, {
-        consultation: consultationId,
+        consultation: orderConsultationId,
         study_type: `${getImagingTypeLabel(newOrderImagingType)} - ${newOrderBodyPart}`,
         clinical_indication: newOrderIndication,
         instructions: `Priority: ${newOrderPriority}`
@@ -140,7 +171,7 @@ export default function RadiologyInline({ visitId, consultationId }: RadiologyIn
 
   if (loading) {
     return (
-      <div className={styles.inlineComponent}>
+      <div className={styles.inlineComponent} data-guide-id="radiology-inline">
         <h3>Radiology Orders</h3>
         <p>Loading...</p>
       </div>
@@ -148,16 +179,24 @@ export default function RadiologyInline({ visitId, consultationId }: RadiologyIn
   }
 
   return (
-    <div className={styles.inlineComponent}>
+    <div className={styles.inlineComponent} data-guide-id="radiology-inline">
       <div className={styles.inlineHeader}>
         <h3>Radiology Orders</h3>
-        {consultationId && !showCreateOrder && (
+        {isDoctor && !showCreateOrder && (
           <button
             className={styles.addButton}
-            onClick={() => setShowCreateOrder(true)}
+            onClick={async () => {
+              const id = await resolveConsultationId();
+              if (!id) {
+                showError('Consultation is required to create radiology orders');
+                return;
+              }
+              setShowCreateOrder(true);
+            }}
             type="button"
+            disabled={ensuringConsultation}
           >
-            + New Order
+            {ensuringConsultation ? 'Preparing…' : '+ New Order'}
           </button>
         )}
       </div>
@@ -167,7 +206,7 @@ export default function RadiologyInline({ visitId, consultationId }: RadiologyIn
       )}
 
       {/* Create new radiology order form */}
-      {showCreateOrder && consultationId && (
+      {showCreateOrder && (
         <div className={styles.createForm}>
           <h4 style={{ marginBottom: '1rem' }}>Create Radiology Order</h4>
           <div className={styles.formGroup}>

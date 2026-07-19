@@ -9,15 +9,15 @@
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
-  background-color: #f5f5f5;
+  background-color: var(--bg-secondary, #f9fafb);
 }
 
 /* Header - Always visible, visit context preserved */
 .consultationHeader {
-  background: white;
-  border-bottom: 2px solid #e0e0e0;
-  padding: 1.5rem 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--bg-primary, white);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+  padding: 2.5rem 3rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   z-index: 10;
 }
 
@@ -30,7 +30,7 @@
 
 .visitContext h2 {
   margin: 0;
-  color: #333;
+  color: var(--text-primary);
   font-size: 1.5rem;
 }
 
@@ -40,49 +40,49 @@
 }
 
 .statusBadge {
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  padding: 0.375rem 0.875rem;
+  border-radius: var(--radius-sm);
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 .statusBadge.statusOpen {
-  background-color: #4caf50;
-  color: white;
+  background: var(--badge-open-bg);
+  color: var(--badge-open-text);
 }
 
 .statusBadge.statusClosed {
-  background-color: #f44336;
-  color: white;
+  background: var(--badge-closed-bg);
+  color: var(--badge-closed-text);
 }
 
 .paymentBadge {
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  padding: 0.375rem 0.875rem;
+  border-radius: var(--radius-sm);
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 .paymentBadge.paymentCleared {
-  background-color: #2196f3;
-  color: white;
+  background: var(--badge-paid-bg);
+  color: var(--badge-paid-text);
 }
 
 .paymentBadge.paymentPending {
-  background-color: #ff9800;
-  color: white;
+  background: var(--badge-pending-bg);
+  color: var(--badge-pending-text);
 }
 
 .patientSummary {
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid rgba(128, 128, 128, 0.15);
   padding-top: 1rem;
 }
 
 .patientSummary h3 {
   margin: 0 0 0.75rem 0;
-  color: #666;
-  font-size: 1rem;
-  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  font-weight: 700;
 }
 
 .patientDetails {
@@ -104,8 +104,8 @@
 }
 
 .patientField span {
-  font-size: 1rem;
-  color: #333;
+  font-size: 1.05rem;
+  color: var(--text-primary);
 }
 
 /* Scrollable content container - wraps form and inline components */
@@ -125,11 +125,14 @@
 }
 
 .consultationSection {
-  background: white;
-  border-radius: 8px;
-  padding: 1.5rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-lg);
+  padding: 2rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--glass-border);
 }
 
 .consultationSection label {
@@ -139,15 +142,15 @@
 
 .consultationSection h3 {
   margin: 0 0 0.25rem 0;
-  color: #333;
+  color: var(--text-primary);
   font-size: 1.125rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .sectionDescription {
   display: block;
   font-size: 0.875rem;
-  color: #666;
+  color: var(--text-secondary);
   font-weight: normal;
   margin-top: 0.25rem;
 }
@@ -155,9 +158,9 @@
 .consultationTextarea {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  border-radius: var(--radius-md);
+  font-size: 1.05rem;
   font-family: inherit;
   resize: vertical;
   min-height: 120px;
@@ -171,21 +174,21 @@
 }
 
 .consultationTextarea:disabled {
-  background-color: #f5f5f5;
+  background-color: var(--bg-secondary, #f9fafb);
   cursor: not-allowed;
   color: #999;
 }
 
 /* Action Buttons - Fixed at bottom */
 .consultationActions {
-  background: white;
-  border-top: 2px solid #e0e0e0;
+  background: var(--bg-primary, white);
+  border-top: 1px solid rgba(128, 128, 128, 0.1);
   padding: 1rem 2rem;
   display: flex;
   justify-content: flex-end;
   align-items: center;
   gap: 1rem;
-  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
   z-index: 10;
   flex-wrap: wrap;
 }
@@ -228,18 +231,18 @@
 
 .btnCancel,
 .btnSave {
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-weight: 600;
+  padding: 1rem 2rem;
+  border-radius: var(--radius-md);
+  font-size: 1.05rem;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
   border: none;
 }
 
 .btnCancel {
-  background-color: #f5f5f5;
-  color: #666;
+  background-color: var(--bg-secondary, #f9fafb);
+  color: var(--text-secondary);
 }
 
 .btnCancel:hover:not(:disabled) {
@@ -252,12 +255,12 @@
 }
 
 .btnSave {
-  background-color: #2196f3;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
 }
 
 .btnSave:hover:not(:disabled) {
-  background-color: #1976d2;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
 }
 
 .btnSave:disabled {
@@ -266,12 +269,12 @@
 }
 
 .btnCloseVisit {
-  background-color: #f44336;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;
 }
 
 .btnCloseVisit:hover:not(:disabled) {
-  background-color: #d32f2f;
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
 }
 
 .btnCloseVisit:disabled {
@@ -283,7 +286,7 @@
   padding: 1rem;
   background-color: #ffebee;
   color: #c62828;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   text-align: center;
   font-weight: 500;
 }
@@ -313,8 +316,8 @@
 }
 
 .loadingText {
-  color: #666;
-  font-size: 1rem;
+  color: var(--text-secondary);
+  font-size: 1.05rem;
 }
 
 /* Error States */
@@ -322,13 +325,13 @@
   padding: 2rem;
   background: #ffebee;
   border-left: 4px solid #f44336;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   margin: 1rem;
 }
 
 .errorMessage {
   color: #c62828;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 0.5rem;
 }
 
@@ -342,7 +345,7 @@
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: loading 1.5s ease-in-out infinite;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
 }
 
 @keyframes loading {
@@ -364,10 +367,10 @@
 .offlineIndicator {
   background: #ff9800;
   color: white;
-  padding: 0.5rem 1rem;
+  padding: 1rem 2rem;
   text-align: center;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -379,11 +382,13 @@
 .labInline,
 .radiologyInline,
 .prescriptionInline {
-  background: white;
-  border-radius: 8px;
-  padding: 1.5rem;
+  background: var(--bg-primary, white);
+  color: var(--text-primary);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
   margin: 0 2rem 1.5rem 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-color);
 }
 
 .cardHeader {
@@ -392,14 +397,14 @@
   align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.15);
 }
 
 .cardHeader h3 {
   margin: 0;
-  color: #333;
+  color: var(--text-primary);
   font-size: 1.125rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 /* Ensure inline components are inside scrollable container */
@@ -421,40 +426,42 @@
 .radiologyInline h3,
 .prescriptionInline h3 {
   margin: 0;
-  color: #333;
+  color: var(--text-primary);
   font-size: 1.125rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .addButton {
-  padding: 0.5rem 1rem;
-  background-color: #4caf50;
+  padding: 0.625rem 1.25rem;
+  background: var(--primary-gradient);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .addButton:hover {
-  background-color: #45a049;
+  background: var(--primary-gradient-hover);
+  box-shadow: var(--shadow-md);
 }
 
 .createForm {
-  background: #f9f9f9;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  background: var(--bg-secondary, #f9fafb);
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  border-radius: var(--radius-md);
   padding: 1rem;
   margin: 1rem 0;
 }
 
 .createForm h4 {
   margin: 0 0 1rem 0;
-  color: #2c3e50;
-  font-size: 1rem;
-  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  font-weight: 700;
 }
 
 .formGroup {
@@ -464,21 +471,21 @@
 .createForm .formGroup label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #2c3e50;
+  color: var(--text-primary);
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .formGroup label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.875rem;
   font-weight: 500;
 }
 
 .helpText {
-  color: #2c3e50;
+  color: var(--text-secondary);
   font-size: 0.875rem;
   line-height: 1.5;
   margin: 0.25rem 0 0.75rem 0;
@@ -491,7 +498,7 @@
 .formRow label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.875rem;
   font-weight: 500;
 }
@@ -501,8 +508,8 @@
 .formRow select {
   width: 100%;
   padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  border-radius: var(--radius-md);
   font-size: 0.875rem;
   font-family: inherit;
 }
@@ -521,11 +528,13 @@
 .formGroup textarea,
 .formGroup select {
   width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color, rgba(128, 128, 128, 0.2));
+  border-radius: var(--radius-sm);
   font-size: 0.875rem;
   font-family: inherit;
+  background-color: var(--input-bg, var(--bg-primary));
+  color: var(--text-primary);
 }
 
 .formGroup textarea {
@@ -541,19 +550,21 @@
 }
 
 .primaryButton {
-  padding: 0.5rem 1rem;
-  background-color: #2196f3;
+  padding: 0.625rem 1.25rem;
+  background: var(--primary-gradient);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .primaryButton:hover:not(:disabled) {
-  background-color: #1976d2;
+  background: var(--primary-gradient-hover);
+  box-shadow: var(--shadow-md);
 }
 
 .primaryButton:disabled {
@@ -562,19 +573,20 @@
 }
 
 .secondaryButton {
-  padding: 0.5rem 1rem;
-  background-color: #f5f5f5;
-  color: #666;
-  border: none;
-  border-radius: 4px;
+  padding: 0.625rem 1.25rem;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .secondaryButton:hover:not(:disabled) {
-  background-color: #e0e0e0;
+  background-color: var(--bg-hover);
+  border-color: var(--text-muted);
 }
 
 .secondaryButton:disabled {
@@ -583,19 +595,21 @@
 }
 
 .saveButton {
-  padding: 0.5rem 1rem;
-  background-color: #2196f3;
+  padding: 0.625rem 1.25rem;
+  background: var(--primary-gradient);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .saveButton:hover:not(:disabled) {
-  background-color: #1976d2;
+  background: var(--primary-gradient-hover);
+  box-shadow: var(--shadow-md);
 }
 
 .saveButton:disabled {
@@ -604,19 +618,20 @@
 }
 
 .cancelButton {
-  padding: 0.5rem 1rem;
-  background-color: #f5f5f5;
-  color: #666;
-  border: none;
-  border-radius: 4px;
+  padding: 0.625rem 1.25rem;
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .cancelButton:hover:not(:disabled) {
-  background-color: #e0e0e0;
+  background-color: var(--bg-hover);
+  border-color: var(--text-muted);
 }
 
 .cancelButton:disabled {
@@ -625,20 +640,100 @@
 }
 
 .emptyState {
-  color: #999;
+  color: var(--text-muted);
   font-style: italic;
   text-align: center;
   padding: 2rem;
 }
 
 .infoText {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.875rem;
   font-style: italic;
   padding: 1rem;
-  background-color: #f9f9f9;
-  border-radius: 4px;
+  background-color: var(--bg-secondary, #f9fafb);
+  border-radius: var(--radius-md);
   margin: 1rem 0;
+}
+
+.quickCategories {
+  display: flex;
+  gap: 0.625rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.quickCategoriesLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-right: 0.25rem;
+}
+
+.categoryChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.625rem 1.125rem;
+  min-height: 2.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.categoryChip:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.categoryChipActive {
+  box-shadow: var(--shadow-md);
+  border-color: currentColor;
+}
+
+.categoryPharmacy {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.categoryLab {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.categoryRadiology {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+.categoryProcedure {
+  background: #fce7f3;
+  color: #be185d;
+}
+
+[data-theme="dark"] .categoryPharmacy {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
+
+[data-theme="dark"] .categoryLab {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+}
+
+[data-theme="dark"] .categoryRadiology {
+  background: rgba(234, 179, 8, 0.2);
+  color: #fde047;
+}
+
+[data-theme="dark"] .categoryProcedure {
+  background: rgba(236, 72, 153, 0.2);
+  color: #f9a8d4;
 }
 
 .emptyText {
@@ -649,11 +744,11 @@
 }
 
 .labOrderCard {
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  border-radius: var(--radius-md);
   padding: 1rem;
   margin-bottom: 1rem;
-  background: white;
+  background: var(--bg-primary, white);
 }
 
 .orderHeader {
@@ -664,23 +759,23 @@
 }
 
 .orderHeader strong {
-  color: #333;
-  font-size: 1rem;
+  color: var(--text-primary);
+  font-size: 1.05rem;
 }
 
 .statusBadge {
   display: inline-block;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   margin-left: 0.5rem;
-  background-color: #2196f3;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
 }
 
 .orderDetails {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.875rem;
   line-height: 1.6;
 }
@@ -692,8 +787,8 @@
 .resultCard {
   margin-top: 1rem;
   padding: 1rem;
-  background: #f5f5f5;
-  border-radius: 4px;
+  background: var(--bg-secondary, #f9fafb);
+  border-radius: var(--radius-md);
   border-left: 4px solid #2196f3;
 }
 
@@ -705,20 +800,20 @@
 }
 
 .resultHeader strong {
-  color: #333;
+  color: var(--text-primary);
   font-size: 0.875rem;
 }
 
 .flagBadge {
   display: inline-block;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .flagBadge.flagNORMAL {
-  background-color: #4caf50;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
 }
 
@@ -728,12 +823,12 @@
 }
 
 .flagBadge.flagCRITICAL {
-  background-color: #f44336;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;
 }
 
 .resultData {
-  color: #333;
+  color: var(--text-primary);
   font-size: 0.875rem;
   line-height: 1.6;
   white-space: pre-wrap;
@@ -755,14 +850,14 @@
 
 .codeItem {
   background: #f8f9fa;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  border-radius: var(--radius-md);
   padding: 1rem;
   transition: all 0.2s;
 }
 
 .codeItem:hover {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .codeHeader {
@@ -788,21 +883,21 @@
   background: #2196f3;
   color: white;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .confidenceBadge {
   background: #4caf50;
   color: white;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
 }
 
 .codeDescription {
-  color: #666;
+  color: var(--text-secondary);
   margin: 0.5rem 0;
   line-height: 1.5;
 }
@@ -819,7 +914,7 @@
 }
 
 .codeActions button {
-  padding: 0.5rem 1rem;
+  padding: 1rem 2rem;
   font-size: 0.875rem;
 }
 
@@ -859,11 +954,11 @@
 
 /* Vital Signs Styles */
 .vitalSignsCard {
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  border-radius: var(--radius-md);
   padding: 1rem;
   margin-bottom: 1rem;
-  background: white;
+  background: var(--bg-primary, white);
 }
 
 .vitalSignsHeader {
@@ -872,28 +967,34 @@
   align-items: center;
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.15);
 }
 
 .vitalSignsHeader strong {
-  color: #333;
+  color: var(--text-primary);
   font-size: 0.875rem;
 }
 
 .vitalSignsHeader span {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.75rem;
 }
 
 .alertBanner {
   background-color: #fff3cd;
   border: 1px solid #ffc107;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   padding: 0.5rem;
   margin-bottom: 0.75rem;
   color: #856404;
   font-size: 0.875rem;
   font-weight: 500;
+}
+
+[data-theme="dark"] .alertBanner {
+  background-color: rgba(255, 193, 7, 0.15);
+  border-color: #ffc107;
+  color: #ffd54f;
 }
 
 .vitalSignsGrid {
@@ -904,21 +1005,25 @@
 }
 
 .vitalSignsGrid div {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
 .vitalSignsGrid strong {
-  color: #333;
+  color: var(--text-primary);
   margin-right: 0.5rem;
 }
 
 .vitalSignsNotes {
   margin-top: 0.75rem;
   padding-top: 0.75rem;
-  border-top: 1px solid #e0e0e0;
-  color: #666;
+  border-top: 1px solid rgba(128, 128, 128, 0.15);
+  color: var(--text-secondary);
   font-size: 0.875rem;
+}
+
+.vitalSignsNotes strong {
+  color: var(--text-primary);
 }
 
 .formGrid {
@@ -930,11 +1035,11 @@
 
 /* Clinical Alerts Styles */
 .alertCard {
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  border-radius: var(--radius-md);
   padding: 1rem;
   margin-bottom: 1rem;
-  background: white;
+  background: var(--bg-primary, white);
 }
 
 .alertCard.alertCritical {
@@ -965,22 +1070,22 @@
 }
 
 .alertHeader strong {
-  color: #333;
-  font-size: 1rem;
+  color: var(--text-primary);
+  font-size: 1.05rem;
 }
 
 .severityBadge {
   display: inline-block;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   margin-left: 0.5rem;
   text-transform: uppercase;
 }
 
 .alertCard.alertCritical .severityBadge {
-  background-color: #f44336;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;
 }
 
@@ -991,22 +1096,22 @@
 
 .alertCard.alertMedium .severityBadge {
   background-color: #ffc107;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .alertCard.alertLow .severityBadge {
-  background-color: #2196f3;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
 }
 
 .alertType {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.75rem;
   text-transform: capitalize;
 }
 
 .alertMessage {
-  color: #333;
+  color: var(--text-primary);
   font-size: 0.875rem;
   line-height: 1.6;
   margin-bottom: 0.75rem;
@@ -1020,37 +1125,37 @@
 
 .acknowledgeButton,
 .resolveButton {
-  padding: 0.5rem 1rem;
+  padding: 1rem 2rem;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .acknowledgeButton {
-  background-color: #2196f3;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
 }
 
 .acknowledgeButton:hover {
-  background-color: #1976d2;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
 }
 
 .resolveButton {
-  background-color: #4caf50;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
 }
 
 .resolveButton:hover {
-  background-color: #45a049;
+  background: linear-gradient(135deg, #059669, #047857);
 }
 
 .alertMeta {
   margin-top: 0.5rem;
   padding-top: 0.5rem;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid rgba(128, 128, 128, 0.15);
   color: #999;
   font-size: 0.75rem;
 }
@@ -1059,45 +1164,84 @@
 .formHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 1rem;
   margin-bottom: 1.5rem;
+}
+
+.macroHint {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.macroHint kbd {
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-subtle);
+  font-size: 0.75rem;
+  font-family: inherit;
 }
 
 .formHeader h2 {
   margin: 0;
-  color: #333;
+  color: var(--text-primary);
   font-size: 1.5rem;
 }
 
 .templateButton {
-  padding: 0.5rem 1rem;
-  background-color: #9c27b0;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .templateButton:hover {
-  background-color: #7b1fa2;
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
 }
 
 .templateSelector {
-  background: #f9f9f9;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  background: var(--bg-primary-solid);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
   padding: 1.5rem;
   margin-bottom: 1.5rem;
+  box-shadow: var(--glass-shadow);
 }
 
-.templateSelector h4 {
+.templateSelector h4,
+.templateSelector h5 {
   margin: 0 0 1rem 0;
-  color: #333;
+  color: var(--text-primary);
   font-size: 1.125rem;
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.templateStatus {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.templateSelector .helpText {
+  color: var(--text-secondary);
+}
+
+.templateSelector .helpText code {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--radius-xs);
 }
 
 .templateList {
@@ -1108,52 +1252,64 @@
 }
 
 .templateItem {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--bg-primary-solid);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   padding: 1rem;
   cursor: pointer;
   transition: all 0.2s;
+  color: var(--text-primary);
+  font-family: inherit;
 }
 
 .templateItem:hover {
-  border-color: #9c27b0;
-  box-shadow: 0 2px 4px rgba(156, 39, 176, 0.2);
+  border-color: var(--primary);
+  box-shadow: var(--glass-shadow-hover);
+  background: var(--bg-primary-solid);
 }
 
 .templateItem strong {
   display: block;
-  color: #333;
-  font-size: 0.875rem;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  font-weight: 700;
   margin-bottom: 0.5rem;
 }
 
 .templateCategory {
   display: inline-block;
   padding: 0.25rem 0.5rem;
-  background-color: #e1bee7;
-  color: #4a148c;
-  border-radius: 4px;
+  background-color: rgba(var(--color-primary-rgb), 0.12);
+  color: var(--primary-dark);
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 0.5rem;
 }
 
 .templateDescription {
-  color: #666;
-  font-size: 0.75rem;
-  margin: 0;
-  line-height: 1.4;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  margin: 0.35rem 0 0;
+  line-height: 1.5;
+}
+
+[data-theme="dark"] .templateCategory {
+  background-color: rgba(var(--color-primary-rgb), 0.2);
+  color: #90caf9;
 }
 
 .closeButton {
-  padding: 0.5rem 1rem;
-  background-color: #f5f5f5;
-  color: #666;
+  padding: 1rem 2rem;
+  background-color: var(--bg-secondary, #f9fafb);
+  color: var(--text-secondary);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s;
 }
@@ -1164,9 +1320,9 @@
 
 /* Referrals Styles */
 .referralForm {
-  background: #f9f9f9;
-  padding: 1.5rem;
-  border-radius: 4px;
+  background: var(--bg-secondary, #f9fafb);
+  padding: 2rem;
+  border-radius: var(--radius-md);
   margin-bottom: 1rem;
 }
 
@@ -1177,10 +1333,10 @@
 }
 
 .referralCard {
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  border-radius: var(--radius-md);
   padding: 1rem;
-  background: white;
+  background: var(--bg-primary, white);
 }
 
 .referralHeader {
@@ -1189,7 +1345,7 @@
   align-items: center;
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.15);
 }
 
 .referralHeader > div {
@@ -1205,12 +1361,12 @@
 
 .referralDetails p {
   margin: 0.5rem 0;
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
 .referralDetails strong {
-  color: #333;
+  color: var(--text-primary);
   margin-right: 0.5rem;
 }
 
@@ -1220,7 +1376,7 @@
   gap: 1rem;
   margin-top: 0.75rem;
   padding-top: 0.75rem;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid rgba(128, 128, 128, 0.15);
   color: #999;
   font-size: 0.75rem;
 }
@@ -1230,102 +1386,102 @@
   gap: 0.5rem;
   margin-top: 0.75rem;
   padding-top: 0.75rem;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid rgba(128, 128, 128, 0.15);
 }
 
 .statusPending {
   background-color: #ffc107;
   color: #000;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .statusAccepted {
-  background-color: #4caf50;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .statusRejected {
-  background-color: #f44336;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .statusCompleted {
-  background-color: #2196f3;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .statusCancelled {
   background-color: #9e9e9e;
   color: white;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .urgencyRoutine {
   background-color: #e0e0e0;
-  color: #333;
+  color: var(--text-primary);
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .urgencyUrgent {
   background-color: #ff9800;
   color: white;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .urgencyEmergency {
-  background-color: #f44336;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .acceptButton {
-  background-color: #4caf50;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  padding: 1rem 2rem;
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 500;
 }
 
 .acceptButton:hover {
-  background-color: #45a049;
+  background: linear-gradient(135deg, #059669, #047857);
 }
 
 .completeButton {
-  background-color: #2196f3;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  padding: 1rem 2rem;
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 500;
@@ -1339,8 +1495,8 @@
   background-color: #9e9e9e;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  padding: 1rem 2rem;
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 500;
@@ -1352,11 +1508,11 @@
 
 /* Document Styles */
 .documentCard {
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  border-radius: var(--radius-md);
   padding: 1rem;
   margin-bottom: 1rem;
-  background: white;
+  background: var(--bg-primary, white);
 }
 
 .documentHeader {
@@ -1367,7 +1523,7 @@
 }
 
 .documentHeader strong {
-  color: #333;
+  color: var(--text-primary);
   font-size: 0.875rem;
   margin-right: 0.5rem;
 }
@@ -1377,19 +1533,19 @@
   padding: 0.25rem 0.5rem;
   background-color: #e3f2fd;
   color: #1976d2;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: capitalize;
 }
 
 .documentMeta {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.75rem;
 }
 
 .documentDescription {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.875rem;
   margin-bottom: 0.75rem;
   line-height: 1.5;
@@ -1400,7 +1556,7 @@
   justify-content: space-between;
   align-items: center;
   padding-top: 0.75rem;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid rgba(128, 128, 128, 0.15);
 }
 
 .documentInfo {
@@ -1420,44 +1576,44 @@
 .deleteButton {
   padding: 0.25rem 0.75rem;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .viewButton {
-  background-color: #2196f3;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
   text-decoration: none;
 }
 
 .viewButton:hover {
-  background-color: #1976d2;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
 }
 
 .downloadButton {
-  background-color: #4caf50;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
 }
 
 .downloadButton:hover {
-  background-color: #45a049;
+  background: linear-gradient(135deg, #059669, #047857);
 }
 
 .deleteButton {
-  background-color: #f44336;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;
 }
 
 .deleteButton:hover {
-  background-color: #d32f2f;
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
 }
 
 .fileInfo {
   margin-top: 0.5rem;
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.75rem;
   font-style: italic;
 }
@@ -1468,28 +1624,28 @@
 }
 
 .toggleButton {
-  padding: 0.75rem 1.5rem;
-  background-color: #2196f3;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .toggleButton:hover {
-  background-color: #1976d2;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
 }
 
 .previousConsultationsPanel {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 1.5rem;
+  background: var(--bg-primary, white);
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  border-radius: var(--radius-md);
+  padding: 2rem;
   margin: 1rem 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .panelHeader {
@@ -1498,12 +1654,12 @@
   align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.1);
 }
 
 .panelHeader h3 {
   margin: 0;
-  color: #333;
+  color: var(--text-primary);
   font-size: 1.25rem;
 }
 
@@ -1514,15 +1670,15 @@
 }
 
 .consultationCard {
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  background: #f9f9f9;
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary, #f9fafb);
   overflow: hidden;
   transition: box-shadow 0.2s;
 }
 
 .consultationCard:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
 }
 
 .consultationHeader {
@@ -1531,7 +1687,7 @@
   align-items: center;
   padding: 1rem;
   cursor: pointer;
-  background: white;
+  background: var(--bg-primary, white);
 }
 
 .consultationInfo {
@@ -1542,12 +1698,12 @@
 }
 
 .consultationInfo strong {
-  color: #333;
-  font-size: 1rem;
+  color: var(--text-primary);
+  font-size: 1.05rem;
 }
 
 .consultationDate {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
@@ -1558,26 +1714,26 @@
 }
 
 .copyAllButton {
-  padding: 0.5rem 1rem;
-  background-color: #4caf50;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s;
   margin-left: 1rem;
 }
 
 .copyAllButton:hover {
-  background-color: #45a049;
+  background: linear-gradient(135deg, #059669, #047857);
 }
 
 .consultationDetails {
   padding: 1rem;
-  background: white;
-  border-top: 1px solid #e0e0e0;
+  background: var(--bg-primary, white);
+  border-top: 1px solid rgba(128, 128, 128, 0.15);
 }
 
 .consultationField {
@@ -1596,7 +1752,7 @@
 }
 
 .fieldHeader strong {
-  color: #333;
+  color: var(--text-primary);
   font-size: 0.875rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -1604,18 +1760,18 @@
 
 .copyFieldButton {
   padding: 0.25rem 0.75rem;
-  background-color: #2196f3;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .copyFieldButton:hover {
-  background-color: #1976d2;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
 }
 
 .fieldContent {
@@ -1623,9 +1779,9 @@
   font-size: 0.875rem;
   line-height: 1.6;
   white-space: pre-wrap;
-  background: #f9f9f9;
+  background: var(--bg-secondary, #f9fafb);
   padding: 0.75rem;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   border-left: 3px solid #2196f3;
 }
 
@@ -1639,5 +1795,72 @@
 .loadingState {
   text-align: center;
   padding: 2rem;
-  color: #666;
+  color: var(--text-secondary);
+}
+
+/* Patient allergy banner */
+.allergyBannerGroup {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid #f44336;
+  background: #ffebee;
+}
+
+.allergyBannerTitle {
+  font-weight: 600;
+  color: #b71c1c;
+  margin-bottom: 0.5rem;
+}
+
+.allergyBannerList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.allergyBannerItem {
+  padding: 0.35rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.allergyBanner {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border-left: 4px solid #f44336;
+  background: #ffebee;
+}
+
+.allergyBannerSevere {
+  color: #b71c1c;
+}
+
+.allergyBannerModerate {
+  color: #e65100;
+}
+
+.allergyBannerMild {
+  color: #f57f17;
+}
+
+.allergySeverityTag,
+.allergyTypeTag,
+.allergyVerifiedTag {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.allergyReaction {
+  opacity: 0.9;
+}
+
+.allergyBannerHint {
+  font-size: 0.85rem;
+  opacity: 0.85;
 }

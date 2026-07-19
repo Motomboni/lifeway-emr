@@ -10,6 +10,7 @@ import { getPatientMedicalHistory } from '../api/patientPortal';
 import { PatientPortalMedicalHistory } from '../types/patientPortal';
 import { useToast } from '../hooks/useToast';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
+import PatientAllergiesReadOnly from '../components/patients/PatientAllergiesReadOnly';
 import styles from '../styles/PatientPortal.module.css';
 
 export default function PatientPortalMedicalHistoryPage() {
@@ -113,11 +114,13 @@ export default function PatientPortalMedicalHistoryPage() {
                 <strong>Blood Group:</strong> {history.patient.blood_group}
               </div>
             )}
-            {history.patient.allergies && (
-              <div className={styles.infoRow}>
-                <strong>Allergies:</strong> {history.patient.allergies}
-              </div>
-            )}
+            <div className={styles.infoRow}>
+              <strong>Allergies</strong>
+              <PatientAllergiesReadOnly
+                structuredAllergies={history.patient.structured_allergies}
+                allergiesSummary={history.patient.allergies}
+              />
+            </div>
           </div>
         </section>
 

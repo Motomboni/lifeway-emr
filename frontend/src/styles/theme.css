@@ -5,19 +5,59 @@
  */
 :root {
   /* Light theme colors */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-tertiary: #e9ecef;
-  --bg-hover: #f1f3f5;
-  --card-bg: #ffffff;
-  --input-bg: #ffffff;
-  --border: #dee2e6;
-  --text-primary: #212529;
-  --text-secondary: #6c757d;
-  --text-muted: #adb5bd;
-  --border-color: #dee2e6;
-  --shadow: rgba(0, 0, 0, 0.1);
-  --shadow-lg: rgba(0, 0, 0, 0.15);
+  --bg-primary-solid: #ffffff;
+  --bg-secondary-solid: #eef4fb;
+  --bg-primary: rgba(255, 255, 255, 0.72);
+  --bg-secondary: #eef4fb;
+  --bg-tertiary: rgba(233, 236, 239, 0.75);
+  --bg-hover: rgba(241, 243, 245, 0.85);
+  --card-bg: rgba(255, 255, 255, 0.82);
+  --input-bg: rgba(255, 255, 255, 0.92);
+  --border: rgba(255, 255, 255, 0.65);
+  --text-primary: #020617;
+  --text-secondary: #1e293b;
+  --text-muted: #475569;
+  --text-on-glass: #020617;
+  --text-on-glass-secondary: #1e293b;
+  --page-title-color: #020617;
+  --page-subtitle-color: #334155;
+  --link-color: #1565c0;
+  --link-color-hover: #0d47a1;
+  --nav-tab-inactive-color: #1e293b;
+  --nav-tab-inactive-hover: #1565c0;
+  --nav-tab-active-color: #020617;
+  --nav-tab-active-bg: rgba(255, 255, 255, 0.95);
+  --nav-tab-active-border: var(--primary);
+  --primary-color: var(--primary);
+  --title-text-shadow: none;
+  --subtitle-text-shadow: none;
+  --border-color: rgba(255, 255, 255, 0.75);
+  --shadow: rgba(13, 71, 161, 0.08);
+  --shadow-lg: rgba(13, 71, 161, 0.14);
+
+  /* Glassmorphism */
+  --glass-blur: 16px;
+  --glass-blur-strong: 22px;
+  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-bg-strong: rgba(255, 255, 255, 0.9);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.85);
+  --glass-border-hover: rgba(33, 150, 243, 0.35);
+  --glass-text-shadow: 0 1px 1px rgba(255, 255, 255, 0.85);
+  --glass-shadow: 0 8px 32px rgba(13, 71, 161, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  --glass-shadow-hover: 0 16px 48px rgba(13, 71, 161, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --shadow-sm: 0 2px 8px rgba(13, 71, 161, 0.06);
+  --shadow-md: var(--glass-shadow-hover);
+  --shadow-card: var(--glass-shadow);
+  --primary-gradient: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  --primary-gradient-hover: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary-dark) 100%);
+
+  /* Interactive Guide */
+  --guide-spotlight-ring: rgba(59, 130, 246, 0.85);
+  --guide-overlay: rgba(15, 23, 42, 0.45);
+  --guide-step-active: #3b82f6;
+  --guide-step-complete: #22c55e;
+  --guide-sandbox-banner: #f59e0b;
   
   /* Accent colors */
   --primary: #2196f3;
@@ -27,23 +67,98 @@
   --warning: #ff9800;
   --error: #f44336;
   --info: #00bcd4;
+
+  /* Aliases used by billing/reconciliation and radiology modules */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-muted);
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-rgb: 33, 150, 243;
+  --color-border: var(--border-color);
+  --color-border-light: var(--border-color);
+  --color-background: var(--bg-secondary);
+  --color-background-secondary: var(--bg-tertiary);
+  --color-card-background: var(--glass-bg);
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --border-radius: var(--radius-md);
+
+  /* Status / payment pills */
+  --badge-open-bg: #d1fae5;
+  --badge-open-text: #065f46;
+  --badge-closed-bg: #fee2e2;
+  --badge-closed-text: #991b1b;
+  --badge-paid-bg: #dbeafe;
+  --badge-paid-text: #1e40af;
+  --badge-pending-bg: #fef3c7;
+  --badge-pending-text: #92400e;
+  --badge-default-bg: #f3f4f6;
+  --badge-default-text: #374151;
+
+  /* Solid elevated panels (forms, expanded details, cards) */
+  --surface-elevated-bg: var(--bg-secondary-solid);
+  --surface-panel-heading: var(--page-title-color);
+  --surface-panel-text: var(--text-on-glass);
+  --surface-panel-text-muted: var(--text-on-glass-secondary);
+  --surface-tag-bg: var(--badge-default-bg);
+  --surface-tag-text: var(--badge-default-text);
 }
 
 [data-theme="dark"] {
   /* Dark theme colors */
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #2d2d2d;
-  --bg-tertiary: #3d3d3d;
-  --bg-hover: #383838;
-  --card-bg: #252525;
-  --input-bg: #2d2d2d;
-  --border: #404040;
-  --text-primary: #ffffff;
-  --text-secondary: #b0b0b0;
-  --text-muted: #707070;
-  --border-color: #404040;
-  --shadow: rgba(0, 0, 0, 0.3);
+  --bg-primary-solid: #1a1a1a;
+  --bg-secondary-solid: #121820;
+  --bg-primary: rgba(26, 26, 26, 0.78);
+  --bg-secondary: #121820;
+  --bg-tertiary: rgba(61, 61, 61, 0.75);
+  --bg-hover: rgba(56, 56, 56, 0.85);
+  --card-bg: rgba(37, 37, 37, 0.65);
+  --input-bg: rgba(45, 45, 45, 0.9);
+  --border: rgba(255, 255, 255, 0.08);
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-on-glass: #f8fafc;
+  --text-on-glass-secondary: #cbd5e1;
+  --page-title-color: #ffffff;
+  --page-subtitle-color: #e2e8f0;
+  --link-color: #42a5f5;
+  --link-color-hover: #64b5f6;
+  --nav-tab-inactive-color: #0f172a;
+  --nav-tab-inactive-hover: #42a5f5;
+  --nav-tab-active-color: #0f172a;
+  --nav-tab-active-bg: rgba(255, 255, 255, 0.92);
+  --nav-tab-active-border: var(--primary);
+  --primary-color: var(--primary);
+  --title-text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7), 0 0 1px rgba(0, 0, 0, 0.85);
+  --subtitle-text-shadow: none;
+  --border-color: rgba(255, 255, 255, 0.12);
+  --shadow: rgba(0, 0, 0, 0.35);
   --shadow-lg: rgba(0, 0, 0, 0.5);
+
+  --glass-blur: 18px;
+  --glass-blur-strong: 24px;
+  --glass-bg: rgba(30, 30, 30, 0.82);
+  --glass-bg-strong: rgba(22, 22, 22, 0.9);
+  --glass-bg-subtle: rgba(40, 40, 40, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-border-hover: rgba(66, 165, 245, 0.4);
+  --glass-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55), 0 0 1px rgba(0, 0, 0, 0.7);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --glass-shadow-hover: 0 16px 48px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-md: var(--glass-shadow-hover);
+  --shadow-card: var(--glass-shadow);
+  --primary-gradient: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  --primary-gradient-hover: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary-dark) 100%);
+
+  --guide-spotlight-ring: rgba(96, 165, 250, 0.9);
+  --guide-overlay: rgba(0, 0, 0, 0.55);
   
   /* Accent colors (slightly adjusted for dark mode) */
   --primary: #42a5f5;
@@ -53,22 +168,65 @@
   --warning: #ffa726;
   --error: #ef5350;
   --info: #26c6da;
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-muted);
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-rgb: 66, 165, 245;
+  --color-border: var(--border-color);
+  --color-border-light: var(--border-color);
+  --color-background: var(--bg-secondary);
+  --color-background-secondary: var(--bg-tertiary);
+  --color-card-background: var(--glass-bg);
+
+  --badge-open-bg: #14532d;
+  --badge-open-text: #ecfdf5;
+  --badge-closed-bg: #7f1d1d;
+  --badge-closed-text: #fee2e2;
+  --badge-paid-bg: #0c4a6e;
+  --badge-paid-text: #e0f2fe;
+  --badge-pending-bg: #78350f;
+  --badge-pending-text: #fef3c7;
+  --badge-default-bg: #334155;
+  --badge-default-text: #e2e8f0;
+
+  --surface-elevated-bg: var(--bg-secondary-solid);
+  --surface-panel-heading: var(--text-on-glass);
+  --surface-panel-text: var(--text-on-glass);
+  --surface-panel-text-muted: var(--text-on-glass-secondary);
+  --surface-tag-bg: var(--badge-default-bg);
+  --surface-tag-text: var(--badge-default-text);
 }
 
-/* Apply theme to html and body */
+/* App canvas — subtle gradient so glass surfaces show depth */
 html {
-  background-color: var(--bg-secondary);
+  background-color: var(--bg-secondary-solid);
+  background-image:
+    radial-gradient(ellipse 80% 55% at 8% 12%, rgba(33, 150, 243, 0.1), transparent),
+    radial-gradient(ellipse 70% 50% at 92% 88%, rgba(13, 71, 161, 0.07), transparent),
+    linear-gradient(165deg, #eef4fb 0%, #f6f9fc 45%, #e8eef6 100%);
   color: var(--text-primary);
 }
 
+[data-theme="dark"] html {
+  background-color: var(--bg-secondary-solid);
+  background-image:
+    radial-gradient(ellipse 75% 50% at 10% 15%, rgba(66, 165, 245, 0.08), transparent),
+    radial-gradient(ellipse 65% 45% at 90% 85%, rgba(13, 71, 161, 0.12), transparent),
+    linear-gradient(165deg, #0f1419 0%, #121820 50%, #0d1117 100%);
+}
+
+/* Apply theme to body */
 body {
-  background-color: var(--bg-secondary);
+  background: transparent;
   color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 #root {
-  background-color: var(--bg-secondary);
+  background: transparent;
   color: var(--text-primary);
   min-height: 100vh;
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -76,14 +234,19 @@ body {
 
 /* Theme-aware components */
 .card {
-  background-color: var(--bg-primary);
-  border-color: var(--border-color);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
   color: var(--text-primary);
 }
 
 .input, .select, .textarea {
-  background-color: var(--bg-primary);
-  border-color: var(--border-color);
+  background: var(--input-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
   color: var(--text-primary);
 }
 
@@ -91,3 +254,12 @@ body {
   border-color: var(--primary);
   outline-color: var(--primary);
 }
+
+/* Headings and labels stay high-contrast on glass */
+h1, h2, h3, h4, h5, h6,
+label,
+th {
+  color: var(--text-primary);
+}
+
+/* Page titles and subtitles — light mode defaults; dark mode in dark-mode-overrides.css */

@@ -8,6 +8,37 @@ import type { Appointment } from '../types/appointment';
 import type { LabResult } from '../types/lab';
 import type { Prescription } from '../types/prescription';
 import type { RadiologyResult, PatientPortalMedicalHistory } from '../types/patientPortal';
+import type { ImmunizationRecord } from './clinical';
+
+export interface OutstandingBill {
+  visit_id: number;
+  created_at: string;
+  chief_complaint: string;
+  outstanding_balance: string;
+  currency: string;
+  payment_status: string;
+}
+
+export async function getOutstandingBills(): Promise<OutstandingBill[]> {
+  const res = await apiRequest<{ bills: OutstandingBill[] }>(
+    '/patient-portal/outstanding-bills/'
+  );
+  return res.bills || [];
+}
+
+export async function payOutstandingBill(visitId: number): Promise<{
+  authorization_url: string;
+  reference: string;
+  amount: string;
+}> {
+  return apiRequest('/patient-portal/pay-bill/', {
+    method: 'POST',
+    body: JSON.stringify({
+      visit_id: visitId,
+      callback_url: `${window.location.origin}/patient-portal/dashboard?payment=success`,
+    }),
+  });
+}
 
 /**
  * Get patient's own profile
@@ -68,4 +99,12 @@ export async function getPatientPrescriptions(): Promise<Prescription[]> {
  */
 export async function getPatientMedicalHistory(): Promise<PatientPortalMedicalHistory> {
   return apiRequest<PatientPortalMedicalHistory>('/patient-portal/medical-history/');
+}
+
+/**
+ * Get patient's own immunization schedule (read-only).
+ */
+export async function getPatientImmunizations(): Promise<ImmunizationRecord[]> {
+  const data = await apiRequest<ImmunizationRecord[]>('/patient-portal/immunizations/');
+  return Array.isArray(data) ? data : [];
 }

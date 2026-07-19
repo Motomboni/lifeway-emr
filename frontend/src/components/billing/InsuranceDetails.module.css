@@ -1,0 +1,285 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.infoPanel {
+  background: color-mix(in srgb, var(--primary) 10%, var(--bg-primary-solid));
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border-color));
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+}
+
+.infoHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.infoTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--page-title-color);
+  margin: 0;
+}
+
+.infoActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .infoGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.infoFieldLabel {
+  font-size: 0.875rem;
+  color: var(--text-on-glass-secondary);
+  margin: 0 0 0.25rem;
+}
+
+.infoFieldValue {
+  font-weight: 600;
+  color: var(--page-title-color);
+  margin: 0;
+}
+
+.infoDivider {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border-color));
+}
+
+.infoCoverageRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.infoCoverageAmount {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--page-title-color);
+}
+
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--page-title-color);
+  margin: 0 0 0.75rem;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.statusApproved {
+  background: var(--badge-open-bg);
+  color: var(--badge-open-text);
+}
+
+.statusRejected {
+  background: var(--badge-closed-bg);
+  color: var(--badge-closed-text);
+}
+
+.statusPending {
+  background: var(--badge-pending-bg);
+  color: var(--badge-pending-text);
+}
+
+.emptyState {
+  background: var(--bg-secondary-solid);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+
+.emptyText {
+  color: var(--text-on-glass-secondary);
+  margin: 0 0 1rem;
+}
+
+.formPanel {
+  background: var(--bg-primary-solid);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.75rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.formTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--page-title-color);
+  margin: 0 0 1.25rem;
+}
+
+.formFields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.formLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--page-title-color);
+}
+
+.formInput,
+.formSelect,
+.formTextarea {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-family: inherit;
+  background: var(--input-bg);
+  color: var(--text-on-glass);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.formInput::placeholder,
+.formTextarea::placeholder {
+  color: var(--text-muted);
+}
+
+.formInput:focus,
+.formSelect:focus,
+.formTextarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+.formTextarea {
+  resize: vertical;
+  min-height: 5.5rem;
+}
+
+.formActions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.primaryButton,
+.secondaryButton,
+.approveButton,
+.rejectButton,
+.preAuthButton {
+  padding: 0.625rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.primaryButton {
+  flex: 1;
+  min-width: 10rem;
+  background: var(--primary);
+  color: #fff;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.secondaryButton {
+  background: var(--bg-tertiary);
+  color: var(--text-on-glass);
+  border: 1px solid var(--border-color);
+}
+
+.secondaryButton:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.approveButton {
+  background: var(--success);
+  color: #fff;
+}
+
+.approveButton:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.rejectButton {
+  background: var(--error);
+  color: #fff;
+}
+
+.rejectButton:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.preAuthButton {
+  background: var(--warning);
+  color: #fff;
+}
+
+.preAuthButton:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.approveButton:disabled,
+.rejectButton:disabled,
+.preAuthButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.preAuthActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.emptyState .primaryButton {
+  flex: none;
+  display: inline-block;
+}
+
+[data-theme="dark"] .infoTitle,
+[data-theme="dark"] .infoFieldValue,
+[data-theme="dark"] .infoCoverageAmount,
+[data-theme="dark"] .sectionTitle,
+[data-theme="dark"] .formTitle,
+[data-theme="dark"] .formLabel {
+  color: var(--text-on-glass);
+  text-shadow: var(--glass-text-shadow);
+}

@@ -91,6 +91,7 @@ If you see `WeasyPrint OK`, backend PDF generation (receipts/invoices) will use 
 
 - Python is **64-bit**: `python -c "import sys; print(sys.maxsize > 2**32)"` → `True`
 - PATH contains `C:\msys64\ucrt64\bin` and you restarted the terminal after adding it.
+- Set **`WEASYPRINT_DLL_DIRECTORIES=C:\msys64\ucrt64\bin`** (user env var or `backend/.env`) so Python can load Pango/Cairo DLLs.
 
 ---
 

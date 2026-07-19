@@ -22,6 +22,7 @@ export interface Prescription {
   dispensed_by?: number;
   created_at: string;
   updated_at: string;
+  clinical_alerts_count?: number;
 }
 
 export interface PrescriptionCreateData {

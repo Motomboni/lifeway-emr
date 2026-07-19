@@ -1,10 +1,11 @@
 /* Billing Documents Panel Styles */
 
 .panel {
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-primary-solid);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
   padding: 24px;
+  color: var(--text-on-glass);
 }
 
 .header {
@@ -14,7 +15,7 @@
 .title {
   font-size: 20px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--page-title-color);
   margin: 0;
 }
 
@@ -25,10 +26,10 @@
 }
 
 .documentCard {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   padding: 20px;
-  background: #f9fafb;
+  background: var(--bg-secondary-solid);
 }
 
 .cardHeader {
@@ -45,7 +46,7 @@
 .cardTitle {
   font-size: 18px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--page-title-color);
   margin: 0;
   flex: 1;
 }
@@ -53,9 +54,9 @@
 .badgeAvailable {
   display: inline-block;
   padding: 4px 8px;
-  background: #10b981;
-  color: white;
-  border-radius: 12px;
+  background: var(--success);
+  color: #fff;
+  border-radius: var(--radius-md);
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -63,7 +64,7 @@
 
 .cardDescription {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-on-glass-secondary);
   margin-bottom: 16px;
   line-height: 1.5;
 }
@@ -84,23 +85,23 @@
 }
 
 .buttonPrimary {
-  background: #2563eb;
+  background: var(--primary);
   color: white;
 }
 
 .buttonPrimary:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--primary-hover);
 }
 
 .buttonDisabled {
-  background: #e5e7eb;
-  color: #9ca3af;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
   cursor: not-allowed;
 }
 
 .helpText {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-on-glass-secondary);
   margin-top: 8px;
   text-align: center;
 }
@@ -121,3 +122,8 @@
   }
 }
 
+[data-theme="dark"] .title,
+[data-theme="dark"] .cardTitle {
+  color: var(--text-on-glass);
+  text-shadow: var(--glass-text-shadow);
+}

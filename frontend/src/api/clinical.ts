@@ -1,6 +1,6 @@
 /**
  * Clinical API Client
- * 
+ *
  * Endpoints:
  * - GET /api/v1/visits/{visit_id}/clinical/vital-signs/ - List vital signs
  * - POST /api/v1/visits/{visit_id}/clinical/vital-signs/ - Create vital signs
@@ -9,6 +9,7 @@
  * - GET /api/v1/clinical/templates/ - List templates
  * - POST /api/v1/clinical/templates/ - Create template
  * - POST /api/v1/clinical/templates/{id}/use/ - Use template
+ * - GET /api/v1/clinical/patients/{id}/immunizations/ - Immunization records
  */
 import { apiRequest } from '../utils/apiClient';
 import {
@@ -31,7 +32,7 @@ export async function fetchVitalSigns(visitId: number): Promise<VitalSigns[]> {
  */
 export async function createVitalSigns(
   visitId: number,
-  data: VitalSignsCreate
+  data: VitalSignsCreate,
 ): Promise<VitalSigns> {
   return apiRequest<VitalSigns>(`/visits/${visitId}/clinical/vital-signs/`, {
     method: 'POST',
@@ -44,7 +45,7 @@ export async function createVitalSigns(
  */
 export async function fetchClinicalAlerts(
   visitId: number,
-  isResolved?: boolean
+  isResolved?: boolean,
 ): Promise<ClinicalAlert[]> {
   const params = new URLSearchParams();
   if (isResolved !== undefined) {
@@ -52,7 +53,7 @@ export async function fetchClinicalAlerts(
   }
   const queryString = params.toString();
   return apiRequest<ClinicalAlert[]>(
-    `/visits/${visitId}/clinical/alerts/${queryString ? `?${queryString}` : ''}`
+    `/visits/${visitId}/clinical/alerts/${queryString ? `?${queryString}` : ''}`,
   );
 }
 
@@ -61,13 +62,13 @@ export async function fetchClinicalAlerts(
  */
 export async function acknowledgeAlert(
   visitId: number,
-  alertId: number
+  alertId: number,
 ): Promise<ClinicalAlert> {
   return apiRequest<ClinicalAlert>(
     `/visits/${visitId}/clinical/alerts/${alertId}/acknowledge/`,
     {
       method: 'POST',
-    }
+    },
   );
 }
 
@@ -76,13 +77,13 @@ export async function acknowledgeAlert(
  */
 export async function resolveAlert(
   visitId: number,
-  alertId: number
+  alertId: number,
 ): Promise<ClinicalAlert> {
   return apiRequest<ClinicalAlert>(
     `/visits/${visitId}/clinical/alerts/${alertId}/resolve/`,
     {
       method: 'POST',
-    }
+    },
   );
 }
 
@@ -90,7 +91,7 @@ export async function resolveAlert(
  * Fetch clinical templates
  */
 export async function fetchClinicalTemplates(
-  category?: string
+  category?: string,
 ): Promise<ClinicalTemplate[]> {
   const params = new URLSearchParams();
   if (category) {
@@ -98,7 +99,7 @@ export async function fetchClinicalTemplates(
   }
   const queryString = params.toString();
   return apiRequest<ClinicalTemplate[]>(
-    `/clinical/templates/${queryString ? `?${queryString}` : ''}`
+    `/clinical/templates/${queryString ? `?${queryString}` : ''}`,
   );
 }
 
@@ -106,7 +107,7 @@ export async function fetchClinicalTemplates(
  * Create clinical template
  */
 export async function createClinicalTemplate(
-  data: ClinicalTemplateCreate
+  data: ClinicalTemplateCreate,
 ): Promise<ClinicalTemplate> {
   return apiRequest<ClinicalTemplate>('/clinical/templates/', {
     method: 'POST',
@@ -118,7 +119,7 @@ export async function createClinicalTemplate(
  * Apply a clinical template (returns template content)
  */
 export async function applyClinicalTemplate(
-  templateId: number
+  templateId: number,
 ): Promise<{
   history: string;
   examination: string;
@@ -132,5 +133,44 @@ export async function applyClinicalTemplate(
     clinical_notes: string;
   }>(`/clinical/templates/${templateId}/use/`, {
     method: 'POST',
+  });
+}
+
+// --- Nigeria EPI immunization schedule ---
+
+export interface ImmunizationRecord {
+  id: number;
+  patient_id: number;
+  vaccine: string;
+  dose_number: number;
+  scheduled_date: string | null;
+  administered_date: string | null;
+  batch_number: string;
+  administered_by: number | null;
+  notes: string;
+  created_at: string;
+}
+
+export async function fetchPatientImmunizations(patientId: number): Promise<ImmunizationRecord[]> {
+  return apiRequest<ImmunizationRecord[]>(`/clinical/patients/${patientId}/immunizations/`);
+}
+
+export async function createImmunizationRecord(
+  patientId: number,
+  data: Partial<ImmunizationRecord> & { administered?: boolean },
+): Promise<ImmunizationRecord> {
+  return apiRequest<ImmunizationRecord>(`/clinical/patients/${patientId}/immunizations/`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateImmunizationRecord(
+  recordId: number,
+  data: Partial<ImmunizationRecord> & { mark_administered?: boolean },
+): Promise<ImmunizationRecord> {
+  return apiRequest<ImmunizationRecord>(`/clinical/immunizations/${recordId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
   });
 }

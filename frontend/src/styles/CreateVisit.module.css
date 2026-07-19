@@ -1,24 +1,30 @@
 /**
- * Create Visit Styles
+ * Create Visit Styles — solid surfaces for readable text contrast
  */
 .createVisitContainer {
   padding: 2rem;
   max-width: 1000px;
   margin: 0 auto;
+  color: var(--text-on-glass);
 }
 
 .createVisitCard {
-  background: white;
-  border-radius: 8px;
+  background: var(--bg-primary-solid) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
   padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
+  color: var(--text-on-glass);
 }
 
 .createVisitCard h1 {
   margin: 0 0 2rem 0;
-  color: #333;
+  color: var(--page-title-color);
   font-size: 1.75rem;
   font-weight: 700;
+  text-shadow: none;
 }
 
 .searchSection {
@@ -27,7 +33,7 @@
 
 .searchSection h2 {
   margin: 0 0 1rem 0;
-  color: #333;
+  color: var(--page-title-color);
   font-size: 1.125rem;
   font-weight: 600;
 }
@@ -41,30 +47,37 @@
 .searchBox input {
   flex: 1;
   padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   font-size: 1rem;
+  background: var(--input-bg);
+  color: var(--text-on-glass);
+}
+
+.searchBox input::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
 }
 
 .searchBox input:focus {
   outline: none;
-  border-color: #2196f3;
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.15);
 }
 
 .searchButton {
   padding: 0.75rem 1.5rem;
-  background-color: #2196f3;
-  color: white;
+  background-color: var(--primary);
+  color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .searchButton:hover:not(:disabled) {
-  background-color: #1976d2;
+  background-color: var(--primary-hover);
 }
 
 .searchButton:disabled {
@@ -82,21 +95,22 @@
 }
 
 .patientCard {
-  background: #f9f9f9;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  background: var(--bg-secondary-solid);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   padding: 1rem;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  color: var(--text-on-glass);
 }
 
 .patientCard:hover {
-  background: #f0f0f0;
-  border-color: #2196f3;
-  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2);
+  background: var(--bg-hover);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .patientInfo {
@@ -105,28 +119,31 @@
 
 .patientInfo strong {
   display: block;
-  color: #333;
+  color: var(--page-title-color);
   font-size: 1rem;
+  font-weight: 600;
   margin-bottom: 0.5rem;
 }
 
 .patientMeta {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   font-size: 0.875rem;
-  color: #666;
+  font-weight: 500;
+  color: var(--text-on-glass-secondary);
 }
 
 .newPatientLink {
   text-align: center;
   padding: 1rem;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--border-color);
 }
 
 .linkButton {
   background: none;
   border: none;
-  color: #2196f3;
+  color: var(--link-color);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -134,7 +151,7 @@
 }
 
 .linkButton:hover {
-  color: #1976d2;
+  color: var(--link-color-hover);
 }
 
 .visitDetailsSection {
@@ -143,26 +160,28 @@
   gap: 2rem;
 }
 
-.selectedPatient {
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+.selectedPatient,
+.visitOptions {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   padding: 1.5rem;
-  background: #f9f9f9;
+  background: var(--bg-secondary-solid);
 }
 
-.selectedPatient h2 {
+.selectedPatient h2,
+.visitOptions h2 {
   margin: 0 0 1rem 0;
-  color: #333;
+  color: var(--page-title-color);
   font-size: 1.125rem;
   font-weight: 600;
 }
 
 .changeButton {
   padding: 0.5rem 1rem;
-  background-color: #f5f5f5;
-  color: #666;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-on-glass);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -170,21 +189,7 @@
 }
 
 .changeButton:hover {
-  background-color: #e0e0e0;
-}
-
-.visitOptions {
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 1.5rem;
-  background: #f9f9f9;
-}
-
-.visitOptions h2 {
-  margin: 0 0 1rem 0;
-  color: #333;
-  font-size: 1.125rem;
-  font-weight: 600;
+  background-color: var(--bg-hover);
 }
 
 .formGroup {
@@ -196,28 +201,53 @@
 .formGroup label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #333;
+  color: var(--page-title-color);
 }
 
-.formGroup select {
+.formGroup select,
+.formGroup textarea {
   padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   font-size: 1rem;
   font-family: inherit;
+  background: var(--input-bg);
+  color: var(--text-on-glass);
 }
 
-.formGroup select:focus {
+.formGroup textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.formGroup select:focus,
+.formGroup textarea:focus {
   outline: none;
-  border-color: #2196f3;
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.15);
+}
+
+.formGroup select option {
+  background: var(--bg-primary-solid);
+  color: var(--text-primary);
 }
 
 .helpText {
-  font-size: 0.75rem;
-  color: #666;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-on-glass-secondary);
   margin: 0;
-  font-style: italic;
+  line-height: 1.45;
+}
+
+.hintSuccess {
+  color: var(--success) !important;
+  font-weight: 600;
+}
+
+.hintWarning {
+  color: var(--error) !important;
+  font-weight: 500;
 }
 
 .formActions {
@@ -230,7 +260,7 @@
 .createButton,
 .cancelButton {
   padding: 0.75rem 1.5rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -239,12 +269,12 @@
 }
 
 .createButton {
-  background-color: #2196f3;
-  color: white;
+  background-color: var(--primary);
+  color: #fff;
 }
 
 .createButton:hover:not(:disabled) {
-  background-color: #1976d2;
+  background-color: var(--primary-hover);
 }
 
 .createButton:disabled {
@@ -253,10 +283,41 @@
 }
 
 .cancelButton {
-  background-color: #f5f5f5;
-  color: #666;
+  background-color: var(--bg-tertiary);
+  color: var(--text-on-glass);
+  border: 1px solid var(--border-color);
 }
 
 .cancelButton:hover {
-  background-color: #e0e0e0;
+  background-color: var(--bg-hover);
+}
+
+/* Keep headings readable inside the card in both themes */
+.createVisitCard :is(h1, h2, h3, label, strong) {
+  color: var(--page-title-color);
+}
+
+[data-theme="dark"] .createVisitCard :is(h1, h2, h3, label, strong) {
+  color: var(--text-on-glass);
+  text-shadow: var(--glass-text-shadow);
+}
+
+[data-theme="dark"] .createVisitCard :is(p, span):not([class*="hint"]) {
+  color: var(--text-on-glass-secondary);
+}
+
+.createVisitPage {
+  padding: 2rem;
+  color: var(--text-on-glass);
+}
+
+.createVisitPage p {
+  color: var(--text-on-glass-secondary);
+}
+
+.accessDenied {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-on-glass-secondary);
+  font-weight: 500;
 }

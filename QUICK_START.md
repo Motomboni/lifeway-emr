@@ -107,6 +107,53 @@ These are harmless warnings about future React Router changes. They can be ignor
    python manage.py runserver 8001
    ```
 
+## Local test before deployment (Windows)
+
+Use the project venv (Python 3.11 via `uv`), not MSYS `python`.
+
+```powershell
+# One-time
+.\scripts\setup-backend-venv.ps1
+
+# Fresh local DB + test users + NHIA tariffs (SQLite — easiest)
+.\scripts\prepare-local.ps1 -UseSqlite -ResetDb
+
+# Terminal 1 — API (must use same SQLite env as prepare)
+.\scripts\start-local-backend.ps1 -UseSqlite
+
+# Terminal 2 — UI
+cd frontend
+npm install
+npm start
+```
+
+Open **http://localhost:3000** and log in:
+
+| Role | Email | Password |
+|------|-------|----------|
+| Doctor | doctor@clinic.com | Doctor123! |
+| Receptionist | receptionist@clinic.com | Receptionist123! |
+
+**Manual v2.1 checklist**
+
+1. Register patient → create visit → pay registration (receptionist)
+2. Open consultation as doctor → **Clinical AI Scribe** → generate → **Apply to consultation**
+3. Confirm NHIA validation badges and form fields filled
+4. Save consultation → confirm ICD-11 codes appear
+
+**Automated checks**
+
+```powershell
+.\scripts\run-backend-tests.ps1
+# optional E2E (backend must be running):
+cd frontend
+npx playwright test e2e/workflows/visit-pay-consult.spec.ts --project=chromium
+```
+
+For Postgres instead of SQLite, omit `-UseSqlite` and ensure `backend/.env` DB settings match a running local Postgres.
+
+---
+
 ## Development Workflow
 
 1. **Always start backend first** - The frontend depends on it

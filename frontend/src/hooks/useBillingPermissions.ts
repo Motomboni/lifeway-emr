@@ -5,6 +5,7 @@
  * Per EMR Rules: Only Receptionist can view/edit billing.
  */
 import { useAuth } from '../contexts/AuthContext';
+import { isAdminUser } from '../utils/roleUtils';
 
 export interface BillingPermissions {
   canViewBilling: boolean;
@@ -13,6 +14,8 @@ export interface BillingPermissions {
   canAddCharges: boolean;
   canViewInsurance: boolean;
   canManageInsurance: boolean;
+  /** Line-item amounts on ordered-services panels (reception billing only). */
+  canViewChargeAmounts: boolean;
   isReceptionist: boolean;
   isDoctor: boolean;
   isAdmin: boolean;
@@ -23,9 +26,9 @@ export function useBillingPermissions(): BillingPermissions {
   
   const isReceptionist = user?.role === 'RECEPTIONIST';
   const isDoctor = user?.role === 'DOCTOR';
-  const isAdmin = user?.is_superuser === true;
+  const isAdmin = isAdminUser(user);
   
-  // Only Receptionist and Admin can view billing
+  // Receptionist, Admin, and superuser can view billing
   const canViewBilling = isReceptionist || isAdmin;
   
   // Only Receptionist can edit billing
@@ -54,6 +57,7 @@ export function useBillingPermissions(): BillingPermissions {
     canAddCharges,
     canViewInsurance,
     canManageInsurance,
+    canViewChargeAmounts: isReceptionist,
     isReceptionist,
     isDoctor,
     isAdmin,

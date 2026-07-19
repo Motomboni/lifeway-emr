@@ -38,7 +38,7 @@ class ErrorBoundaryClass extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error to console in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.MODE === 'development') {
       console.error('ErrorBoundary caught an error:', error, errorInfo);
     }
 
@@ -76,7 +76,7 @@ class ErrorBoundaryClass extends Component<Props, State> {
               We're sorry, but something unexpected happened. Please try refreshing the page.
             </p>
             
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.MODE === 'development' && this.state.error && (
               <details className={styles.errorDetails}>
                 <summary>Error Details (Development Only)</summary>
                 <pre className={styles.errorStack}>

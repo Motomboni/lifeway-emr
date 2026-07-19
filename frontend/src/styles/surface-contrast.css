@@ -1,0 +1,162 @@
+/**
+ * App-wide contrast on solid / elevated surfaces (panels, expanded details, forms).
+ * Loaded after content-surfaces.css — fixes headings, tags, and labels that global
+ * dark-mode rules wash out on nested panels.
+ */
+
+/* ----- Elevated panel shell ----- */
+:is(
+  [data-content-surface="elevated"],
+  [class*="expandedDetails"],
+  [class*="formPanel"],
+  [class*="infoPanel"],
+  [class*="emptyState"],
+  [class*="breakdownPanel"],
+  [class*="visitInfoPanel"],
+  [class*="permissionMessage"]
+) {
+  background: var(--bg-secondary-solid);
+  border-color: var(--border-color);
+  color: var(--text-on-glass);
+}
+
+/* ----- Headings & labels on elevated surfaces ----- */
+:is(
+  [data-content-surface="elevated"],
+  [class*="expandedDetails"],
+  [class*="formPanel"],
+  [class*="infoPanel"],
+  [class*="timelineCard"],
+  [class*="detailSection"],
+  [class*="breakdownPanel"],
+  [class*="visitInfoPanel"]
+) :is(h1, h2, h3, h4, h5, h6, label, strong, th) {
+  color: var(--page-title-color);
+  text-shadow: none;
+}
+
+:is(
+  [data-content-surface="elevated"],
+  [class*="expandedDetails"],
+  [class*="formPanel"],
+  [class*="infoPanel"],
+  [class*="detailSection"]
+) :is(
+  [class*="detailLabel"],
+  [class*="metadataKey"],
+  [class*="infoFieldLabel"],
+  [class*="actorLabel"],
+  [class*="actorRole"]
+) {
+  color: var(--text-on-glass-secondary);
+}
+
+:is(
+  [data-content-surface="elevated"],
+  [class*="expandedDetails"],
+  [class*="detailSection"]
+) :is(
+  [class*="detailValue"],
+  [class*="metadataValue"],
+  [class*="infoFieldValue"],
+  [class*="actorName"]
+) {
+  color: var(--text-on-glass);
+}
+
+[data-theme="dark"] :is(
+  [data-content-surface="elevated"],
+  [class*="expandedDetails"],
+  [class*="formPanel"],
+  [class*="infoPanel"],
+  [class*="timelineCard"],
+  [class*="detailSection"],
+  [class*="breakdownPanel"],
+  [class*="visitInfoPanel"]
+) :is(h1, h2, h3, h4, h5, h6, label, strong, th) {
+  color: var(--text-on-glass) !important;
+  text-shadow: var(--glass-text-shadow) !important;
+}
+
+[data-theme="dark"] :is(
+  [data-content-surface="elevated"],
+  [class*="expandedDetails"],
+  [class*="detailSection"]
+) :is(
+  [class*="detailLabel"],
+  [class*="metadataKey"],
+  [class*="infoFieldLabel"],
+  [class*="actorLabel"],
+  [class*="actorRole"]
+) {
+  color: var(--text-on-glass-secondary) !important;
+  text-shadow: none !important;
+}
+
+[data-theme="dark"] :is(
+  [data-content-surface="elevated"],
+  [class*="expandedDetails"],
+  [class*="detailSection"]
+) :is(
+  [class*="detailValue"],
+  [class*="metadataValue"],
+  [class*="infoFieldValue"],
+  [class*="actorName"],
+  [class*="eventDescription"]
+) {
+  color: var(--text-on-glass) !important;
+  text-shadow: none !important;
+}
+
+/* ----- Tag / department / status pills (app-wide) ----- */
+:is(
+  [class*="eventDepartment"],
+  [class*="departmentBadge"],
+  [class*="tagPill"]
+):where(span, div, p) {
+  background: var(--badge-default-bg) !important;
+  color: var(--badge-default-text) !important;
+  border: 1px solid color-mix(in srgb, var(--badge-default-text) 14%, var(--border-color));
+  text-shadow: none !important;
+}
+
+[data-theme="dark"] :is(
+  [class*="eventDepartment"],
+  [class*="departmentBadge"],
+  [class*="tagPill"]
+) {
+  background: var(--badge-default-bg) !important;
+  color: var(--badge-default-text) !important;
+  border-color: color-mix(in srgb, var(--badge-default-text) 22%, var(--border-color)) !important;
+}
+
+/* ----- Expand / collapse affordances on cards ----- */
+[class*="expandIndicator"],
+[class*="expandText"] {
+  color: var(--primary) !important;
+  text-shadow: none !important;
+}
+
+[class*="expandIndicator"]:hover [class*="expandText"],
+[class*="expandText"]:hover {
+  color: var(--primary-hover) !important;
+}
+
+/* ----- Page chrome subtitles (patients, appointments, verification, list pages) ----- */
+:is([data-page-subtitle], .emr-page-desc) {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  font-weight: 600 !important;
+  line-height: 1.55 !important;
+  max-width: 42rem;
+}
+
+[data-page-chrome] :is(header, [class*="_header_"]) :is(
+  [data-page-subtitle],
+  .emr-page-desc,
+  [class*="_subtitle_"],
+  [class*="_headerSubtitle_"]
+) {
+  text-shadow: none !important;
+}

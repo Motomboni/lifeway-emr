@@ -10,7 +10,7 @@
  * - Pharmacist: Can dispense prescriptions (separate workflow)
  * - No sidebar navigation - inline only
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePrescriptions } from '../../hooks/usePrescriptions';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../contexts/AuthContext';
@@ -24,6 +24,7 @@ import styles from '../../styles/ConsultationWorkspace.module.css';
 interface PrescriptionInlineProps {
   visitId: string;
   consultationId?: number;
+  ensureConsultation?: () => Promise<number>;
 }
 
 // Component for dispense button with lock check
@@ -58,7 +59,11 @@ function DispenseButtonWithLock({
   );
 }
 
-export default function PrescriptionInline({ visitId, consultationId }: PrescriptionInlineProps) {
+export default function PrescriptionInline({
+  visitId,
+  consultationId,
+  ensureConsultation,
+}: PrescriptionInlineProps) {
   const {
     prescriptions,
     loading,
@@ -70,7 +75,7 @@ export default function PrescriptionInline({ visitId, consultationId }: Prescrip
   } = usePrescriptions(visitId);
   
   const { user } = useAuth();
-  const { showSuccess, showError } = useToast();
+  const { showSuccess, showError, showWarning } = useToast();
   
   // Only pharmacists can dispense
   const canDispense = user?.role === 'PHARMACIST';
@@ -84,9 +89,39 @@ export default function PrescriptionInline({ visitId, consultationId }: Prescrip
   const [newPrescriptionQuantity, setNewPrescriptionQuantity] = useState('');
   const [newPrescriptionInstructions, setNewPrescriptionInstructions] = useState('');
   const [dispenseQuantityById, setDispenseQuantityById] = useState<Record<number, string>>({});
+  const [effectiveConsultationId, setEffectiveConsultationId] = useState<number | undefined>(consultationId);
+  const [ensuringConsultation, setEnsuringConsultation] = useState(false);
+  const isDoctor = user?.role === 'DOCTOR';
+
+  useEffect(() => {
+    if (consultationId) {
+      setEffectiveConsultationId(consultationId);
+    }
+  }, [consultationId]);
+
+  const resolveConsultationId = async (): Promise<number | null> => {
+    if (effectiveConsultationId) {
+      return effectiveConsultationId;
+    }
+    if (!ensureConsultation) {
+      return null;
+    }
+    setEnsuringConsultation(true);
+    try {
+      const id = await ensureConsultation();
+      setEffectiveConsultationId(id);
+      return id;
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Failed to start consultation');
+      return null;
+    } finally {
+      setEnsuringConsultation(false);
+    }
+  };
 
   const handleCreatePrescription = async () => {
-    if (!consultationId) {
+    const orderConsultationId = await resolveConsultationId();
+    if (!orderConsultationId) {
       showError('Consultation is required to create prescriptions');
       return;
     }
@@ -102,7 +137,7 @@ export default function PrescriptionInline({ visitId, consultationId }: Prescrip
     }
 
     try {
-      await createPrescription(visitId, consultationId, {
+      const created = await createPrescription(visitId, orderConsultationId, {
         drug: newPrescriptionDrug,
         drug_code: newPrescriptionDrugCode || undefined,
         dosage: newPrescriptionDosage,
@@ -111,7 +146,14 @@ export default function PrescriptionInline({ visitId, consultationId }: Prescrip
         quantity: newPrescriptionQuantity || undefined,
         instructions: newPrescriptionInstructions || undefined
       });
-      showSuccess('Prescription created successfully');
+      if (created.clinical_alerts_count && created.clinical_alerts_count > 0) {
+        showWarning(
+          `${created.clinical_alerts_count} clinical safety alert(s) generated — review the Clinical Alerts panel.`,
+        );
+        window.dispatchEvent(new CustomEvent('clinical-alerts-changed'));
+      } else {
+        showSuccess('Prescription created successfully');
+      }
       setShowCreatePrescription(false);
       resetForm();
       await refresh();
@@ -127,8 +169,14 @@ export default function PrescriptionInline({ visitId, consultationId }: Prescrip
       return;
     }
     try {
-      await dispensePrescription(visitId, prescriptionId, dispensedQuantity);
+      const dispensed = await dispensePrescription(visitId, prescriptionId, dispensedQuantity);
       showSuccess('Prescription dispensed successfully');
+      if (dispensed.clinical_alerts_count && dispensed.clinical_alerts_count > 0) {
+        showWarning(
+          `${dispensed.clinical_alerts_count} clinical safety alert(s) — review the Clinical Alerts panel.`,
+        );
+        window.dispatchEvent(new CustomEvent('clinical-alerts-changed'));
+      }
       setDispenseQuantityById(prev => {
         const next = { ...prev };
         delete next[prescriptionId];
@@ -174,13 +222,21 @@ export default function PrescriptionInline({ visitId, consultationId }: Prescrip
     <div className={styles.inlineComponent}>
       <div className={styles.inlineHeader}>
         <h3>Prescriptions</h3>
-        {consultationId && !showCreatePrescription && user?.role === 'DOCTOR' && (
+        {isDoctor && !showCreatePrescription && (
           <button
             className={styles.addButton}
-            onClick={() => setShowCreatePrescription(true)}
+            onClick={async () => {
+              const id = await resolveConsultationId();
+              if (!id) {
+                showError('Consultation is required to create prescriptions');
+                return;
+              }
+              setShowCreatePrescription(true);
+            }}
             type="button"
+            disabled={ensuringConsultation}
           >
-            + New Prescription
+            {ensuringConsultation ? 'Preparing…' : '+ New Prescription'}
           </button>
         )}
       </div>
@@ -190,7 +246,7 @@ export default function PrescriptionInline({ visitId, consultationId }: Prescrip
       )}
 
       {/* Create new prescription form */}
-      {showCreatePrescription && consultationId && (
+      {showCreatePrescription && (
         <div className={styles.createForm}>
           <h4>Create Prescription</h4>
           <div className={styles.formGroup}>

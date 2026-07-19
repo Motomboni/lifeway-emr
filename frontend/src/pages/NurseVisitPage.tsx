@@ -28,6 +28,9 @@ import ToastContainer from '../components/common/ToastContainer';
 import OfflineIndicator from '../components/common/OfflineIndicator';
 import BackToDashboard from '../components/common/BackToDashboard';
 import NurseVisitHeader from '../components/nursing/NurseVisitHeader';
+import ClinicalAlertsInline from '../components/clinical/ClinicalAlertsInline';
+import { PatientAllergyBannerForPatient } from '../components/clinical/PatientAllergyBanner';
+import WorkflowRail from '../components/guide/WorkflowRail';
 import AdmissionInformationSection from '../components/nursing/AdmissionInformationSection';
 import VitalSignsSection from '../components/nursing/VitalSignsSection';
 import NursingNotesSection from '../components/nursing/NursingNotesSection';
@@ -46,6 +49,7 @@ export default function NurseVisitPage() {
 
   const [visit, setVisit] = useState<Visit | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [visitStatus, setVisitStatus] = useState<'OPEN' | 'CLOSED'>('OPEN');
   const [paymentStatus, setPaymentStatus] = useState<'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'INSURANCE_PENDING' | 'INSURANCE_CLAIMED' | 'SETTLED'>('UNPAID');
 
@@ -69,12 +73,15 @@ export default function NurseVisitPage() {
 
     try {
       setLoading(true);
+      setLoadError(null);
       const visitData = await getVisit(parseInt(visitId));
       setVisit(visitData);
       setVisitStatus(visitData.status as 'OPEN' | 'CLOSED');
       setPaymentStatus(visitData.payment_status as 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'INSURANCE_PENDING' | 'INSURANCE_CLAIMED' | 'SETTLED');
     } catch (error: any) {
       console.error('Failed to load visit details:', error);
+      setVisit(null);
+      setLoadError(error.message || 'Failed to load visit details');
       showError(error.message || 'Failed to load visit details');
     } finally {
       setLoading(false);
@@ -95,7 +102,7 @@ export default function NurseVisitPage() {
     return (
       <div className={styles.nurseVisitPage}>
         <div className={styles.errorContainer}>
-          <div className={styles.errorMessage}>Visit not found</div>
+          <div className={styles.errorMessage}>{loadError || 'Visit not found'}</div>
           <button onClick={() => navigate('/dashboard')} className={styles.backButton}>
             Back to Dashboard
           </button>
@@ -128,6 +135,11 @@ export default function NurseVisitPage() {
       {visitId && (
         <>
           <NurseVisitHeader visitId={visitId} visit={visit} />
+          <WorkflowRail visitId={visitId} />
+          {visit.patient && (
+            <PatientAllergyBannerForPatient patientId={visit.patient} />
+          )}
+          <ClinicalAlertsInline visitId={visitId} />
           
           {/* Status warning banner */}
           {!canPerformActions && (

@@ -369,3 +369,39 @@ export async function updateAntenatalOutcome(
     body: JSON.stringify(data),
   });
 }
+
+// ============================================================================
+// ANC schedule (IPTp, TT, routine visits)
+// ============================================================================
+
+export interface AncScheduleItem {
+  kind: 'ANC_VISIT' | 'TT_VACCINE' | 'IPTp';
+  week: number;
+  label: string;
+  due_date: string;
+  status: 'completed' | 'due' | 'overdue' | 'upcoming';
+  visit_type?: string;
+  dose?: number;
+}
+
+export interface AncSchedule {
+  record_id: number;
+  lmp: string;
+  edd: string;
+  current_gestational_age_weeks: number | null;
+  items: AncScheduleItem[];
+  upcoming: AncScheduleItem[];
+  overdue: AncScheduleItem[];
+  danger_signs: string;
+}
+
+export async function getAncSchedule(recordId: number): Promise<AncSchedule> {
+  return apiRequest<AncSchedule>(`/antenatal/records/${recordId}/schedule/`);
+}
+
+export async function sendAncScheduleReminder(recordId: number): Promise<{ detail: string }> {
+  return apiRequest<{ detail: string }>(
+    `/antenatal/records/${recordId}/send_schedule_reminder/`,
+    { method: 'POST', body: JSON.stringify({}) },
+  );
+}

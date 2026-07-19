@@ -7,60 +7,69 @@ Usage:
 This command should be run periodically (e.g., via cron) to send
 reminder emails for upcoming appointments.
 """
+
+from datetime import timedelta
+
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from datetime import timedelta
+
 from apps.appointments.models import Appointment
 from apps.notifications.utils import send_appointment_reminder
 
 
 class Command(BaseCommand):
-    help = 'Send appointment reminder emails for appointments scheduled in the next 24 hours'
+    help = "Send appointment reminder emails for appointments scheduled in the next 24 hours"
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--hours',
+            "--hours",
             type=int,
             default=24,
-            help='Number of hours ahead to send reminders (default: 24)',
+            help="Number of hours ahead to send reminders (default: 24)",
         )
 
     def handle(self, *args, **options):
-        hours_ahead = options['hours']
+        hours_ahead = options["hours"]
         now = timezone.now()
         reminder_time = now + timedelta(hours=hours_ahead)
-        
+
         # Find appointments scheduled within the reminder window
         appointments = Appointment.objects.filter(
-            status__in=['SCHEDULED', 'CONFIRMED'],
+            status__in=["SCHEDULED", "CONFIRMED"],
             appointment_date__gte=now,
             appointment_date__lte=reminder_time,
-        ).select_related('patient', 'doctor')
-        
+        ).select_related("patient", "doctor")
+
         sent_count = 0
         failed_count = 0
-        
+
         for appointment in appointments:
             try:
-                if appointment.patient and appointment.patient.email:
+                patient = appointment.patient
+                if patient and (patient.email or patient.phone):
                     send_appointment_reminder(appointment)
                     sent_count += 1
+                    channels = []
+                    if patient.email:
+                        channels.append("email")
+                    if patient.phone:
+                        channels.append("sms")
                     self.stdout.write(
                         self.style.SUCCESS(
-                            f'Sent reminder for appointment #{appointment.id} '
-                            f'({appointment.patient.get_full_name()})'
+                            f"Sent reminder ({', '.join(channels)}) for appointment "
+                            f"#{appointment.id} ({patient.get_full_name()})"
                         )
                     )
             except Exception as e:
                 failed_count += 1
                 self.stdout.write(
                     self.style.ERROR(
-                        f'Failed to send reminder for appointment #{appointment.id}: {e}'
+                        f"Failed to send reminder for appointment #{appointment.id}: {e}"
                     )
                 )
-        
+
         self.stdout.write(
             self.style.SUCCESS(
-                f'\nReminder emails sent: {sent_count}, Failed: {failed_count}'
+                f"\nReminder emails sent: {sent_count}, Failed: {failed_count}"
             )
         )

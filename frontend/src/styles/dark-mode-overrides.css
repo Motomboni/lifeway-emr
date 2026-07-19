@@ -1,0 +1,152 @@
+/**
+ * Dark mode typography overrides — loaded globally so they win over
+ * CSS-module hardcoded header colors and status badge colors.
+ */
+
+[data-theme="dark"] {
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-on-glass: #f8fafc;
+  --text-on-glass-secondary: #cbd5e1;
+}
+
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3:not(.nursing-care-features-title),
+[data-theme="dark"] h4 {
+  color: var(--page-title-color) !important;
+  text-shadow: var(--title-text-shadow) !important;
+}
+
+[data-theme="dark"] h3.nursing-care-features-title,
+[data-theme="dark"] h3[class*="nursingCareFeaturesTitle"] {
+  color: #020617 !important;
+  -webkit-text-fill-color: #020617 !important;
+  text-shadow: none !important;
+}
+
+[data-theme="dark"] [class*="headerSubtitle"],
+[data-theme="dark"] [class*="_subtitle_"]:not([class*="heroSubtitle"]),
+[data-theme="dark"] [class*="Subtitle"]:not([class*="heroSubtitle"]),
+[data-theme="dark"] [class*="dashboardHeader"] p,
+[data-theme="dark"] [class*="_header_"] p,
+[data-theme="dark"] [class*="_header_"] > div > p {
+  color: #f8fafc !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 1px rgba(0, 0, 0, 0.9) !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #f8fafc !important;
+}
+
+[data-theme="dark"] [data-page-chrome] [data-page-subtitle],
+[data-theme="dark"] [data-page-chrome] .emr-page-desc {
+  color: #f8fafc !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 1px rgba(0, 0, 0, 0.9) !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #f8fafc !important;
+}
+
+/* Page chrome sitting directly on the canvas (not inside cards) */
+[data-theme="dark"] [class*="appointmentsPage"] > [class*="_header_"] h1,
+[data-theme="dark"] [class*="Page"] > [class*="_header_"] h1,
+[data-theme="dark"] [class*="pageContainer"] > [class*="_header_"] h1 {
+  color: var(--page-title-color) !important;
+}
+
+[data-theme="dark"] [class*="pageContainer"] {
+  background-color: transparent !important;
+}
+
+[data-theme="dark"] [class*="modalHeader"] h3,
+[data-theme="dark"] [class*="modalHeader"] p,
+[data-theme="dark"] [class*="drugName"] {
+  color: var(--page-title-color) !important;
+  text-shadow: var(--title-text-shadow) !important;
+}
+
+[data-theme="dark"] [class*="modalContent"] {
+  background: var(--glass-bg-strong) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Visit / payment status pills — app-wide (Open, Paid, Pending, Closed) */
+[data-theme="dark"] [class*="badgeOpen"],
+[data-theme="dark"] [class*="statusOpen"] {
+  background: var(--badge-open-bg) !important;
+  background-color: var(--badge-open-bg) !important;
+  color: var(--badge-open-text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="dark"] [class*="badgeClosed"],
+[data-theme="dark"] [class*="statusClosed"] {
+  background: var(--badge-closed-bg) !important;
+  background-color: var(--badge-closed-bg) !important;
+  color: var(--badge-closed-text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] [class*="badgeCleared"],
+[data-theme="dark"] [class*="paymentCleared"],
+[data-theme="dark"] [class*="statusPaid"],
+[data-theme="dark"] [class*="statusSettled"] {
+  background: var(--badge-paid-bg) !important;
+  background-color: var(--badge-paid-bg) !important;
+  color: var(--badge-paid-text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="dark"] [class*="badgePending"],
+[data-theme="dark"] [class*="paymentPending"],
+[data-theme="dark"] [class*="badgePartial"] {
+  background: var(--badge-pending-bg) !important;
+  background-color: var(--badge-pending-bg) !important;
+  color: var(--badge-pending-text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] [class*="statusDefault"],
+[data-theme="dark"] [class*="paymentDefault"] {
+  background: var(--badge-default-bg) !important;
+  background-color: var(--badge-default-bg) !important;
+  color: var(--badge-default-text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] [class*="paymentBadge"][class*="paymentCleared"],
+[data-theme="dark"] [class*="paymentBadge"][class*="Cleared"] {
+  background: var(--badge-paid-bg) !important;
+  background-color: var(--badge-paid-bg) !important;
+  color: var(--badge-paid-text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="dark"] [class*="paymentBadge"][class*="paymentPending"],
+[data-theme="dark"] [class*="paymentBadge"][class*="Pending"] {
+  background: var(--badge-pending-bg) !important;
+  background-color: var(--badge-pending-bg) !important;
+  color: var(--badge-pending-text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] [class*="statusBadge"][class*="statusOpen"],
+[data-theme="dark"] [class*="statusBadge"][class*="Open"] {
+  background: var(--badge-open-bg) !important;
+  background-color: var(--badge-open-bg) !important;
+  color: var(--badge-open-text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="dark"] [class*="statusBadge"][class*="statusClosed"],
+[data-theme="dark"] [class*="statusBadge"][class*="Closed"] {
+  background: var(--badge-closed-bg) !important;
+  background-color: var(--badge-closed-bg) !important;
+  color: var(--badge-closed-text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] [class*="statusBadge"],
+[data-theme="dark"] [class*="badge"]:not([class*="badgeOpen"]):not([class*="badgeClosed"]):not([class*="badgeCleared"]):not([class*="badgePending"]),
+[data-theme="dark"] [class*="Badge"] {
+  text-shadow: none !important;
+}

@@ -5,14 +5,15 @@
 }
 
 .paymentSummary {
-  background: #f8f9fa;
-  border: 1px solid #e0e0e0;
+  background: var(--bg-secondary-solid);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 1rem;
   margin-bottom: 1.5rem;
   display: flex;
   gap: 2rem;
   flex-wrap: wrap;
+  color: var(--text-on-glass);
 }
 
 .summaryItem {
@@ -23,7 +24,7 @@
 
 .summaryLabel {
   font-size: 0.875rem;
-  color: #7f8c8d;
+  color: var(--text-on-glass-secondary);
   font-weight: 500;
 }
 
@@ -47,16 +48,16 @@
 
 .balanceHint {
   font-size: 0.875rem;
-  color: #7f8c8d;
+  color: var(--text-on-glass-secondary);
   margin: 0.5rem 0;
   padding: 0.75rem;
-  background: #fff3cd;
-  border-left: 3px solid #ffc107;
+  background: color-mix(in srgb, var(--warning) 15%, var(--bg-primary-solid));
+  border-left: 3px solid var(--warning);
   border-radius: 4px;
 }
 
 .balanceHint strong {
-  color: #856404;
+  color: var(--page-title-color);
 }
 
 .header {
@@ -170,7 +171,7 @@
 .badgePartial {
   display: inline-block;
   padding: 0.25rem 0.75rem;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -178,13 +179,13 @@
 }
 
 .badgeCleared {
-  background-color: #d1ecf1;
-  color: #0c5460;
+  background-color: var(--badge-paid-bg);
+  color: var(--badge-paid-text);
 }
 
 .badgePending {
-  background-color: #fff3cd;
-  color: #856404;
+  background-color: var(--badge-pending-bg);
+  color: var(--badge-pending-text);
 }
 
 .badgePartial {

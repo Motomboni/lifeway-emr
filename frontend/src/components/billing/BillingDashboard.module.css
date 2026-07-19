@@ -1,14 +1,17 @@
 /* Billing Dashboard Styles */
 .dashboard {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
+  background: var(--bg-primary-solid);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  color: var(--text-on-glass);
 }
 
 .header {
-  border-bottom: 1px solid #e5e7eb;
-  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  padding: 1.75rem 2rem;
+  background: var(--bg-primary-solid);
 }
 
 .headerContent {
@@ -18,64 +21,65 @@
 }
 
 .headerTitle {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #111827;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--page-title-color);
   margin: 0;
 }
 
 .headerSubtitle {
-  font-size: 0.875rem;
-  color: #6b7280;
+  font-size: 0.9rem;
+  color: var(--text-on-glass-secondary);
   margin-top: 0.25rem;
-}
-
-.visitClosedBadge {
-  padding: 0.25rem 0.75rem;
-  background: #f3f4f6;
-  color: #374151;
-  border-radius: 9999px;
-  font-size: 0.875rem;
   font-weight: 500;
 }
 
+.visitClosedBadge {
+  padding: 0.35rem 1rem;
+  background: var(--badge-default-bg);
+  color: var(--badge-default-text);
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 .outstandingBalanceContainer {
-  padding: 1rem 1.5rem 0;
+  padding: 1.5rem 2rem 0;
 }
 
 .tabsContainer {
-  border-bottom: 1px solid #e5e7eb;
-  padding: 0 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  padding: 0 2rem;
+  background: var(--bg-primary-solid);
 }
 
 .tabs {
   display: flex;
-  gap: 2rem;
+  gap: 2.5rem;
 }
 
 .tab {
-  padding: 1rem 0.25rem;
-  border-bottom: 2px solid transparent;
-  font-weight: 500;
-  font-size: 0.875rem;
+  padding: 1.25rem 0.25rem;
+  border-bottom: 3px solid transparent;
+  font-weight: 600;
+  font-size: 0.95rem;
   background: none;
-  border: none;
   border-top: none;
   border-left: none;
   border-right: none;
   cursor: pointer;
-  color: #6b7280;
-  transition: all 0.2s;
+  color: var(--text-on-glass-secondary);
+  transition: all 0.3s ease;
 }
 
 .tab:hover {
-  color: #374151;
-  border-bottom-color: #d1d5db;
+  color: var(--text-on-glass);
 }
 
 .tabActive {
-  color: #2563eb;
-  border-bottom-color: #2563eb;
+  color: var(--primary);
+  border-bottom-color: var(--primary);
 }
 
 .tabIcon {
@@ -84,17 +88,67 @@
 
 .tabContent {
   padding: 1.5rem;
+  background: var(--bg-primary-solid);
 }
 
 .permissionMessage {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--bg-secondary-solid);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
   padding: 1.5rem;
   text-align: center;
 }
 
 .permissionText {
-  color: #6b7280;
+  color: var(--text-on-glass-secondary);
+  font-weight: 500;
 }
 
+.loadingPanel {
+  background: var(--bg-primary-solid);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  padding: 1.5rem;
+}
+
+/* Visit billing tabs — data-billing-tab beats global _tab_ typography rules (Vite hashes omit file name) */
+:global([data-content-surface="billing"]) button[data-billing-tab="inactive"],
+:global(#billing-section) button[data-billing-tab="inactive"] {
+  color: var(--text-on-glass-secondary) !important;
+  background: transparent !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: currentColor !important;
+  opacity: 1 !important;
+}
+
+:global([data-content-surface="billing"]) button[data-billing-tab="inactive"]:hover,
+:global(#billing-section) button[data-billing-tab="inactive"]:hover {
+  color: var(--text-on-glass) !important;
+}
+
+:global([data-content-surface="billing"]) button[data-billing-tab="active"],
+:global(#billing-section) button[data-billing-tab="active"] {
+  color: var(--primary) !important;
+  background: transparent !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: currentColor !important;
+  opacity: 1 !important;
+}
+
+:global([data-theme="dark"]) :is([data-content-surface="billing"], #billing-section) button[data-billing-tab="inactive"] {
+  color: #f1f5f9 !important;
+}
+
+:global([data-theme="dark"]) :is([data-content-surface="billing"], #billing-section) button[data-billing-tab="inactive"]:hover {
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) :is([data-content-surface="billing"], #billing-section) button[data-billing-tab="active"] {
+  color: var(--primary) !important;
+}
+
+:global([data-theme="dark"]) .tabsContainer {
+  background: var(--bg-primary-solid);
+  border-bottom-color: var(--border-color);
+}

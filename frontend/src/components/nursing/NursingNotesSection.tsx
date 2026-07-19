@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { useToast } from '../../hooks/useToast';
 import { fetchNursingNotes, createNursingNote, updateNursingNote } from '../../api/nursing';
 import { NursingNote, NursingNoteCreate } from '../../types/nursing';
-import SpeechToTextButton from '../common/SpeechToTextButton';
+import VoiceTextareaField from '../common/VoiceTextareaField';
 import styles from '../../styles/NurseVisit.module.css';
 
 interface NursingNotesSectionProps {
@@ -152,76 +152,40 @@ export default function NursingNotesSection({ visitId, canCreate }: NursingNotes
           </div>
           <div className={styles.formField}>
             <label>Note Content *</label>
-            <div style={{ position: 'relative', paddingTop: '2rem' }}>
-              <textarea
-                value={formData.note_content}
-                onChange={(e) => setFormData({ ...formData, note_content: e.target.value })}
-                rows={6}
-                required
-                placeholder="Enter nursing note content..."
-              />
-              <SpeechToTextButton
-                value={formData.note_content}
-                onTranscribe={(text) => setFormData((prev) => ({ ...prev, note_content: text }))}
-                appendMode={true}
-                position="top-right"
-                showPreview={true}
-              />
-            </div>
+            <VoiceTextareaField
+              value={formData.note_content}
+              onValueChange={(text) => setFormData((prev) => ({ ...prev, note_content: text }))}
+              rows={6}
+              required
+              placeholder="Enter nursing note content..."
+            />
           </div>
           <div className={styles.formField}>
             <label>Patient Condition</label>
-            <div style={{ position: 'relative', paddingTop: '2rem' }}>
-              <textarea
-                value={formData.patient_condition}
-                onChange={(e) => setFormData({ ...formData, patient_condition: e.target.value })}
-                rows={3}
-                placeholder="Describe patient's condition..."
-              />
-              <SpeechToTextButton
-                value={formData.patient_condition}
-                onTranscribe={(text) => setFormData((prev) => ({ ...prev, patient_condition: text }))}
-                appendMode={true}
-                position="top-right"
-                showPreview={true}
-              />
-            </div>
+            <VoiceTextareaField
+              value={formData.patient_condition || ''}
+              onValueChange={(text) => setFormData((prev) => ({ ...prev, patient_condition: text }))}
+              rows={3}
+              placeholder="Describe patient's condition..."
+            />
           </div>
           <div className={styles.formField}>
             <label>Care Provided</label>
-            <div style={{ position: 'relative', paddingTop: '2rem' }}>
-              <textarea
-                value={formData.care_provided}
-                onChange={(e) => setFormData({ ...formData, care_provided: e.target.value })}
-                rows={3}
-                placeholder="Describe care provided..."
-              />
-              <SpeechToTextButton
-                value={formData.care_provided}
-                onTranscribe={(text) => setFormData({ ...formData, care_provided: text })}
-                appendMode={true}
-                position="top-right"
-                showPreview={true}
-              />
-            </div>
+            <VoiceTextareaField
+              value={formData.care_provided || ''}
+              onValueChange={(text) => setFormData((prev) => ({ ...prev, care_provided: text }))}
+              rows={3}
+              placeholder="Describe care provided..."
+            />
           </div>
           <div className={styles.formField}>
             <label>Patient Response</label>
-            <div style={{ position: 'relative', paddingTop: '2rem' }}>
-              <textarea
-                value={formData.patient_response}
-                onChange={(e) => setFormData({ ...formData, patient_response: e.target.value })}
-                rows={3}
-                placeholder="Describe patient's response..."
-              />
-              <SpeechToTextButton
-                value={formData.patient_response}
-                onTranscribe={(text) => setFormData((prev) => ({ ...prev, patient_response: text }))}
-                appendMode={true}
-                position="top-right"
-                showPreview={true}
-              />
-            </div>
+            <VoiceTextareaField
+              value={formData.patient_response || ''}
+              onValueChange={(text) => setFormData((prev) => ({ ...prev, patient_response: text }))}
+              rows={3}
+              placeholder="Describe patient's response..."
+            />
           </div>
           <div className={styles.formField}>
             <label>

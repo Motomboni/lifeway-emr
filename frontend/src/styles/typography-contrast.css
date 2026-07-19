@@ -1,0 +1,274 @@
+/**
+ * Typography & link contrast — loaded after module styles so titles,
+ * subtitles, and text links stay readable on glass and gradient backgrounds.
+ */
+
+/* Shared selector for text links (anchors + link-styled controls, not buttons) */
+:is(
+  a[href],
+  [class$="Link"],
+  [class*="_link_"]
+):where(
+  :not([class*="Button"]):not([class*="button"]):not([class*="btn"]):not([class*="actionCard"]):not([class*="primaryButton"]):not([class*="logoutButton"]):not([class*="newVisitButton"]):not([class*="viewAllButton"]):not([class*="backLink"]):not([class*="footerLinks"]):not([class*="quickLinkButton"])
+) {
+  color: var(--link-color);
+  text-decoration-color: color-mix(in srgb, var(--link-color) 70%, transparent);
+  opacity: 1;
+}
+
+:is(
+  a[href],
+  [class$="Link"],
+  [class*="_link_"]
+):where(
+  :not([class*="Button"]):not([class*="button"]):not([class*="btn"]):not([class*="actionCard"]):not([class*="primaryButton"]):not([class*="logoutButton"]):not([class*="newVisitButton"]):not([class*="viewAllButton"]):not([class*="backLink"]):not([class*="footerLinks"]):not([class*="quickLinkButton"])
+):hover,
+:is(
+  a[href],
+  [class$="Link"],
+  [class*="_link_"]
+):where(
+  :not([class*="Button"]):not([class*="button"]):not([class*="btn"]):not([class*="actionCard"]):not([class*="primaryButton"]):not([class*="logoutButton"]):not([class*="newVisitButton"]):not([class*="viewAllButton"]):not([class*="backLink"]):not([class*="footerLinks"]):not([class*="quickLinkButton"])
+):focus-visible {
+  color: var(--link-color-hover);
+  text-decoration-color: var(--link-color-hover);
+}
+
+/* Inactive tab / segment controls (Staff Management, Billing, IVF, Backup, etc.) */
+:is(
+  button[class*="_tab_"],
+  [class*="inactiveTab"]
+):not([data-billing-tab]):not([class*="tabActive"]):not([class*="TabActive"]):not([class*="_active_"]) {
+  color: var(--nav-tab-inactive-color) !important;
+  text-shadow: none !important;
+}
+
+:is(
+  button[class*="_tab_"],
+  [class*="inactiveTab"]
+):not([data-billing-tab]):not([class*="tabActive"]):not([class*="TabActive"]):not([class*="_active_"]):hover {
+  color: var(--nav-tab-inactive-hover) !important;
+}
+
+/* Active / selected pill tabs (Staff Management, etc.) */
+button[class*="tabActive"]:not([data-billing-tab]):not([class*="_tab_"]) {
+  background: var(--nav-tab-active-bg) !important;
+  color: var(--nav-tab-active-color) !important;
+  border-color: var(--nav-tab-active-border) !important;
+  text-shadow: none !important;
+  font-weight: 600;
+}
+
+/* Active underline-style tabs (IVF, etc.) — visit billing uses data-billing-tab */
+button[class*="_tab_"][class*="tabActive"]:not([data-billing-tab]),
+button[class*="_tab_"][class*="_active_"]:not([data-billing-tab]) {
+  color: var(--nav-tab-active-color) !important;
+  text-shadow: none !important;
+}
+
+[data-theme="dark"] button[class*="_tab_"][class*="tabActive"]:not([data-billing-tab]),
+[data-theme="dark"] button[class*="_tab_"][class*="_active_"]:not([data-billing-tab]) {
+  border-bottom-color: var(--nav-tab-active-border) !important;
+}
+
+[data-theme="dark"] :is(
+  a[href],
+  [class$="Link"],
+  [class*="_link_"]
+):where(
+  :not([class*="Button"]):not([class*="button"]):not([class*="btn"]):not([class*="actionCard"]):not([class*="primaryButton"]):not([class*="logoutButton"]):not([class*="newVisitButton"]):not([class*="viewAllButton"]):not([class*="backLink"]):not([class*="footerLinks"]):not([class*="quickLinkButton"])
+) {
+  text-shadow: none;
+  text-decoration-color: var(--link-color);
+}
+
+[class*="backLink"],
+:root:not([data-theme="dark"]) [class*="_link_"]:not([class*="linkButton"]) {
+  color: var(--link-color) !important;
+}
+
+[class*="backLink"]:hover,
+:root:not([data-theme="dark"]) [class*="_link_"]:not([class*="linkButton"]):hover {
+  color: var(--link-color-hover) !important;
+}
+
+/* Back to Dashboard: solid primary in dark mode (hover unchanged) */
+[data-theme="dark"] [class*="backLink"]:not(:hover):not(:focus-visible),
+[data-theme="dark"] [class*="backButton"]:not(:hover):not(:focus-visible) {
+  color: var(--primary) !important;
+  text-shadow: none !important;
+  text-decoration: none !important;
+  opacity: 1 !important;
+}
+
+/* ===== Light mode: darken page titles & subtitles ===== */
+:root:not([data-theme="dark"]) h1,
+:root:not([data-theme="dark"]) h2,
+:root:not([data-theme="dark"]) h3,
+:root:not([data-theme="dark"]) h4 {
+  color: var(--page-title-color);
+}
+
+:root:not([data-theme="dark"]) :is(
+  [class*="header"],
+  [class*="Header"],
+  [class*="dashboardHeader"],
+  [class*="pageContainer"],
+  [class*="Page"],
+  [class*="page"]
+) :is(h1, h2):not(
+  :is([class*="statCard"], [class*="kpiCard"], [class*="metricCard"], [class*="balanceCard"]) *
+) {
+  color: var(--page-title-color) !important;
+  text-shadow: none !important;
+}
+
+:root:not([data-theme="dark"]) :is(
+  [data-page-subtitle],
+  [class*="_subtitle_"],
+  [class*="Subtitle"],
+  [class*="_headerSubtitle_"],
+  [class*="header"] p,
+  [class*="Header"] p,
+  [class*="dashboardHeader"] p,
+  [class*="headerContent"] p,
+  [class*="headerLeft"] p,
+  [class*="pageDescription"],
+  [class*="PageDescription"]
+):not(
+  :is([class*="statCard"], [class*="kpiCard"], [class*="metricCard"], [class*="balanceCard"], [class*="summaryCardIcon"]) *,
+  [class*="heroSubtitle"],
+  [data-page-chrome] .emr-page-desc,
+  [data-page-chrome] [data-page-subtitle]
+) {
+  color: #0f172a !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #0f172a !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.95), 0 0 20px rgba(255, 255, 255, 0.65) !important;
+}
+
+/* Override hardcoded mid-gray subtitles (#7f8c8d, #6c757d, etc.) on page chrome */
+:root:not([data-theme="dark"]) [class*="Page"] [class*="header"] p,
+:root:not([data-theme="dark"]) [class*="page"] [class*="header"] p {
+  color: var(--page-subtitle-color) !important;
+}
+
+/* ===== Dark mode: strengthen white/light titles & subtitles ===== */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3:not(.nursing-care-features-title),
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 {
+  text-shadow: var(--title-text-shadow);
+}
+
+[data-theme="dark"] :is(
+  [class*="header"],
+  [class*="Header"],
+  [class*="dashboardHeader"],
+  [class*="pageContainer"],
+  [class*="Page"],
+  [class*="page"]
+) :is(h1, h2, h3):not(
+  :is([class*="statCard"], [class*="kpiCard"], [class*="metricCard"], [class*="balanceCard"]) *,
+  [class*="nursingCareFeaturesTitle"]
+) {
+  color: var(--page-title-color) !important;
+  text-shadow: var(--title-text-shadow) !important;
+}
+
+[data-theme="dark"] :is(
+  [data-page-subtitle],
+  [class*="_subtitle_"],
+  [class*="Subtitle"],
+  [class*="_headerSubtitle_"],
+  [class*="header"] p,
+  [class*="Header"] p,
+  [class*="dashboardHeader"] p,
+  [class*="headerContent"] p,
+  [class*="headerLeft"] p,
+  [class*="pageDescription"],
+  [class*="PageDescription"],
+  [class*="quickActionsHeading"]
+):not(
+  :is([class*="statCard"], [class*="kpiCard"], [class*="metricCard"], [class*="balanceCard"], [class*="summaryCardIcon"]) *,
+  [class*="heroSubtitle"],
+  [data-page-chrome] .emr-page-desc,
+  [data-page-chrome] [data-page-subtitle]
+) {
+  color: #f8fafc !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 1px rgba(0, 0, 0, 0.9) !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #f8fafc !important;
+}
+
+/* Nurse Dashboard — Nursing Care Features heading (on glass canvas) */
+.nursing-care-features-title,
+[class*="nursingCareFeaturesTitle"] {
+  color: #020617 !important;
+  text-shadow: none !important;
+}
+
+[data-theme="dark"] .nursing-care-features-title,
+[data-theme="dark"] [class*="nursingCareFeaturesTitle"] {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+:is([class*="nursingCareSection"]) :is([class*="sectionHeader"]) h3[class*="nursingCareFeaturesTitle"] {
+  color: #020617 !important;
+  text-shadow: none !important;
+}
+
+[data-theme="dark"] :is([class*="nursingCareSection"]) :is([class*="sectionHeader"]) h3[class*="nursingCareFeaturesTitle"] {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+:is([class*="searchHint"]),
+:is([class*="searchHint"]) p {
+  color: var(--page-subtitle-color, #1e293b) !important;
+  text-shadow: none !important;
+}
+
+[data-theme="dark"] :is([class*="searchHint"]),
+[data-theme="dark"] :is([class*="searchHint"]) p {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+/* Create Visit card — readable labels and meta on solid surface */
+:root:not([data-theme="dark"]) [class*="createVisitCard"] :is(h1, h2, h3, label, strong) {
+  color: var(--page-title-color) !important;
+  text-shadow: none !important;
+}
+
+[class*="createVisitCard"] :is([class*="helpText"], [class*="patientMeta"], p):not([class*="hintSuccess"]):not([class*="hintWarning"]) {
+  color: var(--text-on-glass-secondary) !important;
+  text-shadow: none !important;
+}
+
+[data-theme="dark"] [class*="createVisitCard"] :is(h1, h2, h3, label, strong) {
+  color: var(--text-on-glass) !important;
+  text-shadow: var(--glass-text-shadow) !important;
+}
+
+[data-theme="dark"] [class*="createVisitCard"] :is([class*="helpText"], [class*="patientMeta"], p):not([class*="hintSuccess"]):not([class*="hintWarning"]) {
+  color: var(--text-on-glass-secondary) !important;
+}
+
+[data-theme="dark"] :is(
+  .glass,
+  .glass-card,
+  .glass-panel,
+  .glass-strong,
+  .card,
+  [class*="Card_"]:not([class*="statCard"]):not([class*="kpiCard"]):not([class*="metricCard"]):not([class*="balanceCard"]),
+  [class*="_card_"],
+  [class*="dashboardContent"],
+  [class*="dashboardHeader"],
+  [class*="formContainer"]
+) :is(h1, h2, h3, h4, h5, h6, strong, b, th) {
+  text-shadow: var(--title-text-shadow);
+}

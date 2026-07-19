@@ -1,18 +1,25 @@
 /**
  * HistorySection Component
- * 
- * Patient history, chief complaint, and presenting symptoms.
  */
 import React from 'react';
 import SpeechToTextButton from '../../common/SpeechToTextButton';
+import MacroAwareTextarea from '../MacroAwareTextarea';
+import { ConsultationData } from '../../../types/consultation';
 import styles from '../../../styles/ConsultationWorkspace.module.css';
 
 interface HistorySectionProps {
   value: string;
+  formData: Pick<ConsultationData, 'history' | 'examination' | 'diagnosis' | 'clinical_notes'>;
   onChange: (value: string) => void;
+  onMacroExpand: (updates: Partial<ConsultationData>) => void;
 }
 
-export default function HistorySection({ value, onChange }: HistorySectionProps) {
+export default function HistorySection({
+  value,
+  formData,
+  onChange,
+  onMacroExpand,
+}: HistorySectionProps) {
   return (
     <div className={styles.consultationSection}>
       <label htmlFor="history">
@@ -22,11 +29,14 @@ export default function HistorySection({ value, onChange }: HistorySectionProps)
         </span>
       </label>
       <div style={{ position: 'relative', paddingTop: '2rem' }}>
-        <textarea
+        <MacroAwareTextarea
           id="history"
+          field="history"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Enter patient history, chief complaint, and presenting symptoms..."
+          formData={formData}
+          onChange={onChange}
+          onMacroExpand={onMacroExpand}
+          placeholder="Enter patient history… Type .uri + Tab for macros"
           rows={6}
           className={styles.consultationTextarea}
         />

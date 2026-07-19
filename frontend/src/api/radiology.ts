@@ -1,7 +1,7 @@
 /**
  * API client functions for Radiology (PACS-lite integration).
  */
-import { apiRequest } from '../utils/apiClient';
+import { apiRequest, getAuthToken, getOrganizationId } from '../utils/apiClient';
 import type { RadiologyOrder, RadiologyResult } from '../types/radiology';
 import type { Visit } from '../types/visit';
 
@@ -170,6 +170,42 @@ export const draftRadiologyReport = async (
     }
   );
 };
+
+export async function uploadDicomForRequest(
+  visitId: number,
+  requestId: number,
+  file: File,
+): Promise<{
+  study_id: number | null;
+  study_uid: string;
+  image_uid: string;
+  image_count: number;
+  modality?: string;
+}> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const token = getAuthToken();
+  const orgId = getOrganizationId();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (orgId) headers['X-Organization-Id'] = String(orgId);
+
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL || '/api/v1'}/visits/${visitId}/radiology/${requestId}/upload-dicom/`,
+    {
+      method: 'POST',
+      headers,
+      body: formData,
+    },
+  );
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || err.file?.[0] || 'DICOM upload failed');
+  }
+  return response.json();
+}
 
 /**
  * Create a radiology result — DISABLED for Service Catalog.

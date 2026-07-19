@@ -3,7 +3,7 @@
  * Caches same-origin static assets and index.html for offline loading;
  * all /api/ requests go to network only (no caching of PHI).
  */
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const APP_SHELL_CACHE = 'emr-app-shell-' + CACHE_VERSION;
 
 function isSameOrigin(url) {

@@ -1,60 +1,73 @@
 """
-Create or update a superuser for local/staging setup.
+Bootstrap a Django superuser from environment variables.
 
-Required environment variable:
-    DJANGO_SUPERUSER_PASSWORD
+Required:
+  DJANGO_SUPERUSER_USERNAME
+  DJANGO_SUPERUSER_PASSWORD
 
-Optional environment variables:
-    DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_EMAIL,
-    DJANGO_SUPERUSER_FIRST_NAME, DJANGO_SUPERUSER_LAST_NAME,
-    DJANGO_SUPERUSER_ROLE
+Optional:
+  DJANGO_SUPERUSER_EMAIL (default: {username}@localhost)
+  DJANGO_SUPERUSER_ROLE (default: ADMIN)
+  DJANGO_SUPERUSER_FIRST_NAME (default: Admin)
+  DJANGO_SUPERUSER_LAST_NAME (default: User)
+
+Usage (from backend/):
+  export DJANGO_SUPERUSER_USERNAME=admin
+  export DJANGO_SUPERUSER_PASSWORD='strong-temporary-password'
+  python create_superuser.py
 """
+
 import os
+import sys
+
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 django.setup()
 
 from apps.users.models import User
 
-username = os.environ.get('DJANGO_SUPERUSER_USERNAME', 'Damiano')
-email = os.environ.get('DJANGO_SUPERUSER_EMAIL', 'damiano@emr.local')
-password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
-first_name = os.environ.get('DJANGO_SUPERUSER_FIRST_NAME', 'Damiano')
-last_name = os.environ.get('DJANGO_SUPERUSER_LAST_NAME', 'Admin')
-role = os.environ.get('DJANGO_SUPERUSER_ROLE', 'ADMIN')
 
-if not password:
-    raise SystemExit(
-        "DJANGO_SUPERUSER_PASSWORD is required. "
-        "Set it in the shell before running this script."
-    )
+def main() -> int:
+    username = os.environ.get("DJANGO_SUPERUSER_USERNAME", "").strip()
+    password = os.environ.get("DJANGO_SUPERUSER_PASSWORD", "")
+    email = os.environ.get("DJANGO_SUPERUSER_EMAIL", "").strip() or f"{username}@localhost"
+    role = os.environ.get("DJANGO_SUPERUSER_ROLE", "ADMIN").strip() or "ADMIN"
+    first_name = os.environ.get("DJANGO_SUPERUSER_FIRST_NAME", "Admin").strip() or "Admin"
+    last_name = os.environ.get("DJANGO_SUPERUSER_LAST_NAME", "User").strip() or "User"
 
-if User.objects.filter(username=username).exists():
-    print(f"User '{username}' already exists. Updating password...")
-    user = User.objects.get(username=username)
-    user.set_password(password)
-    user.is_superuser = True
-    user.is_staff = True
-    user.is_active = True
-    user.role = role
-    user.email = email
-    user.first_name = first_name
-    user.last_name = last_name
-    user.save()
-    print(f"User '{username}' updated successfully!")
-else:
+    if not username:
+        print(
+            "Error: DJANGO_SUPERUSER_USERNAME is required.",
+            file=sys.stderr,
+        )
+        return 1
+
+    if not password:
+        print(
+            "Error: DJANGO_SUPERUSER_PASSWORD is required.",
+            file=sys.stderr,
+        )
+        return 1
+
+    if User.objects.filter(username=username).exists():
+        print(f"Superuser '{username}' already exists. Skipping.")
+        return 0
+
     user = User.objects.create_superuser(
         username=username,
         email=email,
         password=password,
         first_name=first_name,
         last_name=last_name,
-        role=role
+        role=role,
     )
-    print(f"Superuser '{username}' created successfully!")
 
-print(f"\nLogin credentials:")
-print(f"  Username: {username}")
-print(f"  Role: {user.role}")
-print(f"  Is Superuser: {user.is_superuser}")
+    print(f"Superuser '{user.username}' created successfully.")
+    print(f"  Email: {user.email}")
+    print(f"  Role: {user.role}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

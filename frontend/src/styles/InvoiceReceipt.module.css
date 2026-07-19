@@ -4,10 +4,11 @@
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  background: #fff;
+  background: var(--bg-primary-solid);
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
+  color: var(--text-on-glass);
 }
 
 .actionBar {
@@ -15,8 +16,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px 24px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--bg-secondary-solid);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .actionGroup {
@@ -56,8 +57,8 @@
 
 .document {
   padding: 40px;
-  background: white;
-  color: #1f2937;
+  background: var(--bg-primary-solid);
+  color: var(--text-on-glass);
   font-family: 'Arial', sans-serif;
 }
 

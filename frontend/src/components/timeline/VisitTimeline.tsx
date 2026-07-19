@@ -4,8 +4,9 @@
  * Displays a chronological vertical timeline of all events for a visit.
  * Read-only, visit-scoped, with expandable items and sticky header.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { fetchTimelineEvents, TimelineEvent } from '../../api/timeline';
 import { getVisit } from '../../api/visits';
 import { getPatient } from '../../api/patient';
@@ -185,6 +186,14 @@ const EVENT_CONFIG: Record<string, {
   },
 };
 
+const RECEPTIONIST_HIDDEN_EVENT_TYPES = new Set([
+  'CONSULTATION_STARTED',
+  'CONSULTATION_CLOSED',
+  'ADMISSION_CREATED',
+  'ADMISSION_DISCHARGED',
+  'ADMISSION_TRANSFERRED',
+]);
+
 // Department color mapping
 const DEPARTMENT_COLORS: Record<string, string> = {
   GENERAL: '#4CAF50',
@@ -206,6 +215,7 @@ export default function VisitTimeline({
   showHeader = true,
   onEventClick 
 }: VisitTimelineProps) {
+  const { user } = useAuth();
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [visit, setVisit] = useState<Visit | null>(null);
   const [patient, setPatient] = useState<Patient | null>(null);
@@ -243,6 +253,13 @@ export default function VisitTimeline({
       loadData();
     }
   }, [visitId, showError]);
+
+  const visibleEvents = useMemo(() => {
+    if (user?.role !== 'RECEPTIONIST') {
+      return events;
+    }
+    return events.filter((event) => !RECEPTIONIST_HIDDEN_EVENT_TYPES.has(event.event_type));
+  }, [events, user?.role]);
 
   const formatTimestamp = (timestamp: string): string => {
     const date = new Date(timestamp);
@@ -294,7 +311,7 @@ export default function VisitTimeline({
     );
   }
 
-  if (events.length === 0) {
+  if (visibleEvents.length === 0) {
     return (
       <div className={styles.timelineContainer}>
         {showHeader && visit && patient && (
@@ -314,7 +331,7 @@ export default function VisitTimeline({
     );
   }
 
-  const config = EVENT_CONFIG[events[0]?.event_type] || {
+  const config = EVENT_CONFIG[visibleEvents[0]?.event_type] || {
     icon: <FaCalendarPlus size={16} />,
     color: '#9E9E9E',
     department: 'GENERAL',
@@ -343,7 +360,7 @@ export default function VisitTimeline({
 
       {/* Timeline */}
       <div className={styles.timeline}>
-        {events.map((event, index) => {
+        {visibleEvents.map((event, index) => {
           const eventConfig = EVENT_CONFIG[event.event_type] || {
             icon: <FaCalendarPlus size={16} />,
             color: '#9E9E9E',
@@ -357,7 +374,7 @@ export default function VisitTimeline({
           return (
             <div key={event.id} className={styles.timelineItem}>
               {/* Timeline Line */}
-              {index < events.length - 1 && (
+              {index < visibleEvents.length - 1 && (
                 <div 
                   className={styles.timelineLine}
                   style={{ backgroundColor: departmentColor }}
@@ -437,7 +454,7 @@ export default function VisitTimeline({
 
                 {/* Expanded Details */}
                 {isExpanded && (
-                  <div className={styles.expandedDetails}>
+                  <div className={styles.expandedDetails} data-content-surface="elevated">
                     <div className={styles.detailSection}>
                       <h4>Event Information</h4>
                       <div className={styles.detailRow}>

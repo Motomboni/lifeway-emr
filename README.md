@@ -1,3 +1,11 @@
+# Lifeway EMR v2.0 — Lifeway Medical Centre
+
+Production EMR for [Lifeway Medical Centre](https://lmcemr.com.ng). Version **2.0.0** — single-clinic deployment with IVF, antenatal, Paystack billing, patient portal, and full visit-scoped clinical workflow.
+
+See [CHANGELOG.md](CHANGELOG.md) for release notes. Deploy with [docs/DEPLOY.md](docs/DEPLOY.md). Operations: [docs/OPERATIONS.md](docs/OPERATIONS.md).
+
+---
+
 # Modern EMR System
 
 A comprehensive Electronic Medical Record (EMR) system built with strict adherence to EMR RULE LOCK principles.
@@ -142,11 +150,16 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+cp .env.example .env
 python manage.py makemigrations
 python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
 ```
+
+**Paystack (visit billing):** Set `PAYSTACK_SECRET_KEY` and `PAYSTACK_PUBLIC_KEY` in `.env` for patient payments at reception and via the patient portal.
+
+**Single-clinic:** Lifeway runs one organization (`default-clinic`). Set `REQUIRE_ORGANIZATION_CONTEXT=false` and `ENFORCE_PLAN_LIMITS=false` in production `.env`.
 
 ### Frontend Setup
 
@@ -225,7 +238,8 @@ pytest
 ### Frontend Tests
 ```bash
 cd frontend
-npm test
+npm run typecheck
+npm run test:e2e
 ```
 
 ## Project Structure
@@ -260,7 +274,16 @@ Modern EMR/
 
 ## Deployment
 
-### Backend
+Production uses Docker Compose with PostgreSQL, Redis, Celery, and Nginx:
+
+```bash
+cp .env.prod.example .env   # edit secrets — see SECURITY_HARDENING.md
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Full guide: [docs/DEPLOY.md](docs/DEPLOY.md). Security checklist: [SECURITY_HARDENING.md](SECURITY_HARDENING.md).
+
+### Manual deployment
 1. Set `DEBUG=False` in `settings.py`
 2. Configure `ALLOWED_HOSTS`
 3. Set up PostgreSQL database

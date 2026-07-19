@@ -73,7 +73,7 @@
   margin-left: 12px;
   background: #17a2b8;
   color: white;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 12px;
 }
 
@@ -170,7 +170,7 @@
 
 .summaryCard {
   background: linear-gradient(135deg, #667eea, #764ba2);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 24px;
   text-align: center;
   color: white;
@@ -215,7 +215,7 @@
 
 .modal {
   background: white;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   width: 90%;
   max-width: 700px;
   max-height: 90vh;

@@ -52,17 +52,20 @@
 }
 
 .paymentMethodButton {
-  padding: 1rem;
-  border-radius: 0.5rem;
-  border: 2px solid #e5e7eb;
-  background: white;
+  padding: 1.25rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  background: var(--bg-primary-solid);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   text-align: left;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 }
 
 .paymentMethodButton:hover:not(:disabled) {
-  border-color: #d1d5db;
+  border-color: #3b82f6;
+  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.08);
+  transform: translateY(-2px);
 }
 
 .paymentMethodButton:disabled {
@@ -72,7 +75,8 @@
 
 .paymentMethodButtonActive {
   border-color: #3b82f6;
-  background: #eff6ff;
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.8), rgba(219, 234, 254, 0.4));
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
 }
 
 .paymentMethodIcon {
@@ -82,25 +86,26 @@
 
 .paymentMethodTitle {
   font-weight: 600;
-  color: #111827;
+  color: var(--page-title-color);
 }
 
 .paymentMethodDescription {
   font-size: 0.875rem;
-  color: #4b5563;
+  color: var(--text-on-glass-secondary);
   margin-top: 0.25rem;
 }
 
 .paymentForm {
-  background: #f9fafb;
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-primary-solid);
+  border-radius: var(--radius-md);
+  padding: 1.75rem;
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
 }
 
 .paymentFormTitle {
   font-weight: 600;
-  color: #111827;
+  color: var(--page-title-color);
   margin-bottom: 1rem;
 }
 
@@ -111,17 +116,19 @@
 .formLabel {
   display: block;
   font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
+  font-weight: 600;
+  color: var(--page-title-color);
   margin-bottom: 0.25rem;
 }
 
 .formInput {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 0.5rem;
   font-size: 0.875rem;
+  background: var(--input-bg);
+  color: var(--text-on-glass);
   transition: all 0.2s;
 }
 
@@ -134,10 +141,12 @@
 .formTextarea {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 0.5rem;
   font-size: 0.875rem;
   resize: vertical;
+  background: var(--input-bg);
+  color: var(--text-on-glass);
   transition: all 0.2s;
 }
 
@@ -149,14 +158,23 @@
 
 .submitButton {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
   color: white;
   border: none;
   cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.875rem;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  font-size: 0.95rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.submitButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .submitButton:disabled {
@@ -207,13 +225,14 @@
 .walletBalanceInfo {
   margin-bottom: 1rem;
   padding: 0.75rem;
-  background: #eff6ff;
+  background: var(--bg-secondary-solid);
+  border: 1px solid var(--border-color);
   border-radius: 0.5rem;
 }
 
 .walletBalanceText {
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--text-on-glass-secondary);
 }
 
 .walletBalanceAmount {
@@ -226,7 +245,7 @@
 
 .paymentIntentsTitle {
   font-weight: 600;
-  color: #111827;
+  color: var(--page-title-color);
   margin-bottom: 1rem;
 }
 
@@ -255,18 +274,18 @@
 
 .paymentIntentAmount {
   font-weight: 500;
-  color: #111827;
+  color: var(--page-title-color);
 }
 
 .paymentIntentReference {
   font-size: 0.875rem;
-  color: #4b5563;
+  color: var(--text-on-glass-secondary);
   margin-top: 0.25rem;
 }
 
 .paymentIntentStatus {
   font-size: 0.875rem;
-  color: #4b5563;
+  color: var(--text-on-glass-secondary);
 }
 
 .paymentIntentStatusValue {
@@ -296,7 +315,7 @@
 
 .helpText {
   font-size: 0.75rem;
-  color: #4b5563;
+  color: var(--text-on-glass-secondary);
   margin-top: 0.5rem;
 }
 
@@ -309,10 +328,12 @@
 .permissionMessage {
   text-align: center;
   padding: 2rem;
-  background: #f9fafb;
+  background: var(--bg-secondary-solid);
+  border: 1px solid var(--border-color);
   border-radius: 0.5rem;
 }
 
 .permissionText {
-  color: #4b5563;
+  color: var(--text-on-glass-secondary);
+  font-weight: 500;
 }

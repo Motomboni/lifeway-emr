@@ -17,6 +17,7 @@ import { RadiologyOrder } from '../types/radiology';
 import { useToast } from '../hooks/useToast';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import BackToDashboard from '../components/common/BackToDashboard';
+import DicomStudyPanel from '../components/radiology/DicomStudyPanel';
 import LockIndicator from '../components/locks/LockIndicator';
 import { useActionLock } from '../hooks/useActionLock';
 import styles from '../styles/RadiologyOrders.module.css';
@@ -300,6 +301,13 @@ export default function RadiologyOrdersPage() {
                                 <td colSpan={8} className={styles.formCell}>
                                   <div className={styles.resultForm}>
                                     <h4>Record Radiology Result</h4>
+                                    <DicomStudyPanel
+                                      visitId={selectedVisit}
+                                      requestId={order.id}
+                                      pacsStudyId={order.pacs_study_id}
+                                      imageCount={order.image_count}
+                                      onUploaded={() => loadRadiologyOrders(selectedVisit.toString())}
+                                    />
                                     <p className={styles.formIntro}>
                                       Submit stores report and image count on the radiology request. Finding flag is for reference only and is not stored.
                                     </p>

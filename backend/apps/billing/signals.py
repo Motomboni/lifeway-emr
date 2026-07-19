@@ -9,21 +9,22 @@ Charges are created only when:
 Automatic charge creation for Consultation, Lab, Radiology, and Prescription is DISABLED
 to prevent duplication and to ensure charges come only from the catalog or manual entry.
 """
+
+from decimal import Decimal
+
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from decimal import Decimal
 
 from apps.consultations.models import Consultation
 from apps.laboratory.models import LabOrder
-from apps.radiology.models import RadiologyOrder
 from apps.pharmacy.models import Prescription
-
+from apps.radiology.models import RadiologyOrder
 
 # Default charge amounts (can be overridden in settings) - used only if auto-creation is re-enabled
-DEFAULT_CONSULTATION_FEE = Decimal('5000.00')  # ₦5,000
-DEFAULT_LAB_FEE = Decimal('3000.00')  # ₦3,000
-DEFAULT_RADIOLOGY_FEE = Decimal('4000.00')  # ₦4,000
-DEFAULT_DRUG_FEE = Decimal('2500.00')  # ₦2,500
+DEFAULT_CONSULTATION_FEE = Decimal("5000.00")  # ₦5,000
+DEFAULT_LAB_FEE = Decimal("3000.00")  # ₦3,000
+DEFAULT_RADIOLOGY_FEE = Decimal("4000.00")  # ₦4,000
+DEFAULT_DRUG_FEE = Decimal("2500.00")  # ₦2,500
 
 
 # ---------------------------------------------------------------------------
@@ -80,4 +81,3 @@ def create_prescription_charge(sender, instance, created, **kwargs):
     if not created or not instance.visit:
         return
     # No-op: charges are added only from Service Catalog or manual MISC.
-

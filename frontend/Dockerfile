@@ -6,8 +6,14 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+# Optional: pass VITE_API_URL at build time for cross-origin API
+# e.g. docker build --build-arg VITE_API_URL=https://api.example.com
+# When unset, uses relative /api/v1 (same-origin with nginx proxy)
+ARG VITE_API_URL=
+ENV VITE_API_URL=$VITE_API_URL
+
 COPY frontend/package.json frontend/package-lock.json* ./
-RUN npm install --omit=dev
+RUN npm ci
 
 COPY frontend/ .
 # Build for production (assumes API proxy at /api when served from same origin)

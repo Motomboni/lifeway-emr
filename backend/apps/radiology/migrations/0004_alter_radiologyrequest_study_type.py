@@ -4,15 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('radiology', '0003_radiologystudytype'),
+        ("radiology", "0003_radiologystudytype"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='radiologyrequest',
-            name='study_type',
-            field=models.CharField(blank=True, default='General Study', help_text="Type of radiology study requested (e.g., 'Chest X-Ray', 'CT Scan Head')", max_length=255),
+            model_name="radiologyrequest",
+            name="study_type",
+            field=models.CharField(
+                blank=True,
+                default="General Study",
+                help_text="Type of radiology study requested (e.g., 'Chest X-Ray', 'CT Scan Head')",
+                max_length=255,
+            ),
         ),
     ]

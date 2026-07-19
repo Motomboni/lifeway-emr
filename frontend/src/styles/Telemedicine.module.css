@@ -169,7 +169,7 @@
 
 .statusBadge {
   padding: 0.25rem 0.75rem;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -204,7 +204,7 @@
   padding: 0.25rem 0.75rem;
   background: #e74c3c;
   color: white;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -284,6 +284,12 @@
   font-size: 0.875rem;
   color: var(--text-secondary);
   font-style: italic;
+}
+
+.autoTranscriptHint {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0.5rem 0 1rem;
 }
 
 .transcriptionBlock {

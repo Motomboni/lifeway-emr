@@ -146,7 +146,7 @@ export default function PrescriptionModule({ patientId, onSaved }: PrescriptionM
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm" data-guide-id="prescription-inline">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">E-Prescription</h3>
       <div className="space-y-4">
         <div>

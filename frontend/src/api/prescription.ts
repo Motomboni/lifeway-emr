@@ -48,6 +48,12 @@ export async function createPrescription(
   });
 }
 
+interface DispenseResponse {
+  message: string;
+  prescription: Prescription;
+  clinical_alerts_count?: number;
+}
+
 /**
  * Dispense a prescription (Pharmacist only)
  */
@@ -56,13 +62,24 @@ export async function dispensePrescription(
   prescriptionId: number,
   dispensedQuantity?: string,
   dispensingNotes?: string
-): Promise<Prescription> {
-  return apiRequest<Prescription>(`/visits/${visitId}/pharmacy/dispense/`, {
-    method: 'POST',
-    body: JSON.stringify({
-      prescription_id: prescriptionId,
-      dispensed_quantity: dispensedQuantity || '',
-      dispensing_notes: dispensingNotes || ''
-    }),
-  });
+): Promise<Prescription & { clinical_alerts_count?: number }> {
+  const response = await apiRequest<DispenseResponse | Prescription>(
+    `/visits/${visitId}/pharmacy/dispense/`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        prescription_id: prescriptionId,
+        dispensed_quantity: dispensedQuantity || '',
+        dispensing_notes: dispensingNotes || '',
+      }),
+    },
+  );
+  if (response && typeof response === 'object' && 'prescription' in response) {
+    const wrapped = response as DispenseResponse;
+    return {
+      ...wrapped.prescription,
+      clinical_alerts_count: wrapped.clinical_alerts_count,
+    };
+  }
+  return response as Prescription;
 }

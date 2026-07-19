@@ -27,8 +27,8 @@ interface UseConsultationReturn {
   loading: boolean;
   error: string | null;
   isSaving: boolean;
-  saveConsultation: (visitId: string, data: ConsultationData) => Promise<void>;
-  updateConsultation: (visitId: string, data: ConsultationData) => Promise<void>;
+  saveConsultation: (visitId: string, data: ConsultationData) => Promise<Consultation>;
+  updateConsultation: (visitId: string, data: ConsultationData) => Promise<Consultation>;
 }
 
 export interface UseConsultationOptions {
@@ -73,13 +73,14 @@ export function useConsultation(visitId: string, options?: UseConsultationOption
     loadConsultation();
   }, [visitId, enabled]);
 
-  const saveConsultation = useCallback(async (visitId: string, data: ConsultationData) => {
+  const saveConsultation = useCallback(async (visitId: string, data: ConsultationData): Promise<Consultation> => {
     setIsSaving(true);
     setError(null);
     
     try {
       const saved = await createConsultation(visitId, data);
       setConsultation(saved);
+      return saved;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save consultation');
       throw err;
@@ -88,13 +89,14 @@ export function useConsultation(visitId: string, options?: UseConsultationOption
     }
   }, []);
 
-  const updateConsultation = useCallback(async (visitId: string, data: ConsultationData) => {
+  const updateConsultation = useCallback(async (visitId: string, data: ConsultationData): Promise<Consultation> => {
     setIsSaving(true);
     setError(null);
     
     try {
       const updated = await updateConsultationAPI(visitId, data);
       setConsultation(updated);
+      return updated;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update consultation');
       throw err;

@@ -109,7 +109,7 @@
 .infoCard {
   background: #fff;
   border: 1px solid #e9ecef;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 24px;
   margin-bottom: 24px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
@@ -168,7 +168,7 @@
 .nurseActions {
   background: linear-gradient(135deg, #e8f4f8, #d1ecf1);
   border: 1px solid #bee5eb;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 20px 24px;
   margin-bottom: 24px;
 }
@@ -239,7 +239,7 @@
 .summaryCard {
   background: #fff;
   border: 1px solid #e9ecef;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 20px;
   display: flex;
   align-items: center;
@@ -302,7 +302,7 @@
 .tabContent {
   background: #fff;
   border: 1px solid #e9ecef;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 24px;
   min-height: 400px;
 }
@@ -441,7 +441,7 @@
 
 .embryoStatus {
   padding: 4px 10px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 11px;
   font-weight: 500;
   color: #fff;

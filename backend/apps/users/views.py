@@ -7,69 +7,56 @@ Per EMR Rules:
 - Account lockout after repeated failures
 - Rate limiting on auth endpoints (clinic-grade security)
 """
-from rest_framework import status, generics
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.exceptions import TokenError
-from core.jwt_tokens import RoleAwareRefreshToken, issue_tokens_for_user
-from .role_assumption import (
-    ASSUMABLE_ROLES,
-    can_assume_roles,
-    is_valid_assumable_role,
-    serialize_user_with_role_context,
-)
-from django.contrib.auth import get_user_model
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
+
+import logging
+
 from django.conf import settings
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
-from drf_spectacular.types import OpenApiTypes
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError
+from drf_spectacular.utils import extend_schema
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from core.rate_limiting import rate_limit
+from core.tenant import get_request_organization, is_platform_superuser
+
 from .serializers import (
     LoginSerializer,
-    UserSerializer,
     RefreshTokenSerializer,
     RegisterSerializer,
-    ForgotPasswordSerializer,
-    ResetPasswordSerializer,
-    AccountUpdateSerializer,
-    AssumeRoleSerializer,
+    UserSerializer,
 )
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
-# Auth rate limits (per IP). Relaxed in DEBUG so local testing is not blocked.
-if settings.DEBUG:
-    AUTH_RATE_LIMIT_LOGIN = (60, 1000)
-    AUTH_RATE_LIMIT_REFRESH = (120, 2000)
-    AUTH_RATE_LIMIT_REGISTER = (30, 200)
-    AUTH_RATE_LIMIT_FORGOT_PASSWORD = (30, 200)
-    AUTH_RATE_LIMIT_RESET_PASSWORD = (60, 1000)
-else:
-    AUTH_RATE_LIMIT_LOGIN = (5, 20)
-    AUTH_RATE_LIMIT_REFRESH = (30, 200)
-    AUTH_RATE_LIMIT_REGISTER = (3, 10)
-    AUTH_RATE_LIMIT_FORGOT_PASSWORD = (3, 10)
-    AUTH_RATE_LIMIT_RESET_PASSWORD = (5, 20)
+# Clinic-grade: strict rate limits on auth endpoints (per IP)
+AUTH_RATE_LIMIT_LOGIN = (5, 20)  # 5/min, 20/hour per IP
+AUTH_RATE_LIMIT_REFRESH = (30, 200)
+AUTH_RATE_LIMIT_REGISTER = (3, 10)  # 3/min, 10/hour
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([AllowAny])
-@rate_limit(requests_per_minute=AUTH_RATE_LIMIT_LOGIN[0], requests_per_hour=AUTH_RATE_LIMIT_LOGIN[1])
+@rate_limit(
+    requests_per_minute=AUTH_RATE_LIMIT_LOGIN[0],
+    requests_per_hour=AUTH_RATE_LIMIT_LOGIN[1],
+)
 def login(request):
     """
     Login endpoint - returns JWT access and refresh tokens.
-    
+
     POST /api/v1/auth/login/
     {
         "username": "doctor1",
         "password": "password123"
     }
-    
+
     Returns:
     {
         "access": "eyJ0eXAiOiJKV1QiLCJhbGc...",
@@ -83,153 +70,184 @@ def login(request):
     }
     """
     serializer = LoginSerializer(data=request.data)
-    
+
     if not serializer.is_valid():
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    user = serializer.validated_data['user']
-    
-    refresh = issue_tokens_for_user(user)
+        errors = serializer.errors
+        if isinstance(errors, dict) and errors.get("non_field_errors"):
+            detail = errors["non_field_errors"]
+            if isinstance(detail, list):
+                detail = detail[0] if detail else "Invalid login."
+            return Response({"detail": detail, **errors}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
+    user = serializer.validated_data["user"]
+
+    # Generate JWT tokens
+    refresh = RefreshToken.for_user(user)
     access = refresh.access_token
 
-    return Response({
-        'access': str(access),
-        'refresh': str(refresh),
-        'user': serialize_user_with_role_context(user),
-    }, status=status.HTTP_200_OK)
+    # Add organization_id to JWT for multi-tenancy (user's default org)
+    from apps.organizations.models import OrganizationUser
+
+    default_membership = (
+        OrganizationUser.objects.filter(user=user, is_default=True)
+        .select_related("organization")
+        .first()
+    )
+    if default_membership:
+        access["organization_id"] = default_membership.organization_id
+    else:
+        first_membership = OrganizationUser.objects.filter(user=user).first()
+        if first_membership:
+            access["organization_id"] = first_membership.organization_id
+
+    # Serialize user data
+    user_serializer = UserSerializer(user)
+
+    # Include organization memberships for clinic context
+    from apps.organizations.models import OrganizationUser
+    from apps.organizations.serializers import OrganizationUserSerializer
+
+    memberships = (
+        OrganizationUser.objects.filter(user=user)
+        .select_related("organization")
+        .order_by("-is_default", "organization__name")
+    )
+    org_data = OrganizationUserSerializer(memberships, many=True).data
+
+    return Response(
+        {
+            "access": str(access),
+            "refresh": str(refresh),
+            "user": user_serializer.data,
+            "organizations": org_data,
+        },
+        status=status.HTTP_200_OK,
+    )
 
 
 @extend_schema(
-    tags=['Authentication'],
-    summary='Refresh Token',
-    description='Get a new access token using a refresh token',
+    tags=["Authentication"],
+    summary="Refresh Token",
+    description="Get a new access token using a refresh token",
     request=RefreshTokenSerializer,
     responses={
         200: {
-            'description': 'New access token',
-            'content': {
-                'application/json': {
-                    'example': {
-                        'access': 'eyJ0eXAiOiJKV1QiLCJhbGc...',
-                        'refresh': 'eyJ0eXAiOiJKV1QiLCJhbGc...',
+            "description": "New access token",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "access": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+                        "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc...",
                     }
                 }
-            }
+            },
         },
-        401: {'description': 'Invalid or expired refresh token'},
-    }
+        401: {"description": "Invalid or expired refresh token"},
+    },
 )
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([AllowAny])
-@rate_limit(requests_per_minute=AUTH_RATE_LIMIT_REFRESH[0], requests_per_hour=AUTH_RATE_LIMIT_REFRESH[1])
+@rate_limit(
+    requests_per_minute=AUTH_RATE_LIMIT_REFRESH[0],
+    requests_per_hour=AUTH_RATE_LIMIT_REFRESH[1],
+)
 def refresh_token(request):
     """
     Refresh token endpoint - returns new access token.
-    
+
     POST /api/v1/auth/refresh/
     {
         "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc..."
     }
-    
+
     Returns:
     {
         "access": "eyJ0eXAiOiJKV1QiLCJhbGc..."
     }
     """
     serializer = RefreshTokenSerializer(data=request.data)
-    
+
     if not serializer.is_valid():
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    refresh_token_str = serializer.validated_data['refresh']
-    
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    refresh_token_str = serializer.validated_data["refresh"]
+
     try:
-        refresh = RoleAwareRefreshToken(refresh_token_str)
+        refresh = RefreshToken(refresh_token_str)
         access = refresh.access_token
 
         # Rotate refresh token (security best practice)
         refresh.set_jti()
         refresh.set_exp()
 
-        return Response({
-            'access': str(access),
-            'refresh': str(refresh)
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {"access": str(access), "refresh": str(refresh)}, status=status.HTTP_200_OK
+        )
     except TokenError:
         return Response(
-            {'detail': 'Invalid or expired refresh token.'},
-            status=status.HTTP_401_UNAUTHORIZED
+            {"detail": "Invalid or expired refresh token."},
+            status=status.HTTP_401_UNAUTHORIZED,
         )
 
 
 @extend_schema(
-    tags=['Authentication'],
-    summary='Logout',
-    description='Logout user and blacklist refresh token',
+    tags=["Authentication"],
+    summary="Logout",
+    description="Logout user and blacklist refresh token",
     request=RefreshTokenSerializer,
     responses={
-        200: {'description': 'Successfully logged out'},
-        400: {'description': 'Invalid refresh token'},
-    }
+        200: {"description": "Successfully logged out"},
+        400: {"description": "Invalid refresh token"},
+    },
 )
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def logout(request):
     """
     Logout endpoint - blacklists refresh token.
-    
+
     POST /api/v1/auth/logout/
     {
         "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc..."
     }
     """
     serializer = RefreshTokenSerializer(data=request.data)
-    
+
     if not serializer.is_valid():
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    refresh_token_str = serializer.validated_data['refresh']
-    
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    refresh_token_str = serializer.validated_data["refresh"]
+
     try:
         refresh = RefreshToken(refresh_token_str)
         refresh.blacklist()
         return Response(
-            {'detail': 'Successfully logged out.'},
-            status=status.HTTP_200_OK
+            {"detail": "Successfully logged out."}, status=status.HTTP_200_OK
         )
     except TokenError:
         return Response(
-            {'detail': 'Invalid refresh token.'},
-            status=status.HTTP_400_BAD_REQUEST
+            {"detail": "Invalid refresh token."}, status=status.HTTP_400_BAD_REQUEST
         )
 
 
 @extend_schema(
-    tags=['Authentication'],
-    summary='Get Current User',
-    description='Get information about the currently authenticated user',
+    tags=["Authentication"],
+    summary="Get Current User",
+    description="Get information about the currently authenticated user",
     responses={
         200: UserSerializer,
-        401: {'description': 'Unauthorized'},
-    }
+        401: {"description": "Unauthorized"},
+    },
 )
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def me(request):
     """
     Get current user information.
-    
+
     GET /api/v1/auth/me/
-    
+
     Returns:
     {
         "id": 1,
@@ -238,150 +256,57 @@ def me(request):
         ...
     }
     """
-    return Response(
-        serialize_user_with_role_context(request.user),
-        status=status.HTTP_200_OK,
-    )
+    serializer = UserSerializer(request.user)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @extend_schema(
-    tags=['Authentication'],
-    summary='Assume staff role (admin testing)',
-    description='Issue new tokens so the admin can use the app as another staff role.',
-    request=AssumeRoleSerializer,
-    responses={200: UserSerializer},
-)
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def assume_role(request):
-    """
-    POST /api/v1/auth/assume-role/
-    { "role": "DOCTOR" }
-    """
-    if not can_assume_roles(request.user):
-        return Response(
-            {'detail': 'Only administrators can assume another role.'},
-            status=status.HTTP_403_FORBIDDEN,
-        )
-
-    serializer = AssumeRoleSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    role = serializer.validated_data['role']
-    if not is_valid_assumable_role(role):
-        return Response(
-            {'detail': f'Invalid role. Allowed: {", ".join(ASSUMABLE_ROLES)}'},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    db_user = User.objects.get(pk=request.user.pk)
-    refresh = issue_tokens_for_user(db_user, effective_role=role)
-    access = refresh.access_token
-
-    # Apply in-memory for response payload
-    db_user._actual_role = db_user.role
-    db_user._role_assumed = True
-    db_user.role = role
-
-    return Response({
-        'access': str(access),
-        'refresh': str(refresh),
-        'user': serialize_user_with_role_context(db_user),
-        'assumable_roles': ASSUMABLE_ROLES,
-    }, status=status.HTTP_200_OK)
-
-
-@extend_schema(
-    tags=['Authentication'],
-    summary='Clear assumed role',
-    description='Return to the administrator\'s normal role and re-issue tokens.',
-    responses={200: UserSerializer},
-)
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def clear_assumed_role(request):
-    """
-    POST /api/v1/auth/clear-assumed-role/
-    """
-    if not can_assume_roles(request.user):
-        return Response(
-            {'detail': 'Only administrators can clear an assumed role.'},
-            status=status.HTTP_403_FORBIDDEN,
-        )
-
-    db_user = User.objects.get(pk=request.user.pk)
-    refresh = issue_tokens_for_user(db_user)
-    access = refresh.access_token
-
-    return Response({
-        'access': str(access),
-        'refresh': str(refresh),
-        'user': serialize_user_with_role_context(db_user),
-        'assumable_roles': ASSUMABLE_ROLES,
-    }, status=status.HTTP_200_OK)
-
-
-@extend_schema(
-    tags=['Authentication'],
-    summary='List assumable roles',
-    description='Roles an admin can switch into for testing.',
-)
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def list_assumable_roles(request):
-    """
-    GET /api/v1/auth/assumable-roles/
-    """
-    if not can_assume_roles(request.user):
-        return Response(
-            {'detail': 'Only administrators can list assumable roles.'},
-            status=status.HTTP_403_FORBIDDEN,
-        )
-    from .role_assumption import ROLE_DISPLAY_NAMES
-    roles = [
-        {'value': r, 'label': ROLE_DISPLAY_NAMES.get(r, r)}
-        for r in ASSUMABLE_ROLES
-    ]
-    return Response({
-        'roles': roles,
-        'viewing_as_role': getattr(request.user, '_role_assumed', False),
-        'current_role': request.user.role,
-        'actual_role': getattr(request.user, '_actual_role', request.user.role),
-    })
-
-
-@extend_schema(
-    tags=['Authentication'],
-    summary='List Doctors',
-    description='Get a list of all active doctors (for appointment scheduling)',
+    tags=["Authentication"],
+    summary="List Doctors",
+    description="Get a list of all active doctors (for appointment scheduling)",
     responses={
         200: UserSerializer(many=True),
-        401: {'description': 'Unauthorized'},
-    }
+        401: {"description": "Unauthorized"},
+    },
 )
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_doctors(request):
     """
     List all doctors (for appointment scheduling).
-    
+
     GET /api/v1/auth/doctors/
-    
+
     Returns list of users with DOCTOR role.
     """
-    doctors = User.objects.filter(role='DOCTOR', is_active=True).order_by('first_name', 'last_name')
+    from apps.organizations.models import OrganizationUser
+
+    org = getattr(request, "organization", None)
+    if org:
+        member_user_ids = OrganizationUser.objects.filter(
+            organization=org, user__role="DOCTOR", user__is_active=True
+        ).values_list("user_id", flat=True)
+        doctors = User.objects.filter(id__in=member_user_ids).order_by(
+            "first_name", "last_name"
+        )
+    else:
+        doctors = User.objects.filter(role="DOCTOR", is_active=True).order_by(
+            "first_name", "last_name"
+        )
     serializer = UserSerializer(doctors, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([AllowAny])
-@rate_limit(requests_per_minute=AUTH_RATE_LIMIT_REGISTER[0], requests_per_hour=AUTH_RATE_LIMIT_REGISTER[1])
+@rate_limit(
+    requests_per_minute=AUTH_RATE_LIMIT_REGISTER[0],
+    requests_per_hour=AUTH_RATE_LIMIT_REGISTER[1],
+)
 def register(request):
     """
     User registration endpoint.
-    
+
     POST /api/v1/auth/register/
     {
         "username": "newuser",
@@ -392,7 +317,7 @@ def register(request):
         "last_name": "Doe",
         "role": "DOCTOR"
     }
-    
+
     Returns:
     {
         "id": 1,
@@ -404,193 +329,46 @@ def register(request):
         ...
     }
     """
-    serializer = RegisterSerializer(data=request.data)
-    
-    if not serializer.is_valid():
+    if not settings.PUBLIC_REGISTRATION_ENABLED:
         return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
+            {"detail": "Public registration is disabled."},
+            status=status.HTTP_403_FORBIDDEN,
         )
-    
-    user = serializer.save()
 
-    user_serializer = UserSerializer(user)
-    payload = dict(user_serializer.data)
-    if user.role != 'PATIENT' and not user.is_active:
-        payload['message'] = (
-            'Account created. Your staff account is awaiting administrator approval '
-            'before you can sign in.'
-        )
-    elif user.role != 'PATIENT' and settings.DEBUG:
-        payload['message'] = 'Account created. You can sign in now (local development mode).'
-    else:
-        payload['message'] = 'Account created. You can sign in now.'
+    serializer = RegisterSerializer(data=request.data, context={"request": request})
 
-    return Response(
-        payload,
-        status=status.HTTP_201_CREATED
-    )
-
-
-@extend_schema(
-    tags=['Authentication'],
-    summary='Forgot Password',
-    description='Initiate password reset for an account using username or email.',
-    request=ForgotPasswordSerializer,
-    responses={
-        200: {
-            'description': 'Reset instructions sent if account exists',
-            'content': {
-                'application/json': {
-                    'example': {'detail': 'If an account exists for this identifier, a reset link has been sent.'}
-                }
-            },
-        }
-    },
-)
-@api_view(['POST'])
-@permission_classes([AllowAny])
-@rate_limit(requests_per_minute=AUTH_RATE_LIMIT_FORGOT_PASSWORD[0], requests_per_hour=AUTH_RATE_LIMIT_FORGOT_PASSWORD[1])
-def forgot_password(request):
-    """
-    Forgot password endpoint.
-
-    POST /api/v1/auth/forgot-password/
-    {
-        "identifier": "user@example.com"  // username or email
-    }
-
-    Always returns 200 with a generic message to avoid user enumeration.
-    """
-    serializer = ForgotPasswordSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-    identifier = serializer.validated_data['identifier'].strip()
-
-    user = None
-    if identifier:
-        try:
-            if '@' in identifier:
-                user = User.objects.filter(email__iexact=identifier).first()
-            else:
-                user = User.objects.filter(username__iexact=identifier).first()
-        except Exception:
-            user = None
-
-    if user and user.email:
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        token = PasswordResetTokenGenerator().make_token(user)
-
-        base_url = getattr(settings, 'BASE_URL', 'https://localhost')
-        reset_path = f"/reset-password?uid={uid}&token={token}"
-        reset_url = f"{base_url}{reset_path}"
-
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.info(
-            "Password reset requested for user %s (id=%s, email=%s). Reset URL: %s",
-            user.username,
-            user.id,
-            user.email,
-            reset_url,
-        )
-        # TODO: integrate with real email service
-
-    return Response(
-        {'detail': 'If an account exists for this identifier, a reset link has been sent.'},
-        status=status.HTTP_200_OK,
-    )
-
-
-@extend_schema(
-    tags=['Authentication'],
-    summary='Reset Password',
-    description='Complete password reset using uid and token from reset link.',
-    request=ResetPasswordSerializer,
-    responses={
-        200: {'description': 'Password reset successfully'},
-        400: {'description': 'Invalid or expired reset link'},
-    },
-)
-@api_view(['POST'])
-@permission_classes([AllowAny])
-@rate_limit(requests_per_minute=AUTH_RATE_LIMIT_RESET_PASSWORD[0], requests_per_hour=AUTH_RATE_LIMIT_RESET_PASSWORD[1])
-def reset_password(request):
-    """
-    Reset password endpoint - completes password reset using uid/token.
-
-    POST /api/v1/auth/reset-password/
-    {
-        "uid": "<base64_user_id>",
-        "token": "<token>",
-        "new_password": "...",
-        "new_password_confirm": "..."
-    }
-    """
-    serializer = ResetPasswordSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-
-    uid = serializer.validated_data['uid']
-    token = serializer.validated_data['token']
-    new_password = serializer.validated_data['new_password']
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        uid_int = force_str(urlsafe_base64_decode(uid))
-        user = User.objects.get(pk=uid_int)
-    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = serializer.save()
+    except DjangoValidationError as exc:
+        messages = exc.messages if hasattr(exc, "messages") else [str(exc)]
+        return Response({"detail": messages[0] if messages else str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    except IntegrityError:
         return Response(
-            {'detail': 'Invalid or expired reset link.'},
+            {"detail": "Account could not be created. Username or email may already exist."},
             status=status.HTTP_400_BAD_REQUEST,
         )
-
-    token_generator = PasswordResetTokenGenerator()
-    if not token_generator.check_token(user, token):
+    except Exception:
+        logger.exception("User registration failed")
         return Response(
-            {'detail': 'Invalid or expired reset link.'},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"detail": "Registration failed. Please try again later."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    user.set_password(new_password)
-    user.save(update_fields=['password'])
+    # Serialize user data (exclude password)
+    user_serializer = UserSerializer(user)
 
-    return Response({'detail': 'Password has been reset successfully.'}, status=status.HTTP_200_OK)
-
-
-@extend_schema(
-    tags=['Authentication'],
-    summary='Update Account',
-    description='Update password, email, or username for the current user (requires current_password).',
-    request=AccountUpdateSerializer,
-    responses={
-        200: UserSerializer,
-        400: {'description': 'Validation error'},
-        401: {'description': 'Unauthorized'},
-    },
-)
-@api_view(['PATCH'])
-@permission_classes([IsAuthenticated])
-def update_account(request):
-    """
-    Update account credentials for the authenticated user.
-
-    PATCH /api/v1/auth/account/
-    {
-        "current_password": "...",
-        "new_password": "...",            // optional
-        "new_password_confirm": "...",    // optional
-        "new_email": "new@example.com",   // optional
-        "new_username": "newusername"     // optional
-    }
-    """
-    serializer = AccountUpdateSerializer(data=request.data, context={'request': request})
-    serializer.is_valid(raise_exception=True)
-    user = serializer.save()
-    return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+    return Response(user_serializer.data, status=status.HTTP_201_CREATED)
 
 
 def _is_admin_or_superuser(user):
     """Check if user can approve staff (superuser or ADMIN role)."""
-    return user and user.is_authenticated and (
-        user.is_superuser or getattr(user, 'role', None) == 'ADMIN'
+    return (
+        user
+        and user.is_authenticated
+        and (user.is_superuser or getattr(user, "role", None) == "ADMIN")
     )
 
 
@@ -600,16 +378,16 @@ def _is_superuser(user):
 
 
 @extend_schema(
-    tags=['Authentication'],
-    summary='List Pending Staff',
-    description='List staff accounts awaiting approval (Admin/Superuser only)',
+    tags=["Authentication"],
+    summary="List Pending Staff",
+    description="List staff accounts awaiting approval (Admin/Superuser only)",
     responses={
         200: UserSerializer(many=True),
-        401: {'description': 'Unauthorized'},
-        403: {'description': 'Admin or Superuser required'},
+        401: {"description": "Unauthorized"},
+        403: {"description": "Admin or Superuser required"},
     },
 )
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_pending_staff(request):
     """
@@ -618,32 +396,50 @@ def list_pending_staff(request):
     """
     if not _is_admin_or_superuser(request.user):
         return Response(
-            {'detail': 'Only administrators can view pending staff.'},
-            status=status.HTTP_403_FORBIDDEN
+            {"detail": "Only administrators can view pending staff."},
+            status=status.HTTP_403_FORBIDDEN,
         )
     staff_roles = [
-        'ADMIN', 'DOCTOR', 'NURSE', 'LAB_TECH', 'RADIOLOGY_TECH',
-        'PHARMACIST', 'RECEPTIONIST', 'IVF_SPECIALIST', 'EMBRYOLOGIST'
+        "ADMIN",
+        "DOCTOR",
+        "NURSE",
+        "LAB_TECH",
+        "RADIOLOGY_TECH",
+        "PHARMACIST",
+        "RECEPTIONIST",
+        "IVF_SPECIALIST",
+        "EMBRYOLOGIST",
     ]
-    pending = User.objects.filter(
-        is_active=False,
-        role__in=staff_roles
-    ).order_by('-date_joined')
+    pending = User.objects.filter(is_active=False, role__in=staff_roles)
+    if not is_platform_superuser(request):
+        from apps.organizations.models import OrganizationUser
+
+        org = get_request_organization(request)
+        if not org:
+            return Response(
+                {"detail": "Organization context required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        org_user_ids = OrganizationUser.objects.filter(organization=org).values_list(
+            "user_id", flat=True
+        )
+        pending = pending.filter(id__in=org_user_ids)
+    pending = pending.order_by("-date_joined")
     serializer = UserSerializer(pending, many=True)
     return Response(serializer.data)
 
 
 @extend_schema(
-    tags=['Authentication'],
-    summary='Approve Staff',
-    description='Approve a pending staff account (Admin/Superuser only)',
+    tags=["Authentication"],
+    summary="Approve Staff",
+    description="Approve a pending staff account (Admin/Superuser only)",
     responses={
         200: UserSerializer,
-        403: {'description': 'Admin or Superuser required'},
-        404: {'description': 'User not found'},
+        403: {"description": "Admin or Superuser required"},
+        404: {"description": "User not found"},
     },
 )
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def approve_staff(request, user_id):
     """
@@ -652,104 +448,119 @@ def approve_staff(request, user_id):
     """
     if not _is_admin_or_superuser(request.user):
         return Response(
-            {'detail': 'Only administrators can approve staff.'},
-            status=status.HTTP_403_FORBIDDEN
+            {"detail": "Only administrators can approve staff."},
+            status=status.HTTP_403_FORBIDDEN,
         )
     try:
         user = User.objects.get(pk=user_id)
     except User.DoesNotExist:
+        return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+    if not is_platform_superuser(request):
+        from apps.organizations.models import OrganizationUser
+
+        org = get_request_organization(request)
+        if not org:
+            return Response(
+                {"detail": "Organization context required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not OrganizationUser.objects.filter(organization=org, user=user).exists():
+            return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+    if user.role == "PATIENT":
         return Response(
-            {'detail': 'User not found.'},
-            status=status.HTTP_404_NOT_FOUND
-        )
-    if user.role == 'PATIENT':
-        return Response(
-            {'detail': 'Patient accounts do not require approval.'},
-            status=status.HTTP_400_BAD_REQUEST
+            {"detail": "Patient accounts do not require approval."},
+            status=status.HTTP_400_BAD_REQUEST,
         )
     if user.is_active:
         return Response(
-            {'detail': 'User is already approved.'},
-            status=status.HTTP_400_BAD_REQUEST
+            {"detail": "User is already approved."}, status=status.HTTP_400_BAD_REQUEST
         )
+
+    from apps.organizations.utils import ensure_staff_organization_membership
+
+    org = get_request_organization(request)
+    ensure_staff_organization_membership(user, org, user.role)
+
     user.is_active = True
-    user.save(update_fields=['is_active'])
+    user.save(update_fields=["is_active"])
     serializer = UserSerializer(user)
     return Response(serializer.data)
 
 
 @extend_schema(
-    tags=['Authentication'],
-    summary='List All Staff',
-    description='List all staff users (Superuser only)',
+    tags=["Authentication"],
+    summary="List All Staff",
+    description="List all staff users (Superuser only)",
     responses={
         200: UserSerializer(many=True),
-        401: {'description': 'Unauthorized'},
-        403: {'description': 'Superuser required'},
+        401: {"description": "Unauthorized"},
+        403: {"description": "Superuser required"},
     },
 )
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_all_staff(request):
     """List all staff users. Superuser only."""
     if not _is_superuser(request.user):
         return Response(
-            {'detail': 'Only superusers can view all staff.'},
-            status=status.HTTP_403_FORBIDDEN
+            {"detail": "Only superusers can view all staff."},
+            status=status.HTTP_403_FORBIDDEN,
         )
     staff_roles = [
-        'ADMIN', 'DOCTOR', 'NURSE', 'LAB_TECH', 'RADIOLOGY_TECH',
-        'PHARMACIST', 'RECEPTIONIST', 'IVF_SPECIALIST', 'EMBRYOLOGIST'
+        "ADMIN",
+        "DOCTOR",
+        "NURSE",
+        "LAB_TECH",
+        "RADIOLOGY_TECH",
+        "PHARMACIST",
+        "RECEPTIONIST",
+        "IVF_SPECIALIST",
+        "EMBRYOLOGIST",
     ]
-    staff = User.objects.filter(role__in=staff_roles).order_by('-date_joined')
+    staff = User.objects.filter(role__in=staff_roles).order_by("-date_joined")
     serializer = UserSerializer(staff, many=True)
     return Response(serializer.data)
 
 
 @extend_schema(
-    tags=['Authentication'],
-    summary='Deactivate Staff',
-    description='Deactivate a staff user (Superuser only). User cannot log in until reactivated.',
+    tags=["Authentication"],
+    summary="Deactivate Staff",
+    description="Deactivate a staff user (Superuser only). User cannot log in until reactivated.",
     responses={
         200: UserSerializer,
-        403: {'description': 'Superuser required'},
-        404: {'description': 'User not found'},
+        403: {"description": "Superuser required"},
+        404: {"description": "User not found"},
     },
 )
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def deactivate_staff(request, user_id):
-    """
-    Permanently delete a staff user account.
-
-    Superuser only. Cannot delete your own account.
-    """
+    """Deactivate a staff user. Superuser only. Cannot deactivate yourself."""
     if not _is_superuser(request.user):
         return Response(
-            {'detail': 'Only superusers can deactivate staff.'},
-            status=status.HTTP_403_FORBIDDEN
+            {"detail": "Only superusers can deactivate staff."},
+            status=status.HTTP_403_FORBIDDEN,
         )
     if request.user.id == user_id:
         return Response(
-            {'detail': 'You cannot deactivate your own account.'},
-            status=status.HTTP_400_BAD_REQUEST
+            {"detail": "You cannot deactivate your own account."},
+            status=status.HTTP_400_BAD_REQUEST,
         )
     try:
         user = User.objects.get(pk=user_id)
     except User.DoesNotExist:
+        return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+    if user.role == "PATIENT":
         return Response(
-            {'detail': 'User not found.'},
-            status=status.HTTP_404_NOT_FOUND
+            {"detail": "Use patient management to deactivate patient accounts."},
+            status=status.HTTP_400_BAD_REQUEST,
         )
-    if user.role == 'PATIENT':
+    if not user.is_active:
         return Response(
-            {'detail': 'Use patient management to manage patient accounts.'},
-            status=status.HTTP_400_BAD_REQUEST
+            {"detail": "User is already deactivated."},
+            status=status.HTTP_400_BAD_REQUEST,
         )
-
-    # Hard delete the staff user account.
-    user.delete()
-    return Response(
-        {'detail': 'Staff user account deleted successfully.'},
-        status=status.HTTP_200_OK
-    )
+    user.is_active = False
+    user.save(update_fields=["is_active"])
+    serializer = UserSerializer(user)
+    return Response(serializer.data)

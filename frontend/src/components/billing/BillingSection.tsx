@@ -15,6 +15,7 @@ import { Visit } from '../../types/visit';
 import { Patient } from '../../types/patient';
 import BillingDashboard from './BillingDashboard';
 import LoadingSpinner from '../common/LoadingSpinner';
+import styles from './BillingDashboard.module.css';
 
 interface BillingSectionProps {
   visitId: number;
@@ -37,12 +38,19 @@ export default function BillingSection({
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(initialSummary);
   const [loading, setLoading] = useState(false);
 
+  // VisitDetailsPage already loads billing — use parent data when available (avoids duplicate fetch + spinner)
   useEffect(() => {
-    // Refresh billing summary when visit changes
-    if (visitId) {
+    if (initialSummary) {
+      setBillingSummary(initialSummary);
+      setLoading(false);
+    }
+  }, [initialSummary]);
+
+  useEffect(() => {
+    if (visitId && !initialSummary) {
       loadBillingSummary();
     }
-  }, [visitId]);
+  }, [visitId, initialSummary]);
 
   const loadBillingSummary = async () => {
     try {
@@ -64,7 +72,7 @@ export default function BillingSection({
 
   if (loading && !billingSummary) {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className={styles.loadingPanel}>
         <LoadingSpinner message="Loading billing information..." />
       </div>
     );

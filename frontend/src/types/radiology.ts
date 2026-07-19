@@ -17,6 +17,8 @@ export interface RadiologyOrder {
   finding_flag?: 'NORMAL' | 'ABNORMAL' | 'CRITICAL';
   image_count?: number;
   image_metadata?: Record<string, any>;
+  pacs_study_id?: number | null;
+  has_dicom_images?: boolean;
   created_at: string;
   updated_at: string;
   ordered_by: number;

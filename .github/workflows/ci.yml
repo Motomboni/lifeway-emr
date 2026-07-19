@@ -5,24 +5,18 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  workflow_dispatch:
 
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
     
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
+    env:
+      DEBUG: 'True'
+      SECRET_KEY: ci-backend-test-secret-key-not-for-production
+      ENFORCE_PLAN_LIMITS: 'false'
+      DB_ENGINE: django.db.backends.sqlite3
+      DB_NAME: ci_pytest.sqlite3
     
     steps:
     - uses: actions/checkout@v3
@@ -38,29 +32,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
-    - name: Run migrations
-      working-directory: ./backend
-      env:
-        DB_ENGINE: django.db.backends.postgresql
-        DB_NAME: test_db
-        DB_USER: postgres
-        DB_PASSWORD: postgres
-        DB_HOST: localhost
-        DB_PORT: 5432
-      run: |
-        python manage.py migrate
-    
     - name: Run tests
       working-directory: ./backend
-      env:
-        DB_ENGINE: django.db.backends.postgresql
-        DB_NAME: test_db
-        DB_USER: postgres
-        DB_PASSWORD: postgres
-        DB_HOST: localhost
-        DB_PORT: 5432
       run: |
-        pytest --cov=. --cov-report=xml
+        pytest --cov=. --cov-report=xml -o addopts="--tb=short --strict-markers --create-db"
     
     - name: Upload coverage
       uses: codecov/codecov-action@v3
@@ -84,17 +59,98 @@ jobs:
       working-directory: ./frontend
       run: npm ci
     
-    - name: Run linter
+    - name: Typecheck
       working-directory: ./frontend
-      run: npm run lint || true
-    
-    - name: Run tests
-      working-directory: ./frontend
-      run: npm test -- --coverage --watchAll=false
-    
+      run: npm run typecheck
+
     - name: Build
       working-directory: ./frontend
       run: npm run build
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: npm
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install backend dependencies
+      working-directory: ./backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Prepare database and E2E fixtures
+      working-directory: ./backend
+      env:
+        DB_ENGINE: django.db.backends.sqlite3
+        DB_NAME: e2e_ci.sqlite3
+        DEBUG: 'True'
+        SECRET_KEY: ci-e2e-secret-key-not-for-production
+        ENFORCE_PLAN_LIMITS: 'false'
+        E2E_OTP_EXPOSE: 'true'
+      run: |
+        python manage.py migrate --noinput
+        python manage.py seed_e2e_users
+
+    - name: Install frontend dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Install Playwright Chromium
+      working-directory: ./frontend
+      run: npx playwright install --with-deps chromium
+
+    - name: Start Django API
+      working-directory: ./backend
+      env:
+        DB_ENGINE: django.db.backends.sqlite3
+        DB_NAME: e2e_ci.sqlite3
+        DEBUG: 'True'
+        SECRET_KEY: ci-e2e-secret-key-not-for-production
+        ENFORCE_PLAN_LIMITS: 'false'
+        E2E_OTP_EXPOSE: 'true'
+      run: |
+        python manage.py runserver 127.0.0.1:8000 &
+        for i in $(seq 1 30); do
+          curl -sf http://127.0.0.1:8000/api/v1/health/ && exit 0
+          sleep 2
+        done
+        echo "Backend failed to start"
+        exit 1
+
+    - name: Run Playwright E2E (workflow + billing)
+      working-directory: ./frontend
+      env:
+        CI: true
+      run: |
+        npx playwright test \
+          e2e/workflows/visit-pay-consult.spec.ts \
+          e2e/workflows/patient-portal-otp.spec.ts \
+          e2e/workflows/lab-workflow.spec.ts \
+          e2e/workflows/pharmacy-workflow.spec.ts \
+          e2e/billing/billing.spec.ts \
+          --project=chromium
+
+    - name: Upload Playwright report on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-report
+        path: frontend/playwright-report/
+        retention-days: 7
 
   security-scan:
     runs-on: ubuntu-latest

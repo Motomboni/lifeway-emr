@@ -1,159 +1,243 @@
 .appointmentsPage {
-  padding: 2rem;
+  padding: 2.5rem;
   max-width: 1400px;
   margin: 0 auto;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  min-height: 100%;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+  padding-bottom: 1.5rem;
 }
 
 .header h1 {
   margin: 0;
   color: var(--text-primary);
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  text-shadow: var(--glass-text-shadow, none);
+}
+
+.headerSubtitle {
+  color: #334155;
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin: 0.35rem 0 0;
+  max-width: 36rem;
+  line-height: 1.55;
+}
+
+.header p {
+  color: #334155;
+  font-size: 1.05rem;
+  font-weight: 500;
+  margin-top: 0.5rem;
+  line-height: 1.55;
+}
+
+[data-theme="dark"] .headerSubtitle,
+[data-theme="dark"] .header p {
+  color: #e2e8f0;
+}
+
+.doctorSelfDisplay {
+  padding: 0.75rem 1rem;
+  background: var(--glass-bg-strong, var(--bg-primary-solid));
+  border: 1px solid var(--glass-border, var(--border-color));
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.doctorSelfDisplay span {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.helpText {
+  margin: 0.5rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.45;
 }
 
 .createButton {
-  padding: 0.75rem 1.5rem;
-  background: #27ae60;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
 }
 
 .createButton:hover {
-  background: #229954;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4);
 }
 
 .accessDenied {
   text-align: center;
   padding: 3rem;
-  color: var(--error);
+  color: #ef4444;
+  font-weight: 600;
+  background: rgba(239, 68, 68, 0.05);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(239, 68, 68, 0.1);
 }
 
 .filtersSection {
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-primary);
+  margin-bottom: 2.5rem;
+  padding: 1.5rem 2rem;
+  background: var(--bg-primary, white);
+  border: 1px solid rgba(128, 128, 128, 0.1);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .viewModeButtons,
 .statusFilters {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
 .activeButton,
 .inactiveButton {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: var(--input-bg);
-  color: var(--text-primary);
+  padding: 0.75rem 1.25rem;
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  border-radius: 8px;
+  background: var(--bg-primary, white);
+  color: var(--text-secondary);
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
 }
 
 .activeButton {
-  background: #3498db;
+  background: #3b82f6;
   color: white;
-  border-color: #3498db;
+  border-color: #3b82f6;
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
 }
 
 .inactiveButton:hover {
-  background: var(--bg-hover);
+  background: var(--bg-secondary, #f9fafb);
+  border-color: rgba(128, 128, 128, 0.3);
+  color: var(--text-primary);
 }
 
 .searchBox {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
+  gap: 1rem;
 }
 
 .searchBox input {
   flex: 1;
-  padding: 0.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
+  padding: 1rem;
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  border-radius: 8px;
   font-size: 1rem;
-  background: var(--input-bg);
+  background: var(--bg-secondary, #f9fafb);
   color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+.searchBox input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  background: var(--bg-primary, white);
 }
 
 .searchBox button {
-  padding: 0.75rem 1.5rem;
-  background: #3498db;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
 }
 
 .searchBox button:hover {
-  background: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(59, 130, 246, 0.3);
 }
 
 .formContainer {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  color: var(--text-primary);
+  background: var(--glass-bg-strong, var(--bg-primary-solid));
+  border: 1px solid var(--glass-border, rgba(128, 128, 128, 0.1));
+  border-radius: var(--radius-md);
+  padding: 2.5rem;
+  margin-bottom: 2.5rem;
+  box-shadow: var(--glass-shadow, 0 4px 20px rgba(0, 0, 0, 0.05));
+  overflow: visible;
+  position: relative;
 }
 
 .formContainer h2 {
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 2rem 0;
   color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+  padding-bottom: 1rem;
 }
 
 .formGroup {
   margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.formGroup:has(.searchResults) {
+  margin-bottom: 0.5rem;
+  z-index: 5;
 }
 
 .formGroup label {
   display: block;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 0.5rem;
+  font-size: 0.95rem;
 }
 
 .formGroup input,
 .formGroup select,
 .formGroup textarea {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
+  padding: 1rem;
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  border-radius: 8px;
   font-size: 1rem;
   font-family: inherit;
-  background: var(--input-bg);
+  background: var(--bg-primary, white);
   color: var(--text-primary);
+  transition: all 0.3s ease;
 }
 
 .formGroup input:focus,
 .formGroup select:focus,
 .formGroup textarea:focus {
   outline: none;
-  border-color: #3498db;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
 .patientSearch {
@@ -165,40 +249,42 @@
 }
 
 .searchResults {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  box-shadow: var(--shadow-lg);
-  max-height: 200px;
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  background: var(--glass-bg-strong, var(--bg-primary-solid));
+  border: 1px solid var(--glass-border, rgba(128, 128, 128, 0.15));
+  border-radius: 8px;
+  box-shadow: var(--glass-shadow, 0 10px 25px rgba(0, 0, 0, 0.1));
+  max-height: 250px;
   overflow-y: auto;
-  z-index: 1000;
-  margin-top: 0.25rem;
-  color: var(--text-primary);
+  z-index: 1;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .searchResultsHeader {
-  padding: 0.75rem;
-  background: var(--bg-tertiary);
-  border-bottom: 1px solid var(--border-color);
+  padding: 1rem;
+  background: var(--bg-secondary, #f9fafb);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.1);
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .searchResultItem {
-  padding: 0.75rem;
+  padding: 1rem;
   cursor: pointer;
-  border-bottom: 1px solid var(--border-color);
-  transition: background 0.2s;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.05);
+  transition: background 0.2s ease;
   color: var(--text-primary);
 }
 
 .searchResultItem:hover {
-  background: var(--bg-hover);
+  background: rgba(59, 130, 246, 0.05);
 }
 
 .searchResultItem:last-child {
@@ -216,20 +302,23 @@
   color: var(--text-secondary);
   font-size: 0.9rem;
   margin-left: 0.5rem;
+  background: rgba(128, 128, 128, 0.1);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
 }
 
 .patientMeta {
   color: var(--text-secondary);
   font-size: 0.85rem;
-  margin-top: 0.25rem;
+  margin-top: 0.4rem;
 }
 
 .selectedPatient {
-  margin-top: 0.5rem;
-  padding: 0.75rem;
-  background: var(--bg-tertiary);
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
+  margin-top: 0.75rem;
+  padding: 1rem;
+  background: rgba(var(--color-primary-rgb, 59, 130, 246), 0.1);
+  border: 1px solid rgba(var(--color-primary-rgb, 59, 130, 246), 0.25);
+  border-radius: 8px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -242,214 +331,239 @@
 }
 
 .selectedPatient button {
-  padding: 0.25rem 0.75rem;
-  background: #95a5a6;
-  color: white;
-  border: none;
-  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s;
 }
 
 .selectedPatient button:hover {
-  background: #7f8c8d;
+  background: var(--primary);
+  color: #fff;
 }
 
 .formActions {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 2rem;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(128, 128, 128, 0.1);
 }
 
 .cancelButton,
 .saveButton {
-  padding: 0.75rem 1.5rem;
+  padding: 1rem 2rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.3s ease;
 }
 
 .cancelButton {
-  background: #95a5a6;
-  color: white;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid rgba(128, 128, 128, 0.2);
 }
 
 .cancelButton:hover:not(:disabled) {
-  background: #7f8c8d;
+  background: rgba(128, 128, 128, 0.05);
 }
 
 .saveButton {
-  background: #3498db;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
 }
 
 .saveButton:hover:not(:disabled) {
-  background: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(59, 130, 246, 0.3);
 }
 
 .saveButton:disabled,
 .cancelButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
 .appointmentsList {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .appointmentCard {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1.5rem;
-  transition: box-shadow 0.2s;
-  color: var(--text-primary);
+  background: var(--bg-primary, white);
+  border: 1px solid rgba(128, 128, 128, 0.1);
+  border-radius: var(--radius-md);
+  padding: 1.5rem 2rem;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
 }
 
 .appointmentCard:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  border-color: rgba(59, 130, 246, 0.3);
 }
 
 .appointmentHeader {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .appointmentHeader h3 {
   margin: 0 0 0.5rem 0;
   color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 700;
 }
 
 .appointmentDate {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
 .appointmentBadges {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .statusBadge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
+  padding: 0.35rem 1rem;
+  border-radius: 9999px;
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .statusScheduled {
-  background: #fff3cd;
-  color: #856404;
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .statusConfirmed {
-  background: #d1ecf1;
-  color: #0c5460;
+  background: #dbeafe;
+  color: #1e40af;
 }
 
 .statusCompleted {
-  background: #d4edda;
-  color: #155724;
+  background: #d1fae5;
+  color: #065f46;
 }
 
 .statusCancelled {
-  background: #f8d7da;
-  color: #721c24;
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 .statusNoShow {
-  background: #e2e3e5;
-  color: #383d41;
+  background: #f3f4f6;
+  color: #374151;
 }
 
 .appointmentDetails {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .appointmentDetails p {
-  margin: 0.5rem 0;
+  margin: 0.75rem 0;
   color: var(--text-secondary);
+  font-size: 1rem;
 }
 
 .linkButton {
   background: none;
   border: none;
-  color: var(--primary);
+  color: #3b82f6;
   cursor: pointer;
   text-decoration: underline;
   padding: 0;
   font-size: inherit;
+  font-weight: 500;
+  transition: color 0.2s;
 }
 
 .linkButton:hover {
-  color: var(--primary-hover);
+  color: #2563eb;
 }
 
 .appointmentActions {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
   flex-wrap: wrap;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(128, 128, 128, 0.1);
 }
 
 .confirmButton,
 .completeButton,
 .editButton {
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 500;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.3s ease;
 }
 
 .confirmButton {
-  background: #17a2b8;
-  color: white;
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
 }
 
 .confirmButton:hover {
-  background: #138496;
-}
-
-.completeButton {
-  background: #28a745;
+  background: #3b82f6;
   color: white;
 }
 
+.completeButton {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
 .completeButton:hover {
-  background: #218838;
+  background: #10b981;
+  color: white;
 }
 
 .editButton {
-  background: #ffc107;
-  color: #212529;
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
 }
 
 .editButton:hover {
-  background: #e0a800;
+  background: #f59e0b;
+  color: white;
 }
 
 .emptyState {
   text-align: center;
-  padding: 3rem;
+  padding: 4rem 2rem;
   color: var(--text-secondary);
+  background: var(--bg-primary, white);
+  border-radius: var(--radius-md);
+  border: 1px dashed rgba(128, 128, 128, 0.2);
 }
 
 @media (max-width: 768px) {
   .appointmentsPage {
-    padding: 1rem;
+    padding: 1.5rem;
   }
 
   .header {

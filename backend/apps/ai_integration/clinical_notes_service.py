@@ -1,84 +1,122 @@
 """
-AI clinical notes generation service.
+Clinical AI Scribe — structured note generation from transcripts.
 
-generate_clinical_note(transcript, note_type) -> structured note (SOAP/summary/discharge).
-Doctor must approve/edit before final save. Audit logged when visit is provided.
+Supports auto-detected SOAP vs antenatal templates, NHIA/ICD-11 coding guidance,
+Nigerian English/Pidgin normalization, and obstetric date calculations.
 """
-import logging
-from typing import Dict, Any, Optional
-from django.conf import settings
 
-from .models import AIFeatureType, AIRequest, AIConfiguration, AIProvider
-from .services import AIServiceFactory, AIServiceError
+import logging
+from typing import Any, Dict, Optional
+
+from django.utils import timezone
+
+from .clinical_scribe_prompts import (
+    CLINICAL_SCRIBE_SYSTEM,
+    DISCHARGE_SYSTEM,
+    SUMMARY_SYSTEM,
+)
+from .models import AIConfiguration, AIFeatureType, AIProvider, AIRequest
+from .nhia_validation import validate_scribe_codes
+from .note_parser import build_icd11_apply_payload, parse_scribe_sections
+from .obstetric_calculations import (
+    build_obstetric_context_block,
+    resolve_template,
+)
+from .services import AIServiceError, AIServiceFactory
 
 logger = logging.getLogger(__name__)
 
-SOAP_SYSTEM = """You are a clinical documentation assistant. Given a transcript or bullet notes from a consultation, produce a structured SOAP note.
-Output ONLY the following sections with clear headers. Use neutral, professional language. Do not invent findings not implied by the transcript.
-
-S — Subjective: Chief complaint and history in patient's words or summarized.
-O — Objective: Vital signs, physical exam, lab/imaging findings if mentioned.
-A — Assessment: Working diagnosis or problem list.
-P — Plan: Treatment plan, medications, follow-up."""
-
-SUMMARY_SYSTEM = """You are a clinical documentation assistant. Given a transcript or bullet notes, produce a concise clinical summary paragraph suitable for the medical record. Do not invent information. Use professional language."""
-
-DISCHARGE_SYSTEM = """You are a clinical documentation assistant. Given a transcript or bullet notes from a discharge discussion, produce a structured discharge summary: Diagnosis, Hospital Course (brief), Discharge Medications, Follow-up instructions, and Patient Education. Use professional language. Do not invent information."""
+TEMPLATE_LABELS = {
+    "soap": "SOAP",
+    "antenatal": "Antenatal",
+    "summary": "Summary",
+    "discharge": "Discharge",
+}
 
 
-def _get_note_prompt(transcript: str, note_type: str) -> tuple:
-    """Return (system_prompt, user_prompt) for the given note type."""
+def _get_note_prompt(
+    transcript: str,
+    template: str,
+    reference_date=None,
+) -> tuple[str, str]:
+    """Return (system_prompt, user_prompt) for the resolved template."""
     transcript = (transcript or "").strip() or "No transcript provided."
-    if note_type == "SOAP":
-        return SOAP_SYSTEM, f"Generate a SOAP note from the following:\n\n{transcript}"
-    if note_type == "summary":
+    ref = reference_date or timezone.now().date()
+    obstetric_block = ""
+
+    if template == "antenatal":
+        obstetric_block = build_obstetric_context_block(transcript, reference=ref)
+        system = CLINICAL_SCRIBE_SYSTEM
+        user = (
+            "The following is an antenatal/maternity encounter. "
+            "Apply TEMPLATE B (Antenatal Booking & Summary Card).\n\n"
+            f"{transcript}{obstetric_block}"
+        )
+        return system, user
+
+    if template == "soap":
+        obstetric_block = build_obstetric_context_block(transcript, reference=ref)
+        system = CLINICAL_SCRIBE_SYSTEM
+        user = (
+            "Apply TEMPLATE A (General Consultation Note / SOAP structure).\n\n"
+            f"{transcript}{obstetric_block}"
+        )
+        return system, user
+
+    if template == "summary":
         return SUMMARY_SYSTEM, f"Summarize the following clinical encounter:\n\n{transcript}"
-    if note_type == "discharge":
+
+    if template == "discharge":
         return DISCHARGE_SYSTEM, f"Generate a discharge summary from:\n\n{transcript}"
-    return SUMMARY_SYSTEM, f"Summarize:\n\n{transcript}"
+
+    system = CLINICAL_SCRIBE_SYSTEM
+    user = f"Structure the following clinical encounter appropriately:\n\n{transcript}"
+    return system, user
 
 
 def generate_clinical_note(
     transcript: str,
-    note_type: str,
+    note_type: str = "auto",
     user=None,
     visit=None,
+    reference_date=None,
 ) -> Dict[str, Any]:
     """
     Generate a structured clinical note from transcript/bullet notes.
 
     Args:
-        transcript: Raw transcript or bullet points.
-        note_type: One of 'SOAP', 'summary', 'discharge'.
-        user: User (doctor) requesting generation (for audit).
+        transcript: Raw transcript, dialogue, or shorthand dictate.
+        note_type: auto | SOAP | antenatal | summary | discharge
+        user: Doctor requesting generation (audit).
         visit: Optional visit for audit logging.
+        reference_date: Date for EGA calculation (defaults to today).
 
     Returns:
         {
             "note_type": str,
-            "structured_note": str,  # AI output (editable by doctor)
+            "template_used": str,
+            "structured_note": str,
             "raw_transcript": str,
             "request_id": int | None,
         }
     """
-    note_type = (note_type or "summary").strip().lower()
-    if note_type not in ("soap", "summary", "discharge"):
-        note_type = "summary"
-    note_type_display = "SOAP" if note_type == "soap" else note_type.capitalize()
+    template = resolve_template(note_type, transcript)
+    note_type_display = TEMPLATE_LABELS.get(template, template.capitalize())
 
     config, _ = AIConfiguration.objects.get_or_create(
         feature_type=AIFeatureType.CLINICAL_NOTE_GENERATION,
         defaults={
             "default_provider": AIProvider.OPENAI,
-            "default_model": "gpt-3.5-turbo",
+            "default_model": "gpt-4o-mini",
             "enabled": True,
         },
     )
     if not config.enabled:
         raise AIServiceError("Clinical note generation is disabled.")
 
-    system_prompt, user_prompt = _get_note_prompt(transcript, note_type_display)
-    full_prompt = f"{system_prompt}\n\n---\n\n{user_prompt}"
+    system_prompt, user_prompt = _get_note_prompt(
+        transcript, template, reference_date=reference_date
+    )
 
     try:
         service = AIServiceFactory.create_service(
@@ -86,7 +124,7 @@ def generate_clinical_note(
             model=config.default_model,
         )
         response = service.generate(
-            full_prompt,
+            user_prompt,
             system_prompt=system_prompt,
             max_tokens=config.max_tokens,
             temperature=float(config.temperature),
@@ -109,16 +147,29 @@ def generate_clinical_note(
                 completion_tokens=completion_tokens,
                 total_tokens=prompt_tokens + completion_tokens,
                 cost_usd=cost,
-                request_payload={"note_type": note_type_display, "prompt_length": len(full_prompt)},
+                request_payload={
+                    "note_type": note_type_display,
+                    "template": template,
+                    "prompt_length": len(user_prompt),
+                },
                 response_payload={"response_length": len(content)},
                 success=True,
             ).id
 
+        code_validation = validate_scribe_codes(content)
+        parsed_sections = parse_scribe_sections(content, template=template)
+
         return {
             "note_type": note_type_display,
+            "template_used": template,
             "structured_note": content,
             "raw_transcript": transcript,
             "request_id": request_id,
+            "code_validation": code_validation,
+            "parsed_sections": parsed_sections,
+            "icd11_apply_payload": build_icd11_apply_payload(
+                code_validation.get("validated_codes", [])
+            ),
         }
     except Exception as e:
         if visit and user:

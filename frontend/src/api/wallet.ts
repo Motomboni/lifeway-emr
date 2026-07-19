@@ -29,6 +29,31 @@ export async function getWallet(walletId: number): Promise<Wallet> {
 }
 
 /**
+ * List wallets for staff lookup (requires search or patient id).
+ */
+export async function listWallets(params?: {
+  search?: string;
+  patientId?: number;
+}): Promise<Wallet[]> {
+  const searchParams = new URLSearchParams();
+  if (params?.search?.trim()) {
+    searchParams.append('search', params.search.trim());
+  }
+  if (params?.patientId) {
+    searchParams.append('patient', String(params.patientId));
+  }
+  const query = searchParams.toString();
+  const response = await apiRequest<any>(`/wallet/wallets/${query ? `?${query}` : ''}`);
+  if (Array.isArray(response)) {
+    return response;
+  }
+  if (response?.results && Array.isArray(response.results)) {
+    return response.results;
+  }
+  return [];
+}
+
+/**
  * Get current user's wallet (for patients)
  * Auto-creates wallet if it doesn't exist (handled by backend)
  */

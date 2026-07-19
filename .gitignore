@@ -11,6 +11,9 @@ __pycache__/
 .venv/
 venv/
 backend/db.sqlite3
+backend/local_dev.sqlite3
+backend/local_pytest.sqlite3
+frontend/local_dev.sqlite3
 backend/staticfiles/
 staticfiles/
 *.log

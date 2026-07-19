@@ -1,132 +1,155 @@
 """
-Background tasks for appointment reminders (24h and 2h before).
-
-Run via:
-- Cron: python manage.py send_whatsapp_reminders
-- Or Celery Beat if CELERY_APP is configured (see below).
+Celery tasks for patient notifications (SMS / email / WhatsApp).
 """
+
 import logging
-from django.utils import timezone
 from datetime import timedelta
+
+from celery import shared_task
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-# Template for reminder message (Nigeria-friendly)
-REMINDER_TEMPLATE = (
-    "Reminder: You have an appointment at {clinic} on {date} at {time}. "
-    "Reply HELP if you need assistance."
-)
 
-
-def _get_clinic_name():
-    """Clinic name for messages (from settings or default)."""
-    from django.conf import settings
-    return getattr(settings, 'CLINIC_NAME', 'the clinic')
-
-
-def _format_phone(patient):
-    """Get E.164-style phone for WhatsApp (e.g. +2348012345678)."""
-    phone = (patient.phone or getattr(patient.user, 'phone', None) or '').strip()
-    if not phone:
-        return None
-    if not phone.startswith('+'):
-        # Nigerian: assume 0xx -> +234xx
-        if phone.startswith('0') and len(phone) >= 10:
-            phone = '+234' + phone[1:]
-        else:
-            phone = '+234' + phone
-    return phone
-
-
-def send_reminder_for_appointment(appointment, hours_before):
-    """
-    Send one reminder for an appointment (24h or 2h before).
-    Creates AppointmentReminder record and calls WhatsApp stub.
-    """
-    from apps.notifications.models import AppointmentReminder
-    from apps.notifications.whatsapp_service import send_whatsapp_message
-    
-    patient = appointment.patient
-    phone = _format_phone(patient)
-    if not phone:
-        logger.warning("No phone for patient %s, skip WhatsApp reminder", patient.id)
-        return False
-    
-    clinic = _get_clinic_name()
-    apt_date = appointment.appointment_date
-    date_str = apt_date.strftime('%A, %d %B %Y')
-    time_str = apt_date.strftime('%I:%M %p')
-    message = REMINDER_TEMPLATE.format(
-        clinic=clinic,
-        date=date_str,
-        time=time_str,
-    )
-    
-    reminder = AppointmentReminder.objects.create(
-        appointment=appointment,
-        channel='whatsapp',
-        hours_before=hours_before,
-        status='PENDING',
-    )
-    try:
-        ok = send_whatsapp_message(phone, message)
-        reminder.sent_at = timezone.now()
-        reminder.status = 'SENT' if ok else 'FAILED'
-        if not ok:
-            reminder.error_message = 'Send failed (stub or provider error)'
-        reminder.save()
-        return ok
-    except Exception as e:
-        reminder.status = 'FAILED'
-        reminder.error_message = str(e)
-        reminder.save()
-        logger.exception("WhatsApp reminder failed for appointment %s: %s", appointment.id, e)
-        return False
-
-
-def run_whatsapp_reminders_24h():
-    """Find appointments in the 24h window and send reminders (if not already sent)."""
+@shared_task(name="apps.notifications.tasks.send_appointment_reminder_batch")
+def send_appointment_reminder_batch(hours_ahead=24):
+    """Send appointment reminders (email + SMS) for upcoming appointments."""
     from apps.appointments.models import Appointment
-    from apps.notifications.models import AppointmentReminder
-    
+    from apps.notifications.utils import send_appointment_reminder
+
     now = timezone.now()
-    window_start = now + timedelta(hours=23)
-    window_end = now + timedelta(hours=25)
-    
+    reminder_time = now + timedelta(hours=hours_ahead)
+
     appointments = Appointment.objects.filter(
-        status__in=['SCHEDULED', 'CONFIRMED'],
-        appointment_date__gte=window_start,
-        appointment_date__lte=window_end,
-    ).select_related('patient')
-    
+        status__in=["SCHEDULED", "CONFIRMED"],
+        appointment_date__gte=now,
+        appointment_date__lte=reminder_time,
+    ).select_related("patient", "doctor")
+
     sent = 0
-    for apt in appointments:
-        if AppointmentReminder.objects.filter(appointment=apt, hours_before=24, channel='whatsapp').exists():
+    for appointment in appointments:
+        patient = appointment.patient
+        if not patient or not (patient.email or patient.phone):
             continue
-        if send_reminder_for_appointment(apt, hours_before=24):
+        try:
+            send_appointment_reminder(appointment)
             sent += 1
+        except Exception as e:
+            logger.exception(
+                "Appointment reminder failed for #%s: %s", appointment.id, e
+            )
+
+    logger.info("Appointment reminders sent: %s", sent)
     return sent
 
 
-def run_whatsapp_reminders_2h():
-    """Find appointments in the 2h window and send reminders (if not already sent)."""
+def _whatsapp_appointment_window(hours_ahead: int, window_hours: float = 1.0):
+    """Appointments starting within [now+hours_ahead, now+hours_ahead+window]."""
     from apps.appointments.models import Appointment
     from apps.notifications.models import AppointmentReminder
-    
+    from apps.notifications.whatsapp_service import send_whatsapp_message
+
     now = timezone.now()
-    window_start = now + timedelta(hours=1, minutes=50)
-    window_end = now + timedelta(hours=2, minutes=10)
-    
-    appointments = Appointment.objects.filter(
-        status__in=['SCHEDULED', 'CONFIRMED'],
-        appointment_date__gte=window_start,
-        appointment_date__lte=window_end,
-    ).select_related('patient')
-    
+    start = now + timedelta(hours=hours_ahead)
+    end = start + timedelta(hours=window_hours)
     sent = 0
-    for apt in appointments:
-        if AppointmentReminder.objects.filter(appointment=apt, hours_before=2, channel='whatsapp').exists():
+
+    appointments = Appointment.objects.filter(
+        status__in=["SCHEDULED", "CONFIRMED"],
+        appointment_date__gte=start,
+        appointment_date__lt=end,
+    ).select_related("patient")
+
+    for appt in appointments:
+        patient = appt.patient
+        if not patient or not patient.phone:
             continue
-        if send_reminder_for_appointment(apt, hours_before=2):
+        if AppointmentReminder.objects.filter(
+            appointment=appt,
+            channel="whatsapp",
+            hours_before=hours_ahead,
+            status="SENT",
+        ).exists():
+            continue
+        when = appt.appointment_date.strftime("%d %b %Y %H:%M")
+        message = (
+            f"Hello {patient.first_name or 'there'}, reminder from Lifeway Medical Centre: "
+            f"your appointment is on {when}. Please arrive 15 minutes early."
+        )
+        reminder = AppointmentReminder.objects.create(
+            appointment=appt,
+            channel="whatsapp",
+            hours_before=hours_ahead,
+            status="PENDING",
+        )
+        if send_whatsapp_message(patient.phone, message):
+            reminder.status = "SENT"
+            reminder.sent_at = timezone.now()
+            reminder.save(update_fields=["status", "sent_at"])
             sent += 1
+        else:
+            reminder.status = "FAILED"
+            reminder.error_message = "WhatsApp send failed"
+            reminder.save(update_fields=["status", "error_message"])
+    return sent
+
+
+def run_whatsapp_reminders_24h() -> int:
+    return _whatsapp_appointment_window(hours_ahead=24)
+
+
+def run_whatsapp_reminders_2h() -> int:
+    return _whatsapp_appointment_window(hours_ahead=2)
+
+
+@shared_task(name="apps.notifications.tasks.send_whatsapp_reminder_batch")
+def send_whatsapp_reminder_batch():
+    """Run 24h and 2h WhatsApp appointment reminders."""
+    s24 = run_whatsapp_reminders_24h()
+    s2 = run_whatsapp_reminders_2h()
+    return {"24h": s24, "2h": s2}
+
+
+@shared_task(name="apps.notifications.tasks.send_anc_whatsapp_reminders")
+def send_anc_whatsapp_reminders():
+    """Send WhatsApp reminders for due/overdue ANC schedule items."""
+    from datetime import date
+
+    from apps.antenatal.models import AntenatalRecord
+    from apps.antenatal.schedule_service import (
+        build_anc_schedule,
+        format_anc_whatsapp_reminder,
+    )
+    from apps.notifications.whatsapp_service import send_whatsapp_message
+
+    today = date.today()
+    sent = 0
+    records = AntenatalRecord.objects.filter(outcome="ONGOING").select_related(
+        "patient"
+    )[:200]
+
+    for record in records:
+        patient = record.patient
+        if not patient or not patient.phone:
+            continue
+        schedule = build_anc_schedule(record)
+        due_items = [
+            i
+            for i in schedule.get("items", [])
+            if i["status"] in ("due", "overdue")
+            and abs(
+                (
+                    date.fromisoformat(i["due_date"]) - today
+                ).days
+            )
+            <= 3
+        ]
+        if not due_items:
+            continue
+        item = due_items[0]
+        message = format_anc_whatsapp_reminder(record, item)
+        if send_whatsapp_message(patient.phone, message):
+            sent += 1
+
+    logger.info("ANC WhatsApp reminders sent: %s", sent)
     return sent

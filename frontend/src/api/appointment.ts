@@ -66,7 +66,7 @@ export async function getAppointment(appointmentId: number): Promise<Appointment
 }
 
 /**
- * Create a new appointment (Receptionist only)
+ * Create a new appointment (Receptionist or Doctor)
  */
 export async function createAppointment(
   appointmentData: AppointmentCreateData

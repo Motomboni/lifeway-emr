@@ -1,9 +1,10 @@
 """
 Script to parse clinic services data and convert to Excel format for import.
 """
-import pandas as pd
-from decimal import Decimal
+
 import re
+
+import pandas as pd
 
 # Raw data from user
 raw_data = """
@@ -107,101 +108,117 @@ VACCINES:
 12	HEPATITIS B VACCINE (CHILD)	15,000.00
 """
 
+
 # Function to clean amount string
 def clean_amount(amount_str):
     """Convert amount string to decimal number."""
     if isinstance(amount_str, (int, float)):
         return float(amount_str)
     # Remove commas and convert to float
-    amount_str = str(amount_str).replace(',', '').strip()
+    amount_str = str(amount_str).replace(",", "").strip()
     try:
         return float(amount_str)
     except (ValueError, TypeError):
         return 0.0
+
 
 # Function to generate service code
 def generate_service_code(name, category, index):
     """Generate a unique service code."""
     # Create prefix from category
     prefix_map = {
-        'CLINICAL CONSULTATION': 'CONS',
-        'ANC': 'ANC',
-        'REGISTRATION': 'REG',
-        'VACCINES': 'VAC',
-        'PROCEDURES': 'PROC',
-        'DENTAL': 'DENT',
-        'IVF DRUGS': 'IVF-DRUG',
-        'FERTILITY SERVICES': 'FERT',
-        'CONSUMABLES': 'CONS'
+        "CLINICAL CONSULTATION": "CONS",
+        "ANC": "ANC",
+        "REGISTRATION": "REG",
+        "VACCINES": "VAC",
+        "PROCEDURES": "PROC",
+        "DENTAL": "DENT",
+        "IVF DRUGS": "IVF-DRUG",
+        "FERTILITY SERVICES": "FERT",
+        "CONSUMABLES": "CONS",
     }
-    prefix = prefix_map.get(category, 'SVC')
-    
+    prefix = prefix_map.get(category, "SVC")
+
     # Get first letters of name for code
     words = name.upper().split()
     if len(words) >= 2:
-        code_suffix = ''.join([w[0] for w in words[:3]])[:4]
+        code_suffix = "".join([w[0] for w in words[:3]])[:4]
     else:
-        code_suffix = name[:4].upper().replace(' ', '')
-    
+        code_suffix = name[:4].upper().replace(" ", "")
+
     # Clean code suffix
-    code_suffix = re.sub(r'[^A-Z0-9]', '', code_suffix)
-    
+    code_suffix = re.sub(r"[^A-Z0-9]", "", code_suffix)
+
     return f"{prefix}-{code_suffix}-{index:03d}"
+
 
 # Function to determine department
 def get_department(category, service_name):
     """Determine department based on category and service name."""
     name_upper = service_name.upper()
-    
+
     # Check for radiology services
-    if any(word in name_upper for word in ['RADIOGRAPH', 'X-RAY', 'XRAY', 'SCAN', 'CT', 'MRI', 'ULTRASOUND']):
-        return 'RADIOLOGY'
-    
+    if any(
+        word in name_upper
+        for word in ["RADIOGRAPH", "X-RAY", "XRAY", "SCAN", "CT", "MRI", "ULTRASOUND"]
+    ):
+        return "RADIOLOGY"
+
     # Check for lab services
-    if any(word in name_upper for word in ['TEST', 'BLOOD', 'URINE', 'CULTURE', 'SMEAR', 'BIOPSY']):
-        if 'PAP SMEAR' not in name_upper:  # PAP SMEAR is a procedure
-            return 'LAB'
-    
+    if any(
+        word in name_upper
+        for word in ["TEST", "BLOOD", "URINE", "CULTURE", "SMEAR", "BIOPSY"]
+    ):
+        if "PAP SMEAR" not in name_upper:  # PAP SMEAR is a procedure
+            return "LAB"
+
     # Vaccines and drugs go to pharmacy
-    if category in ['VACCINES', 'IVF DRUGS']:
-        return 'PHARMACY'
-    
+    if category in ["VACCINES", "IVF DRUGS"]:
+        return "PHARMACY"
+
     # Everything else is a procedure
-    return 'PROCEDURE'
+    return "PROCEDURE"
+
 
 # Parse the data
 services = []
 categories = {
-    'CLINICAL CONSULTATION': raw_data.split('CLINICAL CONSULTATION:')[1].split('ANC:')[0].strip(),
-    'ANC': raw_data.split('ANC:')[1].split('REGISTRATION:')[0].strip(),
-    'REGISTRATION': raw_data.split('REGISTRATION:')[1].split('VACCINES:')[0].strip(),
-    'VACCINES': raw_data.split('VACCINES:')[1].split('PROCEDURES:')[0].strip() if 'PROCEDURES:' in raw_data else raw_data.split('VACCINES:')[1].strip(),
+    "CLINICAL CONSULTATION": raw_data.split("CLINICAL CONSULTATION:")[1]
+    .split("ANC:")[0]
+    .strip(),
+    "ANC": raw_data.split("ANC:")[1].split("REGISTRATION:")[0].strip(),
+    "REGISTRATION": raw_data.split("REGISTRATION:")[1].split("VACCINES:")[0].strip(),
+    "VACCINES": raw_data.split("VACCINES:")[1].split("PROCEDURES:")[0].strip()
+    if "PROCEDURES:" in raw_data
+    else raw_data.split("VACCINES:")[1].strip(),
 }
 
 for category, data in categories.items():
-    lines = data.strip().split('\n')
+    lines = data.strip().split("\n")
     for line in lines:
         if not line.strip():
             continue
-        parts = line.split('\t')
+        parts = line.split("\t")
         if len(parts) >= 3:
             try:
                 index = int(parts[0].strip())
                 name = parts[1].strip()
                 amount_str = parts[2].strip()
                 amount = clean_amount(amount_str)
-                
+
                 if amount > 0 and name:
                     service_code = generate_service_code(name, category, index)
                     department = get_department(category, name)
-                    
-                    services.append({
-                        'Department': department,
-                        'Service Code': service_code,
-                        'Service Name': name,
-                        'Amount': amount,
-                        'Description': f'{category} service'
-                    })
+
+                    services.append(
+                        {
+                            "Department": department,
+                            "Service Code": service_code,
+                            "Service Name": name,
+                            "Amount": amount,
+                            "Description": f"{category} service",
+                        }
+                    )
             except Exception as e:
                 print(f"Error parsing line: {line} - {e}")
 
@@ -209,10 +226,9 @@ for category, data in categories.items():
 df = pd.DataFrame(services)
 
 # Save to Excel
-output_file = 'clinic_services_import.xlsx'
-df.to_excel(output_file, index=False, sheet_name='Services')
+output_file = "clinic_services_import.xlsx"
+df.to_excel(output_file, index=False, sheet_name="Services")
 print(f"Created Excel file: {output_file}")
 print(f"Total services: {len(services)}")
-print(f"\nBy Department:")
-print(df['Department'].value_counts())
-
+print("\nBy Department:")
+print(df["Department"].value_counts())

@@ -1,7 +1,7 @@
 {
-  "short_name": "Lifeway Medical",
+  "short_name": "LMC EMR",
   "name": "Lifeway Medical Centre Ltd - EMR System",
-  "description": "Electronic Medical Records System",
+  "description": "Electronic Medical Records for modern healthcare",
   "icons": [
     {
       "src": "LMC logo1.png",
@@ -26,8 +26,8 @@
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "browser"],
-  "theme_color": "#dc2626",
-  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "background_color": "#0f172a",
   "orientation": "any",
   "categories": ["medical", "health", "business"]
 }

@@ -4,15 +4,30 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0004_add_admin_role_and_default'),
+        ("users", "0004_add_admin_role_and_default"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='user',
-            name='role',
-            field=models.CharField(choices=[('ADMIN', 'Administrator'), ('DOCTOR', 'Doctor'), ('NURSE', 'Nurse'), ('LAB_TECH', 'Lab Technician'), ('RADIOLOGY_TECH', 'Radiology Technician'), ('PHARMACIST', 'Pharmacist'), ('RECEPTIONIST', 'Receptionist'), ('PATIENT', 'Patient'), ('IVF_SPECIALIST', 'IVF Specialist'), ('EMBRYOLOGIST', 'Embryologist')], default='DOCTOR', help_text='User role for RBAC enforcement', max_length=50),
+            model_name="user",
+            name="role",
+            field=models.CharField(
+                choices=[
+                    ("ADMIN", "Administrator"),
+                    ("DOCTOR", "Doctor"),
+                    ("NURSE", "Nurse"),
+                    ("LAB_TECH", "Lab Technician"),
+                    ("RADIOLOGY_TECH", "Radiology Technician"),
+                    ("PHARMACIST", "Pharmacist"),
+                    ("RECEPTIONIST", "Receptionist"),
+                    ("PATIENT", "Patient"),
+                    ("IVF_SPECIALIST", "IVF Specialist"),
+                    ("EMBRYOLOGIST", "Embryologist"),
+                ],
+                default="DOCTOR",
+                help_text="User role for RBAC enforcement",
+                max_length=50,
+            ),
         ),
     ]

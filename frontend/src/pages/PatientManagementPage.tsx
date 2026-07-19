@@ -7,20 +7,26 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchPatientsPage, searchPatients, getPatient, updatePatient, archivePatient } from '../api/patient';
+import { useRolePermissions } from '../hooks/useRolePermissions';
+import { fetchPatients, searchPatients, getPatient, updatePatient, archivePatient, verifyNationalHealthId } from '../api/patient';
 import { Patient, PatientCreateData } from '../types/patient';
 import { useToast } from '../hooks/useToast';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import BackToDashboard from '../components/common/BackToDashboard';
+import PageSubtitle from '../components/common/PageSubtitle';
+import PatientAllergiesPanel from '../components/patients/PatientAllergiesPanel';
 import styles from '../styles/PatientManagement.module.css';
 
 export default function PatientManagementPage() {
   const { user } = useAuth();
+  const { canManagePatients, canArchivePatients, canHardDeleteRecords } = useRolePermissions();
+  const canEditAllergies = ['RECEPTIONIST', 'ADMIN', 'DOCTOR', 'NURSE'].includes(
+    user?.role || '',
+  );
   const navigate = useNavigate();
   const { showError, showSuccess } = useToast();
 
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [patientCount, setPatientCount] = useState(0);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,13 +36,13 @@ export default function PatientManagementPage() {
   
   const [editForm, setEditForm] = useState<Partial<PatientCreateData>>({});
   const [isArchiving, setIsArchiving] = useState(false);
+  const [verifyingNhid, setVerifyingNhid] = useState(false);
 
   const loadRecentPatients = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetchPatientsPage({ includeInactive: true, pageSize: 100 });
-      setPatients(response.results || []);
-      setPatientCount(response.count || 0);
+      const allPatients = await fetchPatients();
+      setPatients(allPatients);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load patients';
       showError(errorMessage);
@@ -60,7 +66,6 @@ export default function PatientManagementPage() {
       setIsSearching(true);
       const results = await searchPatients(searchQuery);
       setPatients(results);
-      setPatientCount(results.length);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Search failed';
       showError(errorMessage);
@@ -92,6 +97,7 @@ export default function PatientManagementPage() {
       email: selectedPatient.email || '',
       address: selectedPatient.address || '',
       national_id: selectedPatient.national_id || '',
+      national_health_id: selectedPatient.national_health_id || '',
       blood_group: selectedPatient.blood_group || undefined,
       allergies: selectedPatient.allergies || '',
       medical_history: selectedPatient.medical_history || '',
@@ -116,6 +122,38 @@ export default function PatientManagementPage() {
     }
   };
 
+  const handleVerifyNhid = async () => {
+    if (!selectedPatient) return;
+    const nhid = selectedPatient.national_health_id || editForm.national_health_id;
+    if (!nhid?.trim()) {
+      showError('Enter a National Health ID first (edit patient to add one)');
+      return;
+    }
+    if (!selectedPatient.date_of_birth) {
+      showError('Date of birth is required for NHID verification');
+      return;
+    }
+    try {
+      setVerifyingNhid(true);
+      const result = await verifyNationalHealthId({
+        patient_id: selectedPatient.id,
+        id_number: nhid.trim(),
+        name: selectedPatient.full_name || `${selectedPatient.first_name} ${selectedPatient.last_name}`,
+        dob: selectedPatient.date_of_birth,
+      });
+      if (result.id_verified) {
+        showSuccess('NHID verified successfully');
+        await handleSelectPatient(selectedPatient.id);
+      } else {
+        showError(result.detail || 'NHID verification failed');
+      }
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'NHID verification failed');
+    } finally {
+      setVerifyingNhid(false);
+    }
+  };
+
   const handleCreateVisit = () => {
     if (selectedPatient) {
       navigate(`/visits/new?patient=${selectedPatient.id}`);
@@ -124,13 +162,20 @@ export default function PatientManagementPage() {
 
   const handleArchivePatient = async () => {
     if (!selectedPatient) return;
-    if (!window.confirm(`Archive patient ${selectedPatient.first_name} ${selectedPatient.last_name}? This will soft-delete the record (compliance: no hard delete).`)) {
+    const confirmMsg = canHardDeleteRecords
+      ? `Permanently delete patient ${selectedPatient.first_name} ${selectedPatient.last_name} and all linked data? This cannot be undone.`
+      : `Archive patient ${selectedPatient.first_name} ${selectedPatient.last_name}? This will soft-delete the record.`;
+    if (!window.confirm(confirmMsg)) {
       return;
     }
     try {
       setIsArchiving(true);
       await archivePatient(selectedPatient.id);
-      showSuccess('Patient record archived successfully.');
+      showSuccess(
+        canHardDeleteRecords
+          ? 'Patient permanently deleted.'
+          : 'Patient record archived successfully.'
+      );
       setSelectedPatient(null);
       loadRecentPatients();
       handleSearch();
@@ -142,15 +187,15 @@ export default function PatientManagementPage() {
     }
   };
 
-  const canEdit = user?.role === 'RECEPTIONIST' || user?.role === 'ADMIN';
-  const canArchive = user?.role === 'RECEPTIONIST' || user?.role === 'ADMIN' || user?.is_superuser;
+  const canEdit = canManagePatients;
+  const canArchive = canArchivePatients;
 
   return (
-    <div className={styles.patientManagementPage}>
+    <div className={styles.patientManagementPage} data-page-chrome>
       <BackToDashboard />
       <header className={styles.header}>
         <h1>Patient Management</h1>
-        <p>Search and manage patient records</p>
+        <PageSubtitle>Search and manage patient records</PageSubtitle>
       </header>
 
       <div className={styles.content}>
@@ -158,7 +203,7 @@ export default function PatientManagementPage() {
           <div className={styles.searchBox}>
             <input
               type="text"
-              placeholder="Search by name, phone, patient ID, legacy ID, NHID, or national ID..."
+              placeholder="Search by name, phone, patient ID, or national ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -171,9 +216,6 @@ export default function PatientManagementPage() {
               {isSearching ? 'Searching...' : 'Search'}
             </button>
           </div>
-          <p className={styles.resultCount}>
-            Showing {patients.length} of {patientCount} patient record{patientCount === 1 ? '' : 's'}
-          </p>
 
           <div className={styles.patientsList}>
             {loading ? (
@@ -200,6 +242,9 @@ export default function PatientManagementPage() {
                     <div className={styles.patientCardHeader}>
                       <h3>{patient.full_name || `${patient.first_name} ${patient.last_name}`}</h3>
                       <span className={styles.patientId}>ID: {patient.patient_id}</span>
+                      {patient.id_verified && (
+                        <span style={{ color: '#059669', fontSize: '0.75rem', fontWeight: 600 }}>✓ NHID</span>
+                      )}
                     </div>
                     <div className={styles.patientCardDetails}>
                       {patient.phone && <p>📞 {patient.phone}</p>}
@@ -242,7 +287,11 @@ export default function PatientManagementPage() {
                       onClick={handleArchivePatient}
                       disabled={isArchiving}
                     >
-                      {isArchiving ? 'Archiving...' : 'Archive'}
+                      {isArchiving
+                        ? 'Removing...'
+                        : canHardDeleteRecords
+                          ? 'Delete permanently'
+                          : 'Archive'}
                     </button>
                   )}
                 </div>
@@ -328,6 +377,14 @@ export default function PatientManagementPage() {
                       />
                     </div>
                     <div className={styles.formGroup}>
+                      <label>National Health ID (NHID)</label>
+                      <input
+                        type="text"
+                        value={editForm.national_health_id || ''}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, national_health_id: e.target.value }))}
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
                       <label>Blood Group</label>
                       <select
                         value={editForm.blood_group || ''}
@@ -386,14 +443,20 @@ export default function PatientManagementPage() {
                       />
                     </div>
                     <div className={styles.formGroupFull}>
-                      <label>Allergies</label>
+                      <label>Allergies (legacy summary)</label>
                       <textarea
                         value={editForm.allergies || ''}
                         onChange={(e) => setEditForm(prev => ({ ...prev, allergies: e.target.value }))}
                         rows={2}
-                        placeholder="List known allergies"
+                        placeholder="Synced from structured allergies below when saved there"
                       />
                     </div>
+                    {selectedPatient && (
+                      <PatientAllergiesPanel
+                        patientId={selectedPatient.id}
+                        readOnly={!canEditAllergies}
+                      />
+                    )}
                     <div className={styles.formGroupFull}>
                       <label>Medical History</label>
                       <textarea
@@ -479,6 +542,28 @@ export default function PatientManagementPage() {
                           <span>{selectedPatient.national_id}</span>
                         </div>
                       )}
+                      <div className={styles.detailItem}>
+                        <label>National Health ID:</label>
+                        <span>
+                          {selectedPatient.national_health_id || '—'}
+                          {selectedPatient.id_verified && (
+                            <span style={{ marginLeft: '0.5rem', color: '#059669', fontWeight: 600 }}>
+                              Verified
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      {canManagePatients && !selectedPatient.id_verified && (
+                        <div className={styles.detailItem}>
+                          <button
+                            type="button"
+                            onClick={handleVerifyNhid}
+                            disabled={verifyingNhid}
+                          >
+                            {verifyingNhid ? 'Verifying…' : 'Verify NHID'}
+                          </button>
+                        </div>
+                      )}
                       {selectedPatient.address && (
                         <div className={styles.detailItemFull}>
                           <label>Address:</label>
@@ -524,10 +609,14 @@ export default function PatientManagementPage() {
                         </div>
                         {selectedPatient.allergies && (
                           <div className={styles.detailItemFull}>
-                            <label>Allergies:</label>
+                            <label>Allergies (summary):</label>
                             <span>{selectedPatient.allergies}</span>
                           </div>
                         )}
+                        <PatientAllergiesPanel
+                          patientId={selectedPatient.id}
+                          readOnly={!canEditAllergies}
+                        />
                         {selectedPatient.medical_history && (
                           <div className={styles.detailItemFull}>
                             <label>Medical History:</label>

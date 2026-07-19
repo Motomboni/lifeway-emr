@@ -1,31 +1,24 @@
 /**
  * Patient Portal - Telemedicine Page
- * 
+ *
  * Allows patients to view and join their telemedicine sessions.
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import {
-  fetchTelemedicineSessions,
-  getTelemedicineAccessToken,
-  leaveTelemedicineSession,
-} from '../api/telemedicine';
+import { fetchTelemedicineSessions } from '../api/telemedicine';
 import { TelemedicineSession } from '../types/telemedicine';
 import { useToast } from '../hooks/useToast';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
-import VideoCall from '../components/telemedicine/VideoCall';
 import styles from '../styles/PatientPortal.module.css';
 
 export default function PatientPortalTelemedicinePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { showError, showSuccess } = useToast();
+  const { showError } = useToast();
 
   const [sessions, setSessions] = useState<TelemedicineSession[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeSession, setActiveSession] = useState<TelemedicineSession | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.role !== 'PATIENT') {
@@ -39,42 +32,20 @@ export default function PatientPortalTelemedicinePage() {
     try {
       setLoading(true);
       const data = await fetchTelemedicineSessions();
-      const sessionsArray = Array.isArray(data) 
-        ? data 
-        : ((data as any)?.results || []);
+      const sessionsArray = Array.isArray(data)
+        ? data
+        : ((data as { results?: TelemedicineSession[] })?.results || []);
       setSessions(sessionsArray);
-    } catch (error: any) {
-      showError(error.message || 'Failed to load telemedicine sessions');
+    } catch (error: unknown) {
+      showError(error instanceof Error ? error.message : 'Failed to load telemedicine sessions');
       setSessions([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleJoinSession = async (session: TelemedicineSession) => {
-    try {
-      // Get access token
-      const tokenData = await getTelemedicineAccessToken(session.id);
-      setAccessToken(tokenData.token);
-      setActiveSession(session);
-      showSuccess('Joining session...');
-    } catch (error: any) {
-      showError(error.message || 'Failed to join session');
-    }
-  };
-
-  const handleLeaveSession = async () => {
-    if (!activeSession) return;
-    
-    try {
-      await leaveTelemedicineSession(activeSession.id);
-      setActiveSession(null);
-      setAccessToken(null);
-      showSuccess('Left session successfully');
-      loadSessions();
-    } catch (error: any) {
-      showError(error.message || 'Failed to leave session');
-    }
+  const handleJoinSession = (session: TelemedicineSession) => {
+    navigate(`/telemedicine/room/${session.id}`);
   };
 
   const formatDateTime = (dateString: string) => {
@@ -107,33 +78,6 @@ export default function PatientPortalTelemedicinePage() {
     );
   }
 
-  // Show video call if active session
-  if (activeSession && accessToken) {
-    return (
-      <div className={styles.dashboard}>
-        <header className={styles.header}>
-          <div className={styles.headerContent}>
-            <div>
-              <h1>Video Consultation</h1>
-              <p>Session #{activeSession.id}</p>
-            </div>
-            <button
-              className={styles.logoutButton}
-              onClick={handleLeaveSession}
-            >
-              Leave Session
-            </button>
-          </div>
-        </header>
-        <VideoCall
-          token={accessToken}
-          roomName={activeSession.twilio_room_name || ''}
-          onLeave={handleLeaveSession}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className={styles.dashboard}>
       <header className={styles.header}>
@@ -144,6 +88,7 @@ export default function PatientPortalTelemedicinePage() {
           </div>
           <button
             className={styles.viewAllButton}
+            type="button"
             onClick={() => navigate('/patient-portal/dashboard')}
           >
             Back to Dashboard
@@ -167,20 +112,30 @@ export default function PatientPortalTelemedicinePage() {
                   </div>
                   <div className={styles.cardDetails}>
                     {(session.doctor_display_name || session.doctor_name) && (
-                      <p><strong>Doctor:</strong> {session.doctor_display_name || session.doctor_name}</p>
+                      <p>
+                        <strong>Doctor:</strong>{' '}
+                        {session.doctor_display_name || session.doctor_name}
+                      </p>
                     )}
                     {session.scheduled_start && (
-                      <p><strong>Scheduled:</strong> {formatDateTime(session.scheduled_start)}</p>
+                      <p>
+                        <strong>Scheduled:</strong> {formatDateTime(session.scheduled_start)}
+                      </p>
                     )}
                     {session.actual_start && (
-                      <p><strong>Started:</strong> {formatDateTime(session.actual_start)}</p>
+                      <p>
+                        <strong>Started:</strong> {formatDateTime(session.actual_start)}
+                      </p>
                     )}
                     {session.notes && (
-                      <p><strong>Notes:</strong> {session.notes}</p>
+                      <p>
+                        <strong>Notes:</strong> {session.notes}
+                      </p>
                     )}
                   </div>
                   {(session.status === 'SCHEDULED' || session.status === 'IN_PROGRESS') && (
                     <button
+                      type="button"
                       className={styles.viewButton}
                       onClick={() => handleJoinSession(session)}
                     >

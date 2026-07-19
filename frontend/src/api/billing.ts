@@ -82,6 +82,11 @@ export interface InsuranceCreateData {
   coverage_type: 'FULL' | 'PARTIAL';
   coverage_percentage: number;
   notes?: string;
+  billing_scheme?: 'FEE_FOR_SERVICE' | 'CAPITATION' | 'RETAINER';
+  employer_name?: string;
+  pre_auth_status?: 'NOT_REQUIRED' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  pre_auth_number?: string;
+  pre_auth_notes?: string;
 }
 
 /**
@@ -309,6 +314,11 @@ export async function updateInsurance(visitId: number, insuranceId: number, data
   approved_amount?: string;
   approval_reference?: string;
   rejection_reason?: string;
+  billing_scheme?: 'FEE_FOR_SERVICE' | 'CAPITATION' | 'RETAINER';
+  employer_name?: string;
+  pre_auth_status?: 'NOT_REQUIRED' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  pre_auth_number?: string;
+  pre_auth_notes?: string;
 }): Promise<any> {
   return apiRequest(`/visits/${visitId}/insurance/${insuranceId}/`, {
     method: 'PATCH',
@@ -584,5 +594,190 @@ export async function sendInvoiceEmail(visitId: number, email: string): Promise<
     method: 'POST',
     body: JSON.stringify({ email }),
   });
+}
+
+// ============================================================================
+// NHIA scribe billing, claim pack, compliance
+// ============================================================================
+
+export interface NHIAScribeChargeCode {
+  nhia: string;
+  icd11: string;
+  diagnosis?: string;
+}
+
+export interface NHIAScribeChargesResult {
+  created: Array<{
+    id: number;
+    nhia: string;
+    icd11: string;
+    description: string;
+    amount: string;
+    tariff_name?: string | null;
+  }>;
+  skipped: Array<{ reason: string; nhia?: string; icd11?: string }>;
+  created_count: number;
+  skipped_count: number;
+}
+
+export async function addNhiaScribeCharges(
+  visitId: number,
+  codes: NHIAScribeChargeCode[],
+  onlyMatched = true,
+): Promise<NHIAScribeChargesResult> {
+  return apiRequest<NHIAScribeChargesResult>(`/visits/${visitId}/billing/nhia-charges/`, {
+    method: 'POST',
+    body: JSON.stringify({ codes, only_matched: onlyMatched }),
+  });
+}
+
+export interface ClaimPackLineItem {
+  nhia_code: string;
+  icd11: string;
+  description: string;
+  amount_ngn: string;
+  source?: string;
+}
+
+export interface VisitClaimPack {
+  visit_id: number;
+  visit_date: string;
+  patient_mrn: string;
+  patient_name: string;
+  national_health_id: string;
+  line_items: ClaimPackLineItem[];
+  line_count: number;
+  total_amount_ngn: string;
+  claim_ready: boolean;
+  payment_status: string;
+}
+
+export async function getVisitClaimPack(visitId: number): Promise<VisitClaimPack> {
+  return apiRequest<VisitClaimPack>(`/visits/${visitId}/billing/claim-pack/`);
+}
+
+async function downloadAuthenticatedCsv(path: string, filename: string): Promise<void> {
+  const { getAuthToken } = await import('../utils/apiClient');
+  const token = getAuthToken();
+  const orgId = localStorage.getItem('organization_id');
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (orgId) headers['X-Organization-Id'] = orgId;
+
+  const base = import.meta.env.VITE_API_URL || '/api/v1';
+  const response = await fetch(`${base}${path}`, { headers });
+  if (!response.ok) {
+    throw new Error('Failed to download claim pack');
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function downloadVisitClaimPackCsv(visitId: number): Promise<void> {
+  await downloadAuthenticatedCsv(
+    `/visits/${visitId}/billing/claim-pack/?format=csv`,
+    `claim_pack_visit_${visitId}.csv`,
+  );
+}
+
+export async function downloadBatchClaimPackCsv(params?: {
+  start_date?: string;
+  end_date?: string;
+}): Promise<void> {
+  const qs = new URLSearchParams({ format: 'csv' });
+  if (params?.start_date) qs.set('start_date', params.start_date);
+  if (params?.end_date) qs.set('end_date', params.end_date);
+  await downloadAuthenticatedCsv(
+    `/billing/claim-pack/?${qs.toString()}`,
+    `claim_pack_${new Date().toISOString().slice(0, 10)}.csv`,
+  );
+}
+
+export interface NHIAComplianceSummary {
+  period: { start: string; end: string };
+  visit_count: number;
+  claim_ready_count: number;
+  claim_ready_pct: number;
+  missing_nhid_count: number;
+  no_nhia_codes_count: number;
+  total_nhia_billable_ngn: string;
+  scribe_billed_items: number;
+  open_revenue_leaks: number;
+  visits: Array<{
+    visit_id: number;
+    visit_date: string;
+    patient_name: string;
+    patient_mrn: string;
+    national_health_id: string;
+    line_count: number;
+    total_amount_ngn: string;
+    claim_ready: boolean;
+    payment_status: string;
+    issues: string[];
+  }>;
+}
+
+export async function getNHIAComplianceSummary(params?: {
+  start_date?: string;
+  end_date?: string;
+}): Promise<NHIAComplianceSummary> {
+  const qs = new URLSearchParams();
+  if (params?.start_date) qs.set('start_date', params.start_date);
+  if (params?.end_date) qs.set('end_date', params.end_date);
+  const query = qs.toString();
+  return apiRequest<NHIAComplianceSummary>(
+    `/billing/nhia-compliance/${query ? `?${query}` : ''}`,
+  );
+}
+
+export interface NHIAClaimSubmission {
+  id: number;
+  visit_id: number;
+  patient_id: number;
+  patient_name: string;
+  national_health_id: string;
+  id_verified: boolean;
+  status: string;
+  claim_reference: string;
+  total_amount_ngn: string;
+  line_count: number;
+  validation_errors: string[];
+  denial_reason: string;
+  nhia_portal_reference: string;
+}
+
+export async function getNHIAClaimSubmissions(params?: {
+  status?: string;
+  start_date?: string;
+  end_date?: string;
+}): Promise<NHIAClaimSubmission[]> {
+  const qs = new URLSearchParams();
+  if (params?.status) qs.set('status', params.status);
+  if (params?.start_date) qs.set('start_date', params.start_date);
+  if (params?.end_date) qs.set('end_date', params.end_date);
+  const query = qs.toString();
+  return apiRequest<NHIAClaimSubmission[]>(
+    `/billing/nhia-claims/${query ? `?${query}` : ''}`,
+  );
+}
+
+export async function nhiaClaimAction(
+  visitId: number,
+  action: 'draft' | 'validate' | 'export' | 'submit' | 'paid' | 'deny' | 'resubmit',
+  extra?: { portal_reference?: string; reason?: string; paid_amount?: string },
+): Promise<NHIAClaimSubmission> {
+  return apiRequest<NHIAClaimSubmission>(`/billing/visits/${visitId}/nhia-claim/`, {
+    method: 'POST',
+    body: JSON.stringify({ action, ...extra }),
+  });
+}
+
+export async function getVisitNHIAClaim(visitId: number): Promise<NHIAClaimSubmission> {
+  return apiRequest<NHIAClaimSubmission>(`/billing/visits/${visitId}/nhia-claim/`);
 }
 

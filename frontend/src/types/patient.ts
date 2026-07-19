@@ -22,9 +22,18 @@ export interface Patient {
   national_health_id?: string;
   blood_group?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
   allergies?: string;
+  structured_allergies?: Array<{
+    id: number;
+    allergen: string;
+    allergen_type: string;
+    severity: string;
+    reaction: string;
+    verified: boolean;
+  }>;
   medical_history?: string;
   is_active: boolean;
   is_verified?: boolean;
+  id_verified?: boolean;
   verified_by?: number;
   verified_at?: string;
   user?: number;

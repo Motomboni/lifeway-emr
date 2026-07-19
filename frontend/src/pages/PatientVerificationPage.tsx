@@ -11,6 +11,7 @@ import { Patient } from '../types/patient';
 import { useToast } from '../hooks/useToast';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import BackToDashboard from '../components/common/BackToDashboard';
+import PageSubtitle from '../components/common/PageSubtitle';
 import styles from '../styles/PatientVerification.module.css';
 
 export default function PatientVerificationPage() {
@@ -76,7 +77,7 @@ export default function PatientVerificationPage() {
 
   if (loading) {
     return (
-      <div className={styles.container}>
+      <div className={`${styles.container} ${styles.verificationPage}`} data-page-chrome>
         <BackToDashboard />
         <div className={styles.header}>
           <h1>Patient Account Verification</h1>
@@ -87,13 +88,13 @@ export default function PatientVerificationPage() {
   }
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${styles.verificationPage}`} data-page-chrome>
       <BackToDashboard />
       <div className={styles.header}>
         <h1>Patient Account Verification</h1>
-        <p className={styles.subtitle}>
+        <PageSubtitle className={styles.subtitle}>
           Review and verify patient accounts that registered via the Patient Portal
-        </p>
+        </PageSubtitle>
       </div>
 
       {patients.length === 0 ? (

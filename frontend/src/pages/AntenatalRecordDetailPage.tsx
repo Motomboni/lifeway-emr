@@ -13,11 +13,14 @@ import {
   updateAntenatalRecord,
   getAntenatalRecordSummary,
   getAntenatalRecordVisits,
+  getAncSchedule,
+  sendAncScheduleReminder,
   AntenatalRecord,
   AntenatalRecordUpdateData,
   AntenatalRecordSummary,
   AntenatalVisit,
   PregnancyOutcome,
+  AncSchedule,
 } from '../api/antenatal';
 import BackToDashboard from '../components/common/BackToDashboard';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
@@ -54,6 +57,8 @@ export default function AntenatalRecordDetailPage() {
   const [highRisk, setHighRisk] = useState<boolean>(false);
   const [riskFactors, setRiskFactors] = useState<string>('');
   const [clinicalNotes, setClinicalNotes] = useState<string>('');
+  const [ancSchedule, setAncSchedule] = useState<AncSchedule | null>(null);
+  const [sendingReminder, setSendingReminder] = useState(false);
 
   useEffect(() => {
     if (recordId) {
@@ -66,15 +71,17 @@ export default function AntenatalRecordDetailPage() {
 
     try {
       setLoading(true);
-      const [recordData, summaryData, visitsData] = await Promise.all([
+      const [recordData, summaryData, visitsData, scheduleData] = await Promise.all([
         fetchAntenatalRecord(parseInt(recordId)),
         getAntenatalRecordSummary(parseInt(recordId)),
         getAntenatalRecordVisits(parseInt(recordId)),
+        getAncSchedule(parseInt(recordId)),
       ]);
 
       setRecord(recordData);
       setSummary(summaryData);
       setVisits(visitsData);
+      setAncSchedule(scheduleData);
 
       // Initialize edit form with current values
       setOutcome(recordData.outcome);
@@ -144,6 +151,32 @@ export default function AntenatalRecordDetailPage() {
       MOLAR: '#e83e8c',
     };
     return colors[outcome] || '#6c757d';
+  };
+
+  const handleSendAncReminder = async () => {
+    if (!recordId) return;
+    try {
+      setSendingReminder(true);
+      await sendAncScheduleReminder(parseInt(recordId, 10));
+      showSuccess('ANC WhatsApp reminder sent');
+    } catch (e: unknown) {
+      showError(e instanceof Error ? e.message : 'Failed to send reminder');
+    } finally {
+      setSendingReminder(false);
+    }
+  };
+
+  const scheduleStatusColor = (status: string) => {
+    switch (status) {
+      case 'overdue':
+        return '#dc3545';
+      case 'due':
+        return '#fd7e14';
+      case 'completed':
+        return '#28a745';
+      default:
+        return '#6c757d';
+    }
   };
 
   if (loading) {
@@ -216,6 +249,46 @@ export default function AntenatalRecordDetailPage() {
             <div className={styles.statLabel}>Outcome</div>
           </div>
         </div>
+      )}
+
+      {/* ANC care schedule — IPTp, TT, routine visits */}
+      {ancSchedule && record.outcome === 'ONGOING' && (
+        <section className={styles.editSection}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2>ANC Care Schedule</h2>
+            {(ancSchedule.overdue.length > 0 || ancSchedule.upcoming.length > 0) && (
+              <button
+                type="button"
+                className={styles.editButton}
+                onClick={handleSendAncReminder}
+                disabled={sendingReminder}
+              >
+                {sendingReminder ? 'Sending…' : 'Send WhatsApp reminder'}
+              </button>
+            )}
+          </div>
+          <p style={{ marginBottom: '1rem', color: 'var(--text-secondary, #666)' }}>
+            EGA: {ancSchedule.current_gestational_age_weeks ?? '—'} weeks · EDD: {ancSchedule.edd}
+          </p>
+          <p style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
+            <strong>Danger signs:</strong> {ancSchedule.danger_signs}
+          </p>
+          <div className={styles.formGrid}>
+            {ancSchedule.items.map((item) => (
+              <div
+                key={`${item.kind}-${item.week}-${item.label}`}
+                className={styles.statCard}
+                style={{ borderLeft: `4px solid ${scheduleStatusColor(item.status)}` }}
+              >
+                <div className={styles.statLabel}>{item.kind.replace('_', ' ')} · Week {item.week}</div>
+                <div className={styles.statValue} style={{ fontSize: '1rem' }}>{item.label}</div>
+                <div className={styles.statLabel}>
+                  Due {item.due_date} · {item.status}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Edit Form */}

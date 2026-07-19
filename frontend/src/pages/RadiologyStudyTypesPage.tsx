@@ -4,7 +4,7 @@
  * For Doctors and Radiology Techs to create and manage radiology study types in the catalog.
  */
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useRolePermissions } from '../hooks/useRolePermissions';
 import {
   fetchRadiologyStudyTypes,
   fetchActiveRadiologyStudyTypes,
@@ -26,7 +26,7 @@ import BackToDashboard from '../components/common/BackToDashboard';
 import styles from '../styles/RadiologyStudyTypes.module.css';
 
 export default function RadiologyStudyTypesPage() {
-  const { user } = useAuth();
+  const { canManageRadiologyCatalog, canViewRadiologyCatalog } = useRolePermissions();
   const { showError, showSuccess } = useToast();
   
   const [studyTypes, setStudyTypes] = useState<RadiologyStudyType[]>([]);
@@ -215,12 +215,10 @@ export default function RadiologyStudyTypesPage() {
     setShowCreateForm(false);
   };
 
-  const canManage = user?.role === 'DOCTOR' || user?.role === 'RADIOLOGY_TECH';
-
-  if (!canManage) {
+  if (!canViewRadiologyCatalog) {
     return (
       <div className={styles.errorContainer}>
-        <p>Access denied. This page is for Doctors and Radiology Technicians only.</p>
+        <p>Access denied. This page is for Doctors and Radiology Technicians.</p>
       </div>
     );
   }
@@ -230,7 +228,7 @@ export default function RadiologyStudyTypesPage() {
       <BackToDashboard />
       <header className={styles.header}>
         <h1>Radiology Study Types Catalog</h1>
-        <p>Create and manage available radiology study types and protocols</p>
+        <p>{canManageRadiologyCatalog ? 'Create and manage available radiology study types and protocols' : 'View available radiology study types and protocols'}</p>
       </header>
 
       <div className={styles.content}>
@@ -298,6 +296,7 @@ export default function RadiologyStudyTypesPage() {
           </div>
         </div>
 
+        {canManageRadiologyCatalog && (
         <div className={styles.actions}>
           {!showCreateForm && (
             <button
@@ -311,9 +310,10 @@ export default function RadiologyStudyTypesPage() {
             </button>
           )}
         </div>
+        )}
 
         {/* Create/Edit Form */}
-        {showCreateForm && (
+        {canManageRadiologyCatalog && showCreateForm && (
           <div className={styles.formContainer}>
             <h2>{editingStudyType ? 'Edit Radiology Study Type' : 'Create New Radiology Study Type'}</h2>
             <div className={styles.form}>
@@ -565,6 +565,7 @@ export default function RadiologyStudyTypesPage() {
                       <p><strong>Radiation Dose:</strong> {studyType.radiation_dose}</p>
                     )}
                   </div>
+                  {canManageRadiologyCatalog && (
                   <div className={styles.studyTypeActions}>
                     <button
                       className={styles.editButton}
@@ -579,6 +580,7 @@ export default function RadiologyStudyTypesPage() {
                       Delete
                     </button>
                   </div>
+                  )}
                   <div className={styles.studyTypeMeta}>
                     <p>Created by: {studyType.created_by_name || 'Unknown'}</p>
                     <p>Created: {new Date(studyType.created_at).toLocaleDateString()}</p>

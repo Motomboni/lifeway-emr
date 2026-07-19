@@ -94,7 +94,7 @@ export interface ServiceCatalogImportResponse {
   stats: ServiceCatalogImportStats;
 }
 
-const API_BASE = process.env.REACT_APP_API_URL || '/api/v1';
+const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
 export async function importServiceCatalogFromExcel(
   file: File,

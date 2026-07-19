@@ -7,7 +7,9 @@
 import React, { useEffect, useState } from 'react';
 import { fetchVisitDetails } from '../../api/visits';
 import { HeaderSkeleton } from '../common/LoadingSkeleton';
+import PatientAllergyBanner from '../clinical/PatientAllergyBanner';
 import styles from '../../styles/ConsultationWorkspace.module.css';
+import guideStyles from '../../styles/Guide.module.css';
 
 interface VisitDetails {
   id: number;
@@ -19,9 +21,19 @@ interface VisitDetails {
     age?: number;
     gender?: string;
     phone?: string;
+    allergies_text?: string;
+    structured_allergies?: Array<{
+      id: number;
+      allergen: string;
+      allergen_type: string;
+      severity: string;
+      reaction: string;
+      verified: boolean;
+    }>;
   };
   status: string;
   payment_status: string;
+  visit_type?: string;
   created_at: string;
 }
 
@@ -62,9 +74,18 @@ export default function ConsultationHeader({ visitId }: ConsultationHeaderProps)
 
   return (
     <div className={styles.consultationHeader}>
+      {visitDetails.visit_type === 'SANDBOX' && (
+        <div className={guideStyles.sandboxBanner} role="status">
+          Guide practice visit — demo patient only, not real PHI. Safe to explore and click freely.
+        </div>
+      )}
+      <PatientAllergyBanner
+        allergies={visitDetails.patient_details?.structured_allergies}
+        allergiesText={visitDetails.patient_details?.allergies_text}
+      />
       <div className={styles.visitContext}>
         <h2>Visit #{visitDetails.id}</h2>
-        <div className={styles.visitStatus}>
+        <div className={styles.visitStatus} data-guide-id="visit-status">
           <span className={`${styles.statusBadge} ${visitDetails.status === 'OPEN' ? styles.statusOpen : styles.statusClosed}`}>
             {visitDetails.status}
           </span>
@@ -74,7 +95,7 @@ export default function ConsultationHeader({ visitId }: ConsultationHeaderProps)
         </div>
       </div>
       
-      <div className={styles.patientSummary}>
+      <div className={styles.patientSummary} data-guide-id="patient-summary">
         <h3>Patient Information</h3>
         <div className={styles.patientDetails}>
           {visitDetails.patient_details ? (

@@ -9,15 +9,19 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
-import { createPatient } from '../api/patient';
+import { useOffline } from '../hooks/useOffline';
+import { createPatient, verifyNationalHealthId } from '../api/patient';
+import { queueOfflineAction } from '../utils/offlineQueue';
 import { PatientCreateData } from '../types/patient';
 import { fetchInsuranceProviders, InsuranceProvider } from '../api/insurance';
 import BackToDashboard from '../components/common/BackToDashboard';
+import { extractApiFieldErrors } from '../utils/errorHandler';
 import styles from '../styles/PatientRegistration.module.css';
 
 export default function PatientRegistrationPage() {
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
+  const isOffline = useOffline();
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState<PatientCreateData>({
@@ -33,6 +37,7 @@ export default function PatientRegistrationPage() {
     emergency_contact_phone: '',
     emergency_contact_relationship: '',
     national_id: '',
+    national_health_id: '',
   });
   
   const [isSaving, setIsSaving] = useState(false);
@@ -65,8 +70,25 @@ export default function PatientRegistrationPage() {
     email: '',
     phone: '',
   });
-  
-  // Load insurance providers on mount
+  const [portalFieldsTouched, setPortalFieldsTouched] = useState({
+    email: false,
+    phone: false,
+  });
+
+  // Keep portal login fields aligned with Contact Information until manually edited
+  useEffect(() => {
+    if (!createPortalAccount) return;
+    setPortalData((prev) => ({
+      email: portalFieldsTouched.email ? prev.email : (formData.email ?? ''),
+      phone: portalFieldsTouched.phone ? prev.phone : (formData.phone ?? ''),
+    }));
+  }, [
+    createPortalAccount,
+    formData.email,
+    formData.phone,
+    portalFieldsTouched.email,
+    portalFieldsTouched.phone,
+  ]);
   useEffect(() => {
     const loadProviders = async () => {
       try {
@@ -178,6 +200,9 @@ export default function PatientRegistrationPage() {
       if (formData.national_id?.trim()) {
         cleanedData.national_id = formData.national_id.trim();
       }
+      if (formData.national_health_id?.trim()) {
+        cleanedData.national_health_id = formData.national_health_id.trim();
+      }
       
       // Add insurance data if patient has insurance
       if (hasInsurance) {
@@ -227,12 +252,49 @@ export default function PatientRegistrationPage() {
         }
       }
 
+      if (isOffline) {
+        if (createPortalAccount) {
+          showError('Portal accounts require connectivity. Save basic registration offline only.');
+          setIsSaving(false);
+          return;
+        }
+        await queueOfflineAction('REGISTER_PATIENT', cleanedData);
+        showSuccess('Patient queued — sync from Offline Clinic Queue when online');
+        setIsSaving(false);
+        navigate('/offline-queue');
+        return;
+      }
+
       const patient = await createPatient(cleanedData);
-      showSuccess('Patient registered successfully');
+
+      if (formData.national_health_id?.trim() && formData.date_of_birth) {
+        try {
+          const verifyResult = await verifyNationalHealthId({
+            patient_id: patient.id,
+            id_number: formData.national_health_id.trim(),
+            name: `${patient.first_name} ${patient.last_name}`.trim(),
+            dob: formData.date_of_birth,
+          });
+          if (verifyResult.id_verified) {
+            showSuccess('Patient registered and NHID verified');
+          } else {
+            showSuccess('Patient registered (NHID verification pending)');
+          }
+        } catch {
+          showSuccess('Patient registered (NHID verification failed — verify later in Patients)');
+        }
+      } else {
+        showSuccess('Patient registered successfully');
+      }
       
       // Store registered patient info and show success dialog
+      const patientPk = patient.id;
+      if (!patientPk) {
+        showError('Patient was created but the server did not return an ID. Find them under Patients.');
+        return;
+      }
       setRegisteredPatient({
-        id: patient.id,
+        id: patientPk,
         name: `${patient.first_name} ${patient.last_name}`.trim()
       });
     } catch (err) {
@@ -243,51 +305,30 @@ export default function PatientRegistrationPage() {
         console.error('Error stack:', err.stack);
       }
       
-      // Extract field-specific errors from the error response
-      const newFieldErrors: Record<string, string> = {};
-      let generalErrorMessage = 'Failed to register patient';
-      
-      // Try to extract field errors from the error object
-      if (err instanceof Error) {
-        const errorMessage = err.message;
-        
-        // Check if error has raw response data (from apiClient)
-        const errorWithData = err as any;
-        if (errorWithData.responseData && typeof errorWithData.responseData === 'object') {
-          // Extract field-specific errors from the response data
-          Object.entries(errorWithData.responseData).forEach(([field, errors]) => {
-            if (field !== 'detail' && field !== 'message' && field !== 'error') {
-              const errorList = Array.isArray(errors) ? errors : [errors];
-              if (errorList.length > 0) {
-                newFieldErrors[field] = errorList[0] as string;
-              }
-            }
-          });
+      const errorWithData = err as Error & { responseData?: unknown };
+      const newFieldErrors: Record<string, string> = {
+        ...extractApiFieldErrors(errorWithData.responseData),
+      };
+      let generalErrorMessage = errorWithData.message || 'Failed to register patient';
+
+      if (Object.keys(newFieldErrors).length === 0) {
+        const fieldErrorPattern = /(\w+):\s*([^;]+)/g;
+        let match: RegExpExecArray | null;
+        while ((match = fieldErrorPattern.exec(generalErrorMessage)) !== null) {
+          newFieldErrors[match[1]] = match[2].trim();
         }
-        
-        // Also parse from error message (format: "field_name: error message")
-        if (Object.keys(newFieldErrors).length === 0) {
-          const fieldErrorPattern = /(\w+):\s*([^;]+)/g;
-          let match;
-          
-          while ((match = fieldErrorPattern.exec(errorMessage)) !== null) {
-            const fieldName = match[1];
-            const fieldError = match[2].trim();
-            newFieldErrors[fieldName] = fieldError;
-          }
+      }
+
+      if (Object.keys(newFieldErrors).length === 0) {
+        if (
+          generalErrorMessage === 'An unexpected error occurred' ||
+          generalErrorMessage.includes('unexpected')
+        ) {
+          generalErrorMessage =
+            'Validation failed. Please check all required fields are filled correctly.';
         }
-        
-        // If no field-specific errors found, use the full error message
-        if (Object.keys(newFieldErrors).length === 0) {
-          generalErrorMessage = errorMessage;
-          // If it's a generic message, try to get more details
-          if (generalErrorMessage === 'An unexpected error occurred' || generalErrorMessage.includes('unexpected')) {
-            generalErrorMessage = 'Validation failed. Please check all required fields are filled correctly.';
-          }
-        } else {
-          // If we have field errors, show a general message and set field-specific errors
-          generalErrorMessage = 'Please correct the errors below';
-        }
+      } else {
+        generalErrorMessage = 'Please correct the errors below';
       }
       
       // Update field errors state
@@ -408,9 +449,17 @@ export default function PatientRegistrationPage() {
                 id="createPortalAccount"
                 checked={createPortalAccount}
                 onChange={(e) => {
-                  setCreatePortalAccount(e.target.checked);
+                  const checked = e.target.checked;
+                  setCreatePortalAccount(checked);
+                  if (checked) {
+                    setPortalFieldsTouched({ email: false, phone: false });
+                    setPortalData({
+                      email: formData.email ?? '',
+                      phone: formData.phone ?? '',
+                    });
+                  }
                   // Clear portal field errors when unchecking
-                  if (!e.target.checked) {
+                  if (!checked) {
                     setFieldErrors(prev => {
                       const newErrors = { ...prev };
                       delete newErrors.portal_email;
@@ -443,6 +492,7 @@ export default function PatientRegistrationPage() {
                       id="portalEmail"
                       value={portalData.email}
                       onChange={(e) => {
+                        setPortalFieldsTouched((prev) => ({ ...prev, email: true }));
                         setPortalData(prev => ({ ...prev, email: e.target.value }));
                         // Clear error when typing
                         if (fieldErrors.portal_email) {
@@ -481,6 +531,7 @@ export default function PatientRegistrationPage() {
                       id="portalPhone"
                       value={portalData.phone}
                       onChange={(e) => {
+                        setPortalFieldsTouched((prev) => ({ ...prev, phone: true }));
                         setPortalData(prev => ({ ...prev, phone: e.target.value }));
                         // Clear error when typing
                         if (fieldErrors.portal_phone) {
@@ -578,6 +629,15 @@ export default function PatientRegistrationPage() {
                   {fieldErrors.national_id}
                 </span>
               )}
+            </div>
+            <div className={styles.formGroup}>
+              <label>National Health ID (NHID / NIN)</label>
+              <input
+                type="text"
+                value={formData.national_health_id || ''}
+                onChange={(e) => handleFieldChange('national_health_id', e.target.value)}
+                placeholder="For NHIA claims — verified after registration if DOB is set"
+              />
             </div>
           </div>
 
@@ -830,6 +890,7 @@ export default function PatientRegistrationPage() {
                     email: '',
                     phone: '',
                   });
+                  setPortalFieldsTouched({ email: false, phone: false });
                 }}
               >
                 Register Another Patient

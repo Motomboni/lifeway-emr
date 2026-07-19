@@ -4,11 +4,13 @@
  * Multi-role user registration page.
  * Supports registration for all EMR roles.
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
 import { validateEmail, validateRequired, validatePassword } from '../utils/validation';
 import { registerUser, UserRole } from '../api/auth';
+import AuthShell from '../components/auth/AuthShell';
+import { APP_NAME } from '../config/branding';
 import styles from '../styles/Register.module.css';
 
 interface RoleOption {
@@ -22,58 +24,63 @@ const ROLE_OPTIONS: RoleOption[] = [
   {
     value: 'DOCTOR',
     label: 'Doctor',
-    description: 'Create consultations, orders, and prescriptions',
+    description: 'Consult, order tests, and prescribe treatment',
     icon: '👨‍⚕️',
   },
   {
     value: 'NURSE',
     label: 'Nurse',
-    description: 'Assist with patient care and clinical tasks',
+    description: 'Record vitals, triage, and prepare visits',
     icon: '👩‍⚕️',
   },
   {
     value: 'IVF_SPECIALIST',
     label: 'IVF Specialist',
-    description: 'Manage IVF cycles, procedures, and outcomes',
+    description: 'Plan and track IVF cycles through outcomes',
     icon: '🧬',
   },
   {
     value: 'EMBRYOLOGIST',
     label: 'Embryologist',
-    description: 'Handle embryo culture, grading, and lab procedures',
+    description: 'Culture, grade, and document embryos',
     icon: '🔬',
   },
   {
     value: 'LAB_TECH',
     label: 'Lab Scientist',
-    description: 'Process lab orders and enter results',
+    description: 'Run diagnostics and release lab results',
     icon: '🧪',
   },
   {
     value: 'RADIOLOGY_TECH',
     label: 'Radiology Technician',
-    description: 'Process radiology orders and enter reports',
+    description: 'Perform imaging and finalize radiology reports',
     icon: '📷',
   },
   {
     value: 'PHARMACIST',
     label: 'Pharmacist',
-    description: 'Dispense prescriptions',
+    description: 'Verify prescriptions and dispense medications',
     icon: '💊',
   },
   {
     value: 'RECEPTIONIST',
     label: 'Receptionist',
-    description: 'Register patients and process payments',
+    description: 'Register patients, check in visits, collect payment',
     icon: '📋',
   },
   {
     value: 'PATIENT',
     label: 'Patient',
-    description: 'View your medical records and appointments',
+    description: 'Access records, results, and appointments',
     icon: '👤',
   },
 ];
+
+const isProductionBuild = import.meta.env.PROD;
+const AVAILABLE_ROLE_OPTIONS = isProductionBuild
+  ? ROLE_OPTIONS.filter((role) => role.value === 'PATIENT')
+  : ROLE_OPTIONS;
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -87,18 +94,26 @@ export default function RegisterPage() {
     first_name: '',
     last_name: '',
     role: '' as UserRole | '',
-    specialization: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole | ''>('');
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isProductionBuild && !selectedRole) {
+      setSelectedRole('PATIENT');
+      setFormData((prev) => ({ ...prev, role: 'PATIENT' }));
+    }
+  }, [selectedRole]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    
+
     // Clear error for this field
+    if (submissionError) setSubmissionError(null);
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -110,11 +125,8 @@ export default function RegisterPage() {
 
   const handleRoleSelect = (role: UserRole) => {
     setSelectedRole(role);
-    setFormData(prev => ({
-      ...prev,
-      role,
-      specialization: role === 'DOCTOR' ? prev.specialization : '',
-    }));
+    setFormData(prev => ({ ...prev, role }));
+    if (submissionError) setSubmissionError(null);
     if (errors.role) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -143,7 +155,7 @@ export default function RegisterPage() {
       if (emailFormatError) newErrors.email = emailFormatError;
     }
 
-    // Password validation (must match backend: 8+ chars, upper, lower, digit, special)
+    // Password validation
     const passwordError = validatePassword(formData.password);
     if (passwordError) newErrors.password = passwordError;
 
@@ -163,9 +175,6 @@ export default function RegisterPage() {
     if (!formData.role) {
       newErrors.role = 'Please select a role';
     }
-    if (formData.role === 'DOCTOR' && !formData.specialization.trim()) {
-      newErrors.specialization = 'Specialization is required for doctors';
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -173,7 +182,8 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setSubmissionError(null);
+
     if (!validateForm()) {
       return;
     }
@@ -181,7 +191,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const created = await registerUser({
+      await registerUser({
         username: formData.username,
         email: formData.email,
         password: formData.password,
@@ -189,17 +199,21 @@ export default function RegisterPage() {
         first_name: formData.first_name,
         last_name: formData.last_name,
         role: formData.role as UserRole,
-        specialization: formData.role === 'DOCTOR' ? formData.specialization.trim() : undefined,
       });
+      showSuccess(
+        formData.role === 'PATIENT'
+          ? 'Account created! Your clinic will verify your account before portal access is enabled.'
+          : 'Account created! A clinic administrator must approve your account before you can sign in.'
+      );
 
-      showSuccess(created.message || 'Account created successfully! Please sign in.');
       navigate('/login');
     } catch (error) {
       const err = error as Error & { responseData?: Record<string, string | string[]> };
       const errorMessage = err.message || 'Registration failed';
       showError(errorMessage);
+      setSubmissionError(errorMessage);
 
-      // Parse backend field errors (DRF serializer.errors format)
+      // Parse backend field errors
       const data = err.responseData;
       if (data && typeof data === 'object' && !Array.isArray(data)) {
         const fieldErrors: Record<string, string> = {};
@@ -207,7 +221,10 @@ export default function RegisterPage() {
           if (field === 'detail' || field === 'message' || field === 'error') continue;
           const msg = Array.isArray(value) ? value[0] : value;
           if (typeof msg === 'string') {
-            const formField = field === 'password_confirm' ? 'confirmPassword' : field;
+            let formField = field;
+            if (field === 'password_confirm') formField = 'confirmPassword';
+            if (field === 'slug') formField = 'orgSlug';
+            if (field === 'name') formField = 'orgName';
             fieldErrors[formField] = msg;
           }
         }
@@ -221,35 +238,43 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className={styles.registerContainer}>
-      <div className={styles.registerCard}>
-        <div className={styles.header}>
-          <div className={styles.logo}>
-            <span className={styles.logoIcon}>🏥</span>
-            <h1 className={styles.logoText}>Create Account</h1>
-          </div>
-          <p className={styles.subtitle}>Join Modern EMR System</p>
+    <AuthShell
+      wide
+      title={isProductionBuild ? 'Create patient account' : 'Create staff account'}
+      subtitle={
+        isProductionBuild
+          ? `Patient registration for ${APP_NAME}`
+          : `Registration for ${APP_NAME}`
+      }
+    >
+      {submissionError && (
+        <div className={styles.errorBanner} role="alert" aria-live="assertive">
+          {submissionError}
         </div>
+      )}
 
-        <form onSubmit={handleSubmit} className={styles.registerForm}>
-          {/* Role Selection */}
+      <form onSubmit={handleSubmit} className={styles.registerForm}>
+
           <div className={styles.formSection}>
             <label className={styles.sectionLabel}>Select Your Role *</label>
-            <div className={styles.roleGrid}>
-              {ROLE_OPTIONS.map((role) => (
-                <button
-                  key={role.value}
-                  type="button"
-                  className={`${styles.roleCard} ${selectedRole === role.value ? styles.roleCardSelected : ''}`}
-                  onClick={() => handleRoleSelect(role.value)}
-                >
-                  <span className={styles.roleIcon}>{role.icon}</span>
-                  <span className={styles.roleLabel}>{role.label}</span>
-                  <span className={styles.roleDescription}>{role.description}</span>
-                </button>
-              ))}
-            </div>
-            {errors.role && <span className={styles.errorText}>{errors.role}</span>}
+              <div className={styles.roleGrid}>
+                {AVAILABLE_ROLE_OPTIONS.map((role) => (
+                  <button
+                    key={role.value}
+                    type="button"
+                    data-register-role
+                    data-selected={selectedRole === role.value ? 'true' : 'false'}
+                    aria-pressed={selectedRole === role.value}
+                    className={`${styles.roleOption} ${selectedRole === role.value ? styles.roleOptionSelected : ''}`}
+                    onClick={() => handleRoleSelect(role.value)}
+                  >
+                    <span className={styles.roleIcon}>{role.icon}</span>
+                    <span className={styles.roleLabel}>{role.label}</span>
+                    <span className={styles.roleDescription}>{role.description}</span>
+                  </button>
+                ))}
+              </div>
+              {errors.role && <span className={styles.errorText}>{errors.role}</span>}
           </div>
 
           {/* Personal Information */}
@@ -286,29 +311,12 @@ export default function RegisterPage() {
                 {errors.last_name && <span className={styles.errorText}>{errors.last_name}</span>}
               </div>
             </div>
-            {formData.role === 'DOCTOR' && (
-              <div className={styles.formGroup}>
-                <label htmlFor="specialization">Specialization *</label>
-                <input
-                  id="specialization"
-                  name="specialization"
-                  type="text"
-                  value={formData.specialization}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isLoading}
-                  placeholder="e.g. Gynaecologist, Cardiologist"
-                  className={errors.specialization ? styles.inputError : ''}
-                />
-                {errors.specialization && <span className={styles.errorText}>{errors.specialization}</span>}
-              </div>
-            )}
           </div>
 
           {/* Account Information */}
           <div className={styles.formSection}>
             <label className={styles.sectionLabel}>Account Information</label>
-            
+
             <div className={styles.formGroup}>
               <label htmlFor="username">Username *</label>
               <input
@@ -353,7 +361,7 @@ export default function RegisterPage() {
               />
               {errors.password && <span className={styles.errorText}>{errors.password}</span>}
               <span className={styles.helpText}>
-                At least 8 characters, with uppercase, lowercase, a number, and a special character (!@#$%^&* etc.)
+                At least 12 characters, with uppercase, lowercase, a number, and a special character (!@#$%^&* etc.)
               </span>
             </div>
 
@@ -380,7 +388,6 @@ export default function RegisterPage() {
           >
             {isLoading ? 'Creating Account...' : 'Create Account'}
           </button>
-        </form>
 
         <div className={styles.footer}>
           <p>
@@ -390,7 +397,7 @@ export default function RegisterPage() {
             </Link>
           </p>
         </div>
-      </div>
-    </div>
+      </form>
+    </AuthShell>
   );
 }

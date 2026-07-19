@@ -7,11 +7,13 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '../../hooks/useToast';
 import { fetchVitalSignsNurse, createVitalSignsNurse } from '../../api/nursing';
+import { useOffline } from '../../hooks/useOffline';
+import { queueOfflineAction } from '../../utils/offlineQueue';
 import { fetchVisitDetails } from '../../api/visits';
 import { fetchRegisteredDoctors } from '../../api/auth';
 import { User } from '../../types/auth';
 import { VitalSigns, VitalSignsCreate } from '../../types/clinical';
-import SpeechToTextButton from '../common/SpeechToTextButton';
+import VoiceTextareaField from '../common/VoiceTextareaField';
 import styles from '../../styles/NurseVisit.module.css';
 import { logger } from '../../utils/logger';
 
@@ -22,6 +24,7 @@ interface VitalSignsSectionProps {
 
 export default function VitalSignsSection({ visitId, canCreate }: VitalSignsSectionProps) {
   const { showSuccess, showError } = useToast();
+  const isOffline = useOffline();
   const [vitalSigns, setVitalSigns] = useState<VitalSigns[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -157,6 +160,18 @@ export default function VitalSignsSection({ visitId, canCreate }: VitalSignsSect
         // If temperature is not provided or invalid, set to null
         dataToSend.temperature = null;
       }
+
+      if (isOffline) {
+        await queueOfflineAction('RECORD_VITALS', {
+          visit_id: parseInt(visitId, 10),
+          vitals: dataToSend,
+        });
+        showSuccess('Vital signs queued — sync from Offline Clinic Queue when online');
+        setShowForm(false);
+        setSaving(false);
+        return;
+      }
+
       const savedVitalSigns = await createVitalSignsNurse(parseInt(visitId), dataToSend);
       logger.debug('Vital signs saved successfully:', savedVitalSigns);
       showSuccess('Vital signs recorded successfully');
@@ -226,7 +241,7 @@ export default function VitalSignsSection({ visitId, canCreate }: VitalSignsSect
   };
 
   return (
-    <div className={styles.section}>
+    <div className={styles.section} data-guide-id="vitals-inline">
       <div className={styles.sectionHeader}>
         <h3>📊 Vital Signs</h3>
         {canCreate && (
@@ -394,20 +409,11 @@ export default function VitalSignsSection({ visitId, canCreate }: VitalSignsSect
           </div>
           <div className={styles.formField}>
             <label>Notes</label>
-            <div style={{ position: 'relative', paddingTop: '2rem' }}>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                rows={3}
-              />
-              <SpeechToTextButton
-                value={formData.notes}
-                onTranscribe={(text) => setFormData((prev) => ({ ...prev, notes: text }))}
-                appendMode={true}
-                position="top-right"
-                showPreview={true}
-              />
-            </div>
+            <VoiceTextareaField
+              value={formData.notes || ''}
+              onValueChange={(text) => setFormData((prev) => ({ ...prev, notes: text }))}
+              rows={3}
+            />
           </div>
           <div className={styles.formActions}>
             <button type="submit" disabled={saving} className={styles.saveButton}>

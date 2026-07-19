@@ -5,26 +5,46 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('appointments', '0001_initial'),
-        ('visits', '0001_initial'),
+        ("appointments", "0001_initial"),
+        ("visits", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='visit',
-            name='appointment',
-            field=models.ForeignKey(blank=True, help_text='Linked appointment (optional)', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='visits', to='appointments.appointment'),
+            model_name="visit",
+            name="appointment",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Linked appointment (optional)",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="visits",
+                to="appointments.appointment",
+            ),
         ),
         migrations.AddField(
-            model_name='visit',
-            name='chief_complaint',
-            field=models.TextField(blank=True, help_text='Chief complaint or reason for visit', null=True),
+            model_name="visit",
+            name="chief_complaint",
+            field=models.TextField(
+                blank=True, help_text="Chief complaint or reason for visit", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='visit',
-            name='visit_type',
-            field=models.CharField(blank=True, choices=[('CONSULTATION', 'Consultation'), ('FOLLOW_UP', 'Follow-up'), ('EMERGENCY', 'Emergency'), ('ROUTINE', 'Routine'), ('SPECIALIST', 'Specialist')], help_text='Type of visit', max_length=50, null=True),
+            model_name="visit",
+            name="visit_type",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("CONSULTATION", "Consultation"),
+                    ("FOLLOW_UP", "Follow-up"),
+                    ("EMERGENCY", "Emergency"),
+                    ("ROUTINE", "Routine"),
+                    ("SPECIALIST", "Specialist"),
+                ],
+                help_text="Type of visit",
+                max_length=50,
+                null=True,
+            ),
         ),
     ]

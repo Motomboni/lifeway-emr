@@ -34,18 +34,27 @@ export function parseApiError(error: any): string {
         return response.data;
       }
       
+      if (response.data.non_field_errors) {
+        const nfe = response.data.non_field_errors;
+        if (Array.isArray(nfe) && nfe.length > 0) {
+          return nfe.map((x: unknown) => (typeof x === 'string' ? x : String(x))).join('; ');
+        }
+        if (typeof nfe === 'string') return nfe;
+      }
+
       if (response.data.detail !== undefined && response.data.detail !== null) {
         const d = response.data.detail;
         if (Array.isArray(d) && d.length > 0) {
           return d.map((x: any) => typeof x === 'string' ? x : (x?.message || String(x))).join('; ');
         }
-        if (typeof d === 'string') return d;
+        if (typeof d === 'string') {
+          const errorDetailMatch = d.match(/ErrorDetail\(string='([^']+)'/);
+          if (errorDetailMatch) {
+            return errorDetailMatch[1];
+          }
+          return d;
+        }
         return String(d);
-      }
-
-      if (response.data.non_field_errors) {
-        const nfe = response.data.non_field_errors;
-        return Array.isArray(nfe) ? nfe.join('; ') : String(nfe);
       }
       
       if (response.data.message) {
@@ -116,6 +125,83 @@ export function parseApiError(error: any): string {
   }
 
   return 'An unexpected error occurred';
+}
+
+const API_ERROR_META_KEYS = new Set(['detail', 'message', 'error', 'success']);
+
+function firstFieldErrorMessage(errors: unknown): string | null {
+  if (typeof errors === 'string') {
+    return errors;
+  }
+
+  if (Array.isArray(errors) && errors.length > 0) {
+    const first = errors[0];
+    if (typeof first === 'string') {
+      return first;
+    }
+    if (first && typeof first === 'object' && 'string' in first) {
+      return String((first as { string: unknown }).string);
+    }
+    return String(first);
+  }
+
+  return null;
+}
+
+function parseStringifiedFieldErrors(detail: string): Record<string, string> {
+  const fieldErrors: Record<string, string> = {};
+  const fieldPattern = /'(\w+)':\s*\[ErrorDetail\(string='([^']+)'/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = fieldPattern.exec(detail)) !== null) {
+    fieldErrors[match[1]] = match[2];
+  }
+
+  return fieldErrors;
+}
+
+/**
+ * Extract field-level validation errors from an API error payload.
+ */
+export function extractApiFieldErrors(data: unknown): Record<string, string> {
+  const fieldErrors: Record<string, string> = {};
+
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return fieldErrors;
+  }
+
+  const payload = data as Record<string, unknown>;
+
+  for (const [field, errors] of Object.entries(payload)) {
+    if (API_ERROR_META_KEYS.has(field) || field === 'non_field_errors') {
+      continue;
+    }
+    const message = firstFieldErrorMessage(errors);
+    if (message) {
+      fieldErrors[field] = message;
+    }
+  }
+
+  const detail = payload.detail;
+  if (detail && typeof detail === 'object' && !Array.isArray(detail)) {
+    for (const [field, errors] of Object.entries(detail as Record<string, unknown>)) {
+      if (!fieldErrors[field]) {
+        const message = firstFieldErrorMessage(errors);
+        if (message) {
+          fieldErrors[field] = message;
+        }
+      }
+    }
+  } else if (typeof detail === 'string') {
+    const parsed = parseStringifiedFieldErrors(detail);
+    for (const [field, message] of Object.entries(parsed)) {
+      if (!fieldErrors[field]) {
+        fieldErrors[field] = message;
+      }
+    }
+  }
+
+  return fieldErrors;
 }
 
 /**

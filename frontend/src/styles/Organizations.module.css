@@ -1,0 +1,192 @@
+/**
+ * Organizations page styles
+ */
+.page {
+  padding: 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.header h1 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.headerTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.backLink {
+  color: var(--text-secondary, #666);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: color 0.2s;
+  align-self: flex-start;
+}
+
+.backLink:hover {
+  color: var(--primary, #2196f3);
+}
+
+.createButton {
+  padding: 0.5rem 1rem;
+  background: var(--accent, #1976d2);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.createButton:hover {
+  opacity: 0.9;
+}
+
+.form {
+  background: var(--bg-primary);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px var(--shadow);
+}
+
+.form h3 {
+  margin: 0 0 1rem 0;
+}
+
+.form label {
+  display: block;
+  margin-top: 0.75rem;
+  font-weight: 500;
+}
+
+.form input {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.5rem;
+  margin-top: 0.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.form button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.content {
+  display: flex;
+  gap: 2rem;
+}
+
+.orgList {
+  flex: 0 0 220px;
+}
+
+.orgList h3,
+.membersPanel h3 {
+  margin: 0 0 0.75rem 0;
+}
+
+.orgList ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.orgList li {
+  margin: 0.25rem 0;
+}
+
+.orgList button {
+  width: 100%;
+  padding: 0.5rem;
+  text-align: left;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.orgList li.selected button {
+  background: var(--accent-light, #e3f2fd);
+  border-color: var(--accent);
+}
+
+.membersPanel {
+  flex: 1;
+  background: var(--bg-primary);
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px var(--shadow);
+}
+
+.memberList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+}
+
+.memberList li {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.addMemberForm {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.addMemberForm input {
+  flex: 1;
+  max-width: 150px;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.addMemberForm button {
+  padding: 0.5rem 1rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.addMemberForm button:disabled {
+  opacity: 0.6;
+}
+
+.hint {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #666);
+  line-height: 1.5;
+}
+
+.hint a {
+  color: var(--primary, #2196f3);
+  font-weight: 500;
+}

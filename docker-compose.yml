@@ -41,8 +41,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -51,11 +53,57 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
-    image: emr-frontend:latest
     ports:
       - "3000:80"
     depends_on:
       - backend
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  # Self-hosted LiveKit SFU (telemedicine). Start: docker compose up livekit -d
+  # Or use: scripts/start-livekit.ps1 / docker compose -f docker-compose.livekit.yml up -d
+  livekit:
+    image: livekit/livekit-server:v1.9.11
+    container_name: emr-livekit
+    command: --config /etc/livekit.yaml
+    restart: unless-stopped
+    profiles:
+      - livekit
+    volumes:
+      - ./infra/livekit/livekit.dev.yaml:/etc/livekit.yaml:ro
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
+      - "50100-50120:50100-50120/udp"
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: emr-celery-worker:latest
+    command: ["celery", "-A", "core", "worker", "-l", "info"]
+    volumes:
+      - ./backend:/app
+    env_file: .env
+    environment:
+      DEBUG: "true"
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: ${DB_NAME:-emr_db}
+      DB_USER: ${DB_USER:-emr_user}
+      DB_PASSWORD: ${DB_PASSWORD:-emr_password}
+      DB_HOST: db
+      DB_PORT: "5432"
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
 volumes:
   postgres_data:

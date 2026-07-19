@@ -1,32 +1,42 @@
 /**
  * ClinicalNotesSection Component
- * 
- * Additional clinical notes, treatment plan, and follow-up instructions.
  */
 import React from 'react';
 import SpeechToTextButton from '../../common/SpeechToTextButton';
+import MacroAwareTextarea from '../MacroAwareTextarea';
+import { ConsultationData } from '../../../types/consultation';
 import styles from '../../../styles/ConsultationWorkspace.module.css';
 
 interface ClinicalNotesSectionProps {
   value: string;
+  formData: Pick<ConsultationData, 'history' | 'examination' | 'diagnosis' | 'clinical_notes'>;
   onChange: (value: string) => void;
+  onMacroExpand: (updates: Partial<ConsultationData>) => void;
 }
 
-export default function ClinicalNotesSection({ value, onChange }: ClinicalNotesSectionProps) {
+export default function ClinicalNotesSection({
+  value,
+  formData,
+  onChange,
+  onMacroExpand,
+}: ClinicalNotesSectionProps) {
   return (
     <div className={styles.consultationSection}>
       <label htmlFor="clinical_notes">
         <h3>Clinical Notes</h3>
         <span className={styles.sectionDescription}>
-          Additional clinical notes, treatment plan, and follow-up instructions
+          Treatment plan, prescriptions, follow-up instructions, and additional notes
         </span>
       </label>
       <div style={{ position: 'relative', paddingTop: '2rem' }}>
-        <textarea
+        <MacroAwareTextarea
           id="clinical_notes"
+          field="clinical_notes"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Enter additional clinical notes, treatment plan, and follow-up instructions..."
+          formData={formData}
+          onChange={onChange}
+          onMacroExpand={onMacroExpand}
+          placeholder="Enter clinical notes… Type .htn + Tab for macros"
           rows={6}
           className={styles.consultationTextarea}
         />

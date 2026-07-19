@@ -4,25 +4,64 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('ai_integration', '0001_initial'),
+        ("ai_integration", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='aicache',
-            name='feature_type',
-            field=models.CharField(choices=[('clinical_decision_support', 'Clinical Decision Support'), ('nlp_summarization', 'NLP Summarization'), ('nlp_extraction', 'NLP Extraction'), ('automated_coding', 'Automated Coding (ICD-11/CPT)'), ('drug_interaction_check', 'Drug Interaction Check'), ('diagnosis_suggestion', 'Diagnosis Suggestion'), ('documentation_assistance', 'Documentation Assistance'), ('image_analysis', 'Image Analysis')], db_index=True, max_length=50),
+            model_name="aicache",
+            name="feature_type",
+            field=models.CharField(
+                choices=[
+                    ("clinical_decision_support", "Clinical Decision Support"),
+                    ("nlp_summarization", "NLP Summarization"),
+                    ("nlp_extraction", "NLP Extraction"),
+                    ("automated_coding", "Automated Coding (ICD-11/CPT)"),
+                    ("drug_interaction_check", "Drug Interaction Check"),
+                    ("diagnosis_suggestion", "Diagnosis Suggestion"),
+                    ("documentation_assistance", "Documentation Assistance"),
+                    ("image_analysis", "Image Analysis"),
+                ],
+                db_index=True,
+                max_length=50,
+            ),
         ),
         migrations.AlterField(
-            model_name='aiconfiguration',
-            name='feature_type',
-            field=models.CharField(choices=[('clinical_decision_support', 'Clinical Decision Support'), ('nlp_summarization', 'NLP Summarization'), ('nlp_extraction', 'NLP Extraction'), ('automated_coding', 'Automated Coding (ICD-11/CPT)'), ('drug_interaction_check', 'Drug Interaction Check'), ('diagnosis_suggestion', 'Diagnosis Suggestion'), ('documentation_assistance', 'Documentation Assistance'), ('image_analysis', 'Image Analysis')], help_text='AI feature type', max_length=50, unique=True),
+            model_name="aiconfiguration",
+            name="feature_type",
+            field=models.CharField(
+                choices=[
+                    ("clinical_decision_support", "Clinical Decision Support"),
+                    ("nlp_summarization", "NLP Summarization"),
+                    ("nlp_extraction", "NLP Extraction"),
+                    ("automated_coding", "Automated Coding (ICD-11/CPT)"),
+                    ("drug_interaction_check", "Drug Interaction Check"),
+                    ("diagnosis_suggestion", "Diagnosis Suggestion"),
+                    ("documentation_assistance", "Documentation Assistance"),
+                    ("image_analysis", "Image Analysis"),
+                ],
+                help_text="AI feature type",
+                max_length=50,
+                unique=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='airequest',
-            name='feature_type',
-            field=models.CharField(choices=[('clinical_decision_support', 'Clinical Decision Support'), ('nlp_summarization', 'NLP Summarization'), ('nlp_extraction', 'NLP Extraction'), ('automated_coding', 'Automated Coding (ICD-11/CPT)'), ('drug_interaction_check', 'Drug Interaction Check'), ('diagnosis_suggestion', 'Diagnosis Suggestion'), ('documentation_assistance', 'Documentation Assistance'), ('image_analysis', 'Image Analysis')], help_text='Type of AI feature used', max_length=50),
+            model_name="airequest",
+            name="feature_type",
+            field=models.CharField(
+                choices=[
+                    ("clinical_decision_support", "Clinical Decision Support"),
+                    ("nlp_summarization", "NLP Summarization"),
+                    ("nlp_extraction", "NLP Extraction"),
+                    ("automated_coding", "Automated Coding (ICD-11/CPT)"),
+                    ("drug_interaction_check", "Drug Interaction Check"),
+                    ("diagnosis_suggestion", "Diagnosis Suggestion"),
+                    ("documentation_assistance", "Documentation Assistance"),
+                    ("image_analysis", "Image Analysis"),
+                ],
+                help_text="Type of AI feature used",
+                max_length=50,
+            ),
         ),
     ]

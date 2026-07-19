@@ -4,7 +4,7 @@
  * For Superusers to manage data backups and restores.
  */
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useRolePermissions } from '../hooks/useRolePermissions';
 import {
   fetchBackups,
   fetchRestores,
@@ -25,7 +25,7 @@ import BackToDashboard from '../components/common/BackToDashboard';
 import styles from '../styles/Backup.module.css';
 
 export default function BackupPage() {
-  const { user } = useAuth();
+  const { isSuperuser } = useRolePermissions();
   const { showError, showSuccess } = useToast();
 
   const [backups, setBackups] = useState<Backup[]>([]);
@@ -229,7 +229,7 @@ export default function BackupPage() {
     }
   };
 
-  if (!user?.is_superuser) {
+  if (!isSuperuser) {
     return (
       <div className={styles.backupPage}>
         <BackToDashboard />

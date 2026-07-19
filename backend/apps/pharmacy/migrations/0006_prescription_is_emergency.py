@@ -4,15 +4,17 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pharmacy', '0005_drug_cost_price_drug_sales_price'),
+        ("pharmacy", "0005_drug_cost_price_drug_sales_price"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='prescription',
-            name='is_emergency',
-            field=models.BooleanField(default=False, help_text='Emergency flag: Allows dispensing without payment clearance. Requires proper authorization.'),
+            model_name="prescription",
+            name="is_emergency",
+            field=models.BooleanField(
+                default=False,
+                help_text="Emergency flag: Allows dispensing without payment clearance. Requires proper authorization.",
+            ),
         ),
     ]

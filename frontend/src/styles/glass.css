@@ -1,0 +1,177 @@
+/**
+ * Glassmorphism surfaces — shared tokens are in theme.css.
+ * Auto-applies to CSS-module card/panel class names across the app.
+ */
+
+.glass,
+.glass-card,
+.glass-panel,
+.glass-strong,
+.glass-subtle,
+.card {
+  color: var(--text-on-glass);
+}
+
+.glass,
+.glass-card,
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-strong {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur-strong));
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-subtle {
+  background: var(--glass-bg-subtle);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* CSS Modules: card containers (exclude gradient metric tiles) */
+[class*="Card_"]:not([class*="statCard"]):not([class*="kpiCard"]):not([class*="metricCard"]):not([class*="balanceCard"]):not([class*="roleOption"]),
+[class*="_card_"],
+[class*="dashboardContent"],
+[class*="dashboardHeader"],
+[class*="consultationSection"],
+[class*="AuthShell_panel"],
+[class*="Register_registerCard"],
+[class*="Login_loginCard"],
+[class*="appointmentCard"],
+[class*="templateSelector"],
+[class*="templateItem"] {
+  background: var(--glass-bg-strong) !important;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-color: var(--glass-border) !important;
+  box-shadow: var(--glass-shadow);
+  color: var(--text-on-glass);
+}
+
+[class*="Card_"]:not([class*="statCard"]):not([class*="kpiCard"]):not([class*="metricCard"]):hover,
+[class*="_card_"]:hover,
+[class*="actionCard"]:hover,
+[class*="patientCard"]:hover,
+[class*="visitCard"]:hover,
+[class*="medicationCard"]:hover,
+[class*="appointmentCard"]:hover {
+  box-shadow: var(--glass-shadow-hover);
+}
+
+/* Readable typography on frosted surfaces */
+:is(
+  .glass,
+  .glass-card,
+  .glass-panel,
+  .glass-strong,
+  .card,
+  [class*="Card_"]:not([class*="statCard"]):not([class*="kpiCard"]):not([class*="metricCard"]):not([class*="balanceCard"]):not([class*="roleOption"]),
+  [class*="_card_"],
+  [class*="dashboardContent"],
+  [class*="dashboardHeader"],
+  [class*="consultationSection"],
+  [class*="AuthShell_panel"],
+  [class*="CreateVisit_createVisitCard"],
+[class*="createVisitCard"],
+  [class*="appointmentCard"],
+  [class*="templateSelector"],
+  [class*="templateItem"]
+) :is(h1, h2, h3, h4, h5, h6, strong, b, th):not(.nursing-care-features-title):not([class*="nursingCareFeaturesTitle"]) {
+  color: var(--text-on-glass);
+  text-shadow: var(--glass-text-shadow);
+}
+
+:is(
+  .glass,
+  .glass-card,
+  .glass-panel,
+  .glass-strong,
+  .card,
+  [class*="Card_"]:not([class*="statCard"]):not([class*="kpiCard"]):not([class*="metricCard"]):not([class*="balanceCard"]):not([class*="roleOption"]),
+  [class*="_card_"],
+  [class*="dashboardContent"],
+  [class*="dashboardHeader"],
+  [class*="consultationSection"],
+  [class*="AuthShell_panel"],
+  [class*="CreateVisit_createVisitCard"],
+[class*="createVisitCard"],
+  [class*="appointmentCard"],
+  [class*="templateSelector"],
+  [class*="templateItem"]
+) :is(p, li, td, span, div, label, input, select, textarea) {
+  color: inherit;
+}
+
+:is(
+  [class*="dashboardContent"],
+  [class*="dashboardHeader"],
+  [class*="Card_"],
+  [class*="_card_"],
+  [class*="consultationSection"],
+  [class*="AuthShell_panel"],
+  [class*="CreateVisit_createVisitCard"],
+[class*="createVisitCard"],
+  [class*="appointmentCard"]
+) :is(
+  [class*="subtitle"],
+  [class*="description"],
+  [class*="meta"],
+  [class*="helpText"],
+  [class*="emptyState"]
+) {
+  color: var(--text-on-glass-secondary) !important;
+}
+
+/* Gradient stat / KPI tiles — blur only, preserve module backgrounds */
+[class*="statCard"],
+[class*="kpiCard"],
+[class*="metricCard"],
+[class*="balanceCard"] {
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--glass-shadow);
+}
+
+/* Nested card sub-regions stay flat */
+[class*="cardHeader"],
+[class*="CardHeader"],
+[class*="cardBody"],
+[class*="CardBody"],
+[class*="cardActions"],
+[class*="cardDetails"],
+[class*="cardFooter"],
+[class*="cardMeta"],
+[class*="cardIcon"],
+[class*="cardTitle"],
+[class*="cardValue"],
+[class*="cardsGrid"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .glass-card,
+  .glass-panel,
+  .glass-strong,
+  .glass-subtle,
+  [class*="Card_"],
+  [class*="_card_"],
+  [class*="dashboardContent"],
+  [class*="dashboardHeader"] {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--bg-primary-solid) !important;
+    color: var(--text-primary);
+  }
+}

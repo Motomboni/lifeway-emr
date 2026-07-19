@@ -14,6 +14,13 @@ export interface PatientRetainership {
   is_expired: boolean;
 }
 
+export interface VisitPaymentGates {
+  registration_paid: boolean;
+  consultation_paid: boolean;
+  can_access_consultation: boolean;
+  can_doctor_start_encounter: boolean;
+}
+
 export interface Visit {
   id: number;
   patient: number;
@@ -23,12 +30,13 @@ export interface Visit {
   assigned_doctor?: number | null;
   assigned_doctor_name?: string | null;
   assigned_doctor_specialization?: string | null;
-  visit_type?: 'CONSULTATION' | 'FOLLOW_UP' | 'EMERGENCY' | 'ROUTINE' | 'SPECIALIST';
+  visit_type?: 'CONSULTATION' | 'FOLLOW_UP' | 'EMERGENCY' | 'ROUTINE' | 'SPECIALIST' | 'SANDBOX';
   chief_complaint?: string;
   appointment?: number;
   status: 'OPEN' | 'CLOSED';
   payment_status: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'INSURANCE_PENDING' | 'INSURANCE_CLAIMED' | 'SETTLED' | 'PENDING' | 'CLEARED';
   payment_type?: 'CASH' | 'INSURANCE';
+  payment_gates?: VisitPaymentGates;
   patient_retainership?: PatientRetainership;
   closed_by?: number;
   closed_at?: string;
@@ -40,7 +48,7 @@ export interface VisitCreateData {
   patient: number;
   /** Optional: registered doctor the patient is here to see */
   assigned_doctor?: number | null;
-  visit_type?: 'CONSULTATION' | 'FOLLOW_UP' | 'EMERGENCY' | 'ROUTINE' | 'SPECIALIST';
+  visit_type?: 'CONSULTATION' | 'FOLLOW_UP' | 'EMERGENCY' | 'ROUTINE' | 'SPECIALIST' | 'SANDBOX';
   chief_complaint?: string;
   appointment?: number;
   payment_status?: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'INSURANCE_PENDING' | 'INSURANCE_CLAIMED' | 'SETTLED';

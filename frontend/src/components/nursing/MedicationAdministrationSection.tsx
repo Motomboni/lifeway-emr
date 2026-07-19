@@ -10,6 +10,7 @@ import { fetchMedicationAdministrations, createMedicationAdministration, updateM
 import { fetchPrescriptions } from '../../api/prescription';
 import { MedicationAdministration, MedicationAdministrationCreate } from '../../types/nursing';
 import { Prescription } from '../../types/prescription';
+import VoiceTextareaField from '../common/VoiceTextareaField';
 import styles from '../../styles/NurseVisit.module.css';
 
 interface MedicationAdministrationSectionProps {
@@ -265,9 +266,9 @@ export default function MedicationAdministrationSection({ visitId, canCreate }: 
           {formData.status === 'HELD' && (
             <div className={styles.formField}>
               <label>Reason if Held *</label>
-              <textarea
-                value={formData.reason_if_held}
-                onChange={(e) => setFormData({ ...formData, reason_if_held: e.target.value })}
+              <VoiceTextareaField
+                value={formData.reason_if_held || ''}
+                onValueChange={(text) => setFormData({ ...formData, reason_if_held: text })}
                 rows={3}
                 required
                 placeholder="Explain why medication was held..."
@@ -276,9 +277,9 @@ export default function MedicationAdministrationSection({ visitId, canCreate }: 
           )}
           <div className={styles.formField}>
             <label>Administration Notes</label>
-            <textarea
-              value={formData.administration_notes}
-              onChange={(e) => setFormData({ ...formData, administration_notes: e.target.value })}
+            <VoiceTextareaField
+              value={formData.administration_notes || ''}
+              onValueChange={(text) => setFormData({ ...formData, administration_notes: text })}
               rows={3}
               placeholder="Additional notes about administration..."
             />

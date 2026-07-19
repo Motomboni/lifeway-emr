@@ -26,39 +26,16 @@ Before running the tests, ensure:
 
 3. **Test Users Created in Database**
    
-   You need to create test users in the database. Run these Django commands:
+   Playwright **global-setup** runs this automatically when the backend is up. You can also seed manually:
    
-   ```python
-   # In Django shell: python manage.py shell
-   from apps.users.models import User
-   
-   # Create test doctor
-   User.objects.create_user(
-       username='doctor@clinic.com',
-       email='doctor@clinic.com',
-       password='Doctor123!',
-       first_name='Test',
-       last_name='Doctor',
-       role='DOCTOR')
-   
-   # Create test receptionist
-   User.objects.create_user(
-       username='receptionist@clinic.com',
-       email='receptionist@clinic.com',
-       password='Receptionist123!',
-       first_name='Test',
-       last_name='Receptionist',
-       role='RECEPTIONIST')
-   
-   # Create test lab tech
-   User.objects.create_user(
-       username='labtech@clinic.com',
-       email='labtech@clinic.com',
-       password='LabTech123!',
-       first_name='Test',
-       last_name='Lab Tech',
-       role='LAB_TECH')
+   ```bash
+   cd backend
+   python manage.py seed_e2e_users
    ```
+   
+   Creates `doctor@clinic.com`, `receptionist@clinic.com`, and `labtech@clinic.com` with org membership.
+   
+   Shared E2E helpers live in `frontend/e2e/helpers/` (`auth.ts`, `test-users.ts`, `health.ts`).
 
 4. **Lab Service Price List Configured**
    

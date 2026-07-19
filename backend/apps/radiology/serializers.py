@@ -6,19 +6,21 @@ Per EMR Rules:
 - Radiology Tech: Can only update reports, cannot see diagnosis/consultation notes
 - Data minimization: Radiology Tech sees only what's needed for their role
 """
+
 from rest_framework import serializers
-from .models import RadiologyRequest, RadiologyOrder
+
+from .models import RadiologyOrder, RadiologyRequest
 
 
 class RadiologyRequestSerializer(serializers.ModelSerializer):
     """
     Base serializer for Radiology Request.
-    
+
     Role-based field visibility:
     - Doctor: All fields visible
     - Radiology Tech: Limited fields (no consultation details)
     """
-    
+
     # Read-only fields
     visit_id = serializers.IntegerField(read_only=True)
     consultation_id = serializers.IntegerField(read_only=True)
@@ -27,71 +29,86 @@ class RadiologyRequestSerializer(serializers.ModelSerializer):
     created_at = serializers.DateTimeField(read_only=True)
     updated_at = serializers.DateTimeField(read_only=True)
     report_date = serializers.DateTimeField(read_only=True)
-    
+    pacs_study_id = serializers.SerializerMethodField()
+    has_dicom_images = serializers.SerializerMethodField()
+
+    def get_pacs_study_id(self, obj):
+        try:
+            return obj.pacs_study.id
+        except Exception:
+            return None
+
+    def get_has_dicom_images(self, obj):
+        return bool(obj.image_count and obj.image_count > 0)
+
     class Meta:
         model = RadiologyRequest
         fields = [
-            'id',
-            'visit_id',
-            'consultation_id',
-            'study_type',
-            'study_code',
-            'clinical_indication',
-            'instructions',
-            'status',
-            'report',
-            'report_date',
-            'finding_flag',
-            'image_count',
-            'image_metadata',
-            'ordered_by',
-            'reported_by',
-            'created_at',
-            'updated_at',
+            "id",
+            "visit_id",
+            "consultation_id",
+            "study_type",
+            "study_code",
+            "clinical_indication",
+            "instructions",
+            "status",
+            "report",
+            "report_date",
+            "finding_flag",
+            "image_count",
+            "image_metadata",
+            "pacs_study_id",
+            "has_dicom_images",
+            "ordered_by",
+            "reported_by",
+            "created_at",
+            "updated_at",
         ]
         read_only_fields = [
-            'id',
-            'visit_id',
-            'consultation_id',
-            'ordered_by',
-            'reported_by',
-            'created_at',
-            'updated_at',
-            'report_date',
+            "id",
+            "visit_id",
+            "consultation_id",
+            "ordered_by",
+            "reported_by",
+            "created_at",
+            "updated_at",
+            "report_date",
         ]
 
 
 class RadiologyRequestCreateSerializer(RadiologyRequestSerializer):
     """
     Serializer for creating radiology requests (Doctor only).
-    
+
     Doctor provides:
     - study_type (optional - defaults to 'General Study' if not provided)
     - study_code (optional)
     - clinical_indication (optional)
     - instructions (optional)
-    
+
     System sets:
     - visit_id (from URL)
     - consultation_id (from consultation context)
     - ordered_by (from authenticated user)
     - status (defaults to PENDING)
     """
-    
-    study_type = serializers.CharField(required=False, allow_blank=True, default='General Study')
-    
+
+    study_type = serializers.CharField(
+        required=False, allow_blank=True, default="General Study"
+    )
+
     def validate(self, attrs):
         """Ensure consultation context is provided."""
         # Consultation is set from context, not from request data
-        if 'consultation' in attrs:
+        if "consultation" in attrs:
             raise serializers.ValidationError(
                 "Consultation cannot be set directly. It is derived from consultation context."
             )
-        
+
         # Set default study_type if not provided
-        if not attrs.get('study_type'):
-            attrs['study_type'] = 'General Study'
-        
+        if not attrs.get("study_type"):
+            attrs["study_type"] = "General Study"
+
         return attrs
 
 
@@ -102,6 +119,7 @@ class RadiologyRequestReportSerializer(serializers.ModelSerializer):
     Backend sets: reported_by, report_date, status=COMPLETED.
     Finding flag persistence is only valid for legacy RadiologyResult flow; not accepted here.
     """
+
     report = serializers.CharField(required=True, allow_blank=False)
     image_count = serializers.IntegerField(required=False, allow_null=True, min_value=0)
 
@@ -120,36 +138,36 @@ class RadiologyRequestReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = RadiologyRequest
         fields = [
-            'id',
-            'visit_id',
-            'consultation_id',
-            'study_type',
-            'study_code',
-            'clinical_indication',
-            'instructions',
-            'status',
-            'report',
-            'report_date',
-            'finding_flag',  # read-only: not persisted for Service Catalog
-            'image_count',
-            'image_metadata',
-            'ordered_by',
-            'reported_by',
+            "id",
+            "visit_id",
+            "consultation_id",
+            "study_type",
+            "study_code",
+            "clinical_indication",
+            "instructions",
+            "status",
+            "report",
+            "report_date",
+            "finding_flag",  # read-only: not persisted for Service Catalog
+            "image_count",
+            "image_metadata",
+            "ordered_by",
+            "reported_by",
         ]
         read_only_fields = [
-            'id',
-            'visit_id',
-            'consultation_id',
-            'study_type',
-            'study_code',
-            'clinical_indication',
-            'instructions',
-            'status',
-            'report_date',
-            'finding_flag',
-            'image_metadata',
-            'ordered_by',
-            'reported_by',
+            "id",
+            "visit_id",
+            "consultation_id",
+            "study_type",
+            "study_code",
+            "clinical_indication",
+            "instructions",
+            "status",
+            "report_date",
+            "finding_flag",
+            "image_metadata",
+            "ordered_by",
+            "reported_by",
         ]
 
     def validate_report(self, value):
@@ -164,14 +182,16 @@ class RadiologyRequestReportSerializer(serializers.ModelSerializer):
 class RadiologyRequestReadSerializer(RadiologyRequestSerializer):
     """
     Serializer for reading radiology requests.
-    
+
     Doctor sees all fields including reports.
     Radiology Tech sees limited fields (no consultation context).
     """
+
     pass
 
 
 # === Radiology Orders (aligned with frontend expectations) ===
+
 
 class RadiologyOrderSerializer(serializers.ModelSerializer):
     """Read serializer for radiology orders (visit-scoped)."""
@@ -183,22 +203,22 @@ class RadiologyOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = RadiologyOrder
         fields = [
-            'id',
-            'visit_id',
-            'imaging_type',
-            'body_part',
-            'clinical_indication',
-            'priority',
-            'status',
-            'created_at',
-            'ordered_by',
+            "id",
+            "visit_id",
+            "imaging_type",
+            "body_part",
+            "clinical_indication",
+            "priority",
+            "status",
+            "created_at",
+            "ordered_by",
         ]
         read_only_fields = [
-            'id',
-            'visit_id',
-            'status',
-            'created_at',
-            'ordered_by',
+            "id",
+            "visit_id",
+            "status",
+            "created_at",
+            "ordered_by",
         ]
 
 
@@ -208,48 +228,48 @@ class RadiologyOrderCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = RadiologyOrder
         fields = [
-            'imaging_type',
-            'body_part',
-            'clinical_indication',
-            'priority',
+            "imaging_type",
+            "body_part",
+            "clinical_indication",
+            "priority",
         ]
 
     def validate(self, attrs):
         """Validate radiology order data and check for duplicates."""
         # Check for duplicate radiology order (only on create, not update)
         if self.instance is None:
-            from core.duplicate_prevention import check_radiology_order_duplicate
             from django.core.exceptions import ValidationError as DjangoValidationError
-            
-            visit = self.context.get('visit')
-            study_code = attrs.get('imaging_type')  # Assuming imaging_type is the study code
-            
+
+            from core.duplicate_prevention import check_radiology_order_duplicate
+
+            visit = self.context.get("visit")
+            study_code = attrs.get(
+                "imaging_type"
+            )  # Assuming imaging_type is the study code
+
             if visit and study_code:
                 try:
                     check_radiology_order_duplicate(
-                        visit=visit,
-                        study_code=study_code,
-                        window_minutes=5
+                        visit=visit, study_code=study_code, window_minutes=5
                     )
                 except DjangoValidationError as e:
                     raise serializers.ValidationError(str(e))
-        
+
         return attrs
-    
+
     def create(self, validated_data):
         """
         Create radiology order using visit and user from context.
         Context must provide: visit, request.
         """
-        visit = self.context.get('visit')
-        request = self.context.get('request')
+        visit = self.context.get("visit")
+        request = self.context.get("request")
 
         if not visit or not request:
-            raise serializers.ValidationError("Visit context is required to create radiology order.")
+            raise serializers.ValidationError(
+                "Visit context is required to create radiology order."
+            )
 
         return RadiologyOrder.objects.create(
-            visit=visit,
-            ordered_by=request.user,
-            status='ORDERED',
-            **validated_data
+            visit=visit, ordered_by=request.user, status="ORDERED", **validated_data
         )

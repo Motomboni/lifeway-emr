@@ -15,14 +15,16 @@
 
 /* Modal Content */
 .modalContent {
-  background: white;
+  background: var(--glass-bg-strong, var(--bg-primary-solid));
+  border: 1px solid var(--glass-border, #e0e0e0);
   border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--glass-shadow, 0 4px 20px rgba(0, 0, 0, 0.15));
   max-width: 600px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
   animation: slideUp 0.3s ease-out;
+  color: var(--text-primary);
 }
 
 @keyframes slideUp {
@@ -48,13 +50,14 @@
   margin: 0 0 8px 0;
   font-size: 20px;
   font-weight: 600;
+  color: #ffffff;
 }
 
 .drugName {
   margin: 0;
   font-size: 16px;
-  font-weight: 500;
-  opacity: 0.95;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 /* Form */
@@ -70,7 +73,7 @@
   display: block;
   font-weight: 500;
   margin-bottom: 8px;
-  color: #333;
+  color: var(--text-primary);
   font-size: 14px;
 }
 
@@ -84,10 +87,12 @@
 .formGroup textarea {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--glass-border, #ddd);
   border-radius: 4px;
   font-size: 14px;
   font-family: inherit;
+  background: var(--input-bg, #fff);
+  color: var(--text-primary);
   transition: border-color 0.2s;
 }
 
@@ -119,7 +124,7 @@
 
 .hint {
   display: block;
-  color: #666;
+  color: var(--text-secondary);
   font-size: 12px;
   margin-top: 4px;
   font-style: italic;

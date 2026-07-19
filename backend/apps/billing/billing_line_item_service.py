@@ -8,15 +8,18 @@ Per EMR Rules:
 - Billing is immutable once paid
 - When a Payment is recorded, it is allocated to line items (Registration first, then Consultation, then others)
 """
-from django.db import transaction
-from django.core.exceptions import ValidationError
+
 from decimal import Decimal
-from typing import Optional, Tuple, List
+from typing import List, Optional, Tuple
+
+from django.core.exceptions import ValidationError
+from django.db import transaction
+
+from apps.consultations.models import Consultation
+from apps.visits.models import Visit
 
 from .billing_line_item_models import BillingLineItem
 from .service_catalog_models import ServiceCatalog
-from apps.visits.models import Visit
-from apps.consultations.models import Consultation
 
 
 def create_billing_line_item_from_service(
@@ -27,59 +30,62 @@ def create_billing_line_item_from_service(
 ) -> BillingLineItem:
     """
     Create a BillingLineItem from a ServiceCatalog service.
-    
+
     This function ensures:
     - Exactly one BillingLineItem per service per visit
     - Amount is snapshotted from ServiceCatalog
     - Service details are preserved
-    
+
     Args:
         service: ServiceCatalog instance
         visit: Visit instance
         consultation: Consultation instance (optional, for consultation services)
         created_by: User creating the billing line item (optional)
-    
+
     Returns:
         BillingLineItem instance
-    
+
     Raises:
         ValidationError: If service is not active, visit is closed, or item already exists
     """
     # Validate service
     if not service.is_active:
         raise ValidationError(f"Service '{service.service_code}' is not active.")
-    
+
     # Validate visit
-    if visit.status == 'CLOSED':
+    if visit.status == "CLOSED":
         raise ValidationError("Cannot create billing line items for a CLOSED visit.")
-    
+
     # Check if billing line item already exists
     existing = BillingLineItem.objects.filter(
-        service_catalog=service,
-        visit=visit
+        service_catalog=service, visit=visit
     ).first()
-    
+
     if existing:
         raise ValidationError(
             f"Billing line item already exists for service '{service.service_code}' "
             f"and visit {visit.id}. Each service can only create one billing line item per visit."
         )
-    
+
     # Validate consultation relationship
     if consultation:
         if consultation.visit != visit:
-            raise ValidationError(
-                "Consultation must belong to the same visit."
-            )
-        
+            raise ValidationError("Consultation must belong to the same visit.")
+
         # Consultation can be linked to GOPD_CONSULT and consultation-dependent downstream services
-        allowed_workflow_types = ['GOPD_CONSULT', 'LAB_ORDER', 'DRUG_DISPENSE', 'PROCEDURE', 'RADIOLOGY_STUDY']
+        allowed_workflow_types = [
+            "GOPD_CONSULT",
+            "LAB_ORDER",
+            "DRUG_DISPENSE",
+            "PROCEDURE",
+            "RADIOLOGY_STUDY",
+        ]
         if service.workflow_type not in allowed_workflow_types:
             raise ValidationError(
                 f"Consultation can only be linked to {', '.join(allowed_workflow_types)} services. "
                 f"Service workflow_type: {service.workflow_type}"
             )
-    
+
     # Create billing line item with snapshot
     with transaction.atomic():
         billing_line_item = BillingLineItem.objects.create(
@@ -91,7 +97,7 @@ def create_billing_line_item_from_service(
             amount=service.amount,  # Snapshot amount
             created_by=created_by,
         )
-    
+
     return billing_line_item
 
 
@@ -103,25 +109,24 @@ def get_or_create_billing_line_item(
 ) -> Tuple[BillingLineItem, bool]:
     """
     Get existing or create new BillingLineItem from ServiceCatalog.
-    
+
     Args:
         service: ServiceCatalog instance
         visit: Visit instance
         consultation: Consultation instance (optional)
         created_by: User creating the billing line item (optional)
-    
+
     Returns:
         Tuple of (BillingLineItem, created) where created is True if item was created
     """
     # Try to get existing item
     existing = BillingLineItem.objects.filter(
-        service_catalog=service,
-        visit=visit
+        service_catalog=service, visit=visit
     ).first()
-    
+
     if existing:
         return existing, False
-    
+
     # Create new item
     billing_line_item = create_billing_line_item_from_service(
         service=service,
@@ -129,7 +134,7 @@ def get_or_create_billing_line_item(
         consultation=consultation,
         created_by=created_by,
     )
-    
+
     return billing_line_item, True
 
 
@@ -233,10 +238,10 @@ def allocate_payment_to_line_items(
 def get_visit_billing_summary(visit: Visit) -> dict:
     """
     Get billing summary for a visit from BillingLineItems.
-    
+
     Args:
         visit: Visit instance
-    
+
     Returns:
         dict with billing summary:
         - total_amount: Sum of all billing line items
@@ -246,33 +251,34 @@ def get_visit_billing_summary(visit: Visit) -> dict:
         - status: Overall status (PENDING, PARTIALLY_PAID, PAID)
     """
     line_items = BillingLineItem.objects.filter(visit=visit)
-    
+
     total_amount = sum(item.amount for item in line_items)
     total_paid = sum(item.amount_paid for item in line_items)
     outstanding_balance = total_amount - total_paid
-    
+
     # Determine overall status
     if outstanding_balance <= 0:
-        status = 'PAID'
+        status = "PAID"
     elif total_paid > 0:
-        status = 'PARTIALLY_PAID'
+        status = "PARTIALLY_PAID"
     else:
-        status = 'PENDING'
-    
-    return {
-        'total_amount': total_amount,
-        'total_paid': total_paid,
-        'outstanding_balance': outstanding_balance,
-        'status': status,
-        'line_items': list(line_items.values(
-            'id',
-            'source_service_code',
-            'source_service_name',
-            'amount',
-            'amount_paid',
-            'outstanding_amount',
-            'bill_status',
-            'payment_method',
-        )),
-    }
+        status = "PENDING"
 
+    return {
+        "total_amount": total_amount,
+        "total_paid": total_paid,
+        "outstanding_balance": outstanding_balance,
+        "status": status,
+        "line_items": list(
+            line_items.values(
+                "id",
+                "source_service_code",
+                "source_service_name",
+                "amount",
+                "amount_paid",
+                "outstanding_amount",
+                "bill_status",
+                "payment_method",
+            )
+        ),
+    }

@@ -9,6 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { fetchVisitDetails, VisitDetails } from '../../api/visits';
 import { HeaderSkeleton } from '../common/LoadingSkeleton';
 import styles from '../../styles/NurseVisit.module.css';
+import guideStyles from '../../styles/Guide.module.css';
 
 interface NurseVisitHeaderProps {
   visitId: string;
@@ -50,6 +51,11 @@ export default function NurseVisitHeader({ visitId, visit: visitProp }: NurseVis
 
   return (
     <div className={styles.nurseVisitHeader}>
+      {(visit as VisitDetails).visit_type === 'SANDBOX' && (
+        <div className={guideStyles.sandboxBanner} role="status">
+          Guide practice visit — demo patient only, not real PHI. Safe to explore and click freely.
+        </div>
+      )}
       <div className={styles.visitContext}>
         <h2>Visit #{visitId} - Nursing Care</h2>
         <div className={styles.visitStatus}>

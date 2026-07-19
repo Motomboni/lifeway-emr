@@ -7,6 +7,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import LockIndicator from '../locks/LockIndicator';
 import { useActionLock } from '../../hooks/useActionLock';
+import { apiRequest } from '../../utils/apiClient';
 import styles from './OHIFViewer.module.css';
 
 interface OHIFViewerProps {
@@ -44,11 +45,9 @@ const OHIFViewer: React.FC<OHIFViewerProps> = ({
       }
 
       try {
-        const response = await fetch(`/api/v1/radiology/studies/${studyId}/viewer-url/`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch viewer URL');
-        }
-        const data = await response.json();
+        const data = await apiRequest<{ viewer_url: string }>(
+          `/radiology/studies/${studyId}/viewer-url/`,
+        );
         setActualViewerUrl(data.viewer_url);
       } catch (err: any) {
         const errorMessage = err.message || 'Failed to load viewer';

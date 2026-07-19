@@ -6,7 +6,7 @@ export interface Wallet {
   id: number;
   patient: number;
   patient_name: string;
-  patient_id: number;
+  patient_id: string;
   balance: string;
   currency: string;
   is_active: boolean;
@@ -19,6 +19,7 @@ export interface PaymentChannel {
   name: string;
   channel_type: 'PAYSTACK' | 'MOBILE_MONEY' | 'BANK_TRANSFER' | 'CASH' | 'CARD' | 'INSURANCE';
   is_active: boolean;
+  supports_online_topup?: boolean;
   config: Record<string, any>;
   created_at: string;
   updated_at: string;

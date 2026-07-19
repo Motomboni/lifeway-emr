@@ -1,4 +1,5 @@
-.container {
+.container,
+.verificationPage {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
@@ -16,8 +17,15 @@
 }
 
 .subtitle {
-  color: var(--text-secondary);
+  color: #334155;
   font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.55;
+  max-width: 42rem;
+}
+
+[data-theme="dark"] .subtitle {
+  color: #e2e8f0;
 }
 
 .stats {

@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { getVisitCharges, VisitCharge } from '../../api/billing';
 import { formatCurrency } from '../../utils/currency';
 import { useToast } from '../../hooks/useToast';
+import { useBillingPermissions } from '../../hooks/useBillingPermissions';
 import styles from './ChargesBreakdown.module.css';
 
 const DEPARTMENT_LABELS: Record<string, string> = {
@@ -34,15 +35,24 @@ export interface VisitChargesReadOnlyProps {
   refreshTrigger?: number;
   /** Optional title override */
   title?: string;
+  /** When true, show line-item amounts (default: receptionist only). */
+  showAmounts?: boolean;
+  /** When true, skip outer panel chrome (parent card e.g. consultation inlineComponent). */
+  embedded?: boolean;
 }
 
 export default function VisitChargesReadOnly({
   visitId,
   charges: chargesFromParent,
   refreshTrigger = 0,
-  title = 'Ordered services & charges',
+  title,
+  showAmounts: showAmountsProp,
+  embedded = false,
 }: VisitChargesReadOnlyProps) {
   const { showError } = useToast();
+  const { canViewChargeAmounts } = useBillingPermissions();
+  const showAmounts = showAmountsProp ?? canViewChargeAmounts;
+  const panelTitle = title ?? (showAmounts ? 'Ordered services & charges' : 'Ordered services');
   const [charges, setCharges] = useState<VisitCharge[]>(chargesFromParent ?? []);
   const [loading, setLoading] = useState(chargesFromParent === undefined || chargesFromParent === null);
 
@@ -84,11 +94,15 @@ export default function VisitChargesReadOnly({
     [charges]
   );
 
+  const panelClass = embedded
+    ? `${styles.readOnlyPanel} ${styles.readOnlyPanelEmbedded}`
+    : styles.readOnlyPanel;
+
   if (loading) {
     return (
-      <div className={styles.container}>
+      <div className={`${styles.container} ${panelClass}`}>
         <div className={styles.header}>
-          <h3 className={styles.headerTitle}>{title}</h3>
+          <h3 className={styles.headerTitle}>{panelTitle}</h3>
           <p className={styles.headerSubtitle}>Loading…</p>
         </div>
       </div>
@@ -96,13 +110,21 @@ export default function VisitChargesReadOnly({
   }
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${panelClass}`}>
       <div className={styles.header}>
         <div>
-          <h3 className={styles.headerTitle}>{title}</h3>
+          <h3 className={styles.headerTitle}>{panelTitle}</h3>
           <p className={styles.headerSubtitle}>
-            Same line items as on the patient account / reception billing. Total:{' '}
-            <span className={styles.headerSubtitleAmount}>{formatCurrency(totalCharges.toString())}</span>
+            {showAmounts ? (
+              <>
+                Same line items as on the patient account / reception billing. Total:{' '}
+                <span className={styles.headerSubtitleAmount}>
+                  {formatCurrency(totalCharges.toString())}
+                </span>
+              </>
+            ) : (
+              'Services ordered for this visit (amounts visible to reception only).'
+            )}
           </p>
         </div>
       </div>
@@ -133,7 +155,11 @@ export default function VisitChargesReadOnly({
                       ({chargesArray.length} {chargesArray.length === 1 ? 'item' : 'items'})
                     </span>
                   </div>
-                  <span className={styles.departmentTotal}>{formatCurrency(deptTotal.toString())}</span>
+                  {showAmounts && (
+                    <span className={styles.departmentTotal}>
+                      {formatCurrency(deptTotal.toString())}
+                    </span>
+                  )}
                 </div>
                 <div className={styles.chargesItems}>
                   {chargesArray.map((charge) => (
@@ -156,7 +182,9 @@ export default function VisitChargesReadOnly({
                             )}
                           </div>
                         </div>
-                        <div className={styles.chargeAmount}>{formatCurrency(charge.amount)}</div>
+                        {showAmounts && (
+                          <div className={styles.chargeAmount}>{formatCurrency(charge.amount)}</div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -167,7 +195,7 @@ export default function VisitChargesReadOnly({
         </div>
       )}
 
-      {charges.length > 0 && (
+      {showAmounts && charges.length > 0 && (
         <div className={styles.totalSummary}>
           <div className={styles.totalSummaryContent}>
             <span className={styles.totalSummaryLabel}>Total charges</span>

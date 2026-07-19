@@ -1,161 +1,146 @@
 /**
  * Landing Page
- * 
- * Modern split-screen landing page for visitors.
- * Features hero section, key benefits, and call-to-action.
+ *
+ * Full-bleed geometric hero with capability cards (left) and headline content (right).
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  FiActivity,
+  FiMic,
+  FiShield,
+  FiVideo,
+} from 'react-icons/fi';
+import HeroGeometric from '../components/landing/HeroGeometric';
 import Logo from '../components/common/Logo';
 import styles from '../styles/Landing.module.css';
+
+const CAPABILITIES = [
+  {
+    icon: FiMic,
+    title: 'AI Consultation Scribe',
+    description: 'Voice-to-note documentation that flows straight into the chart.',
+  },
+  {
+    icon: FiShield,
+    title: 'NHIA-Ready Billing',
+    description: 'Validated tariffs, claim packs, and compliance dashboards built in.',
+  },
+  {
+    icon: FiVideo,
+    title: 'Telemedicine',
+    description: 'Secure video visits with live transcription and scribe handoff.',
+  },
+  {
+    icon: FiActivity,
+    title: 'Clinical Intelligence',
+    description: 'Labs, radiology, antenatal schedules, and audit trails in one place.',
+  },
+];
 
 export default function LandingPage() {
   const navigate = useNavigate();
 
-  const services = [
-    "SINGLE/FAMILY REGISTRATION",
-    "OUTPATIENT CONSULTATIONS (GENERAL & SPECIALIST)",
-    "INPATIENT CARE AND MANAGEMENT",
-    "ACCIDENT AND EMERGENCY",
-    "FULLY AUTOMATED LABORATORY",
-    "3D/4D ULTRASOUND SCANS",
-    "RADIOLOGICAL INVESTIGATIONS (XRAYS)",
-    "PHARMACY",
-    "DENTAL CLINIC",
-    "PAEDIATRIC CLINIC/IMMUNIZATIONS",
-    "ANTENATAL CARE & DELIVERIES",
-    "OBSTETRICS & GYNAECOLOGY",
-    "FAMILY PLANNING CLINICS",
-    "CERVICAL CANCER SCREENING, PAP SMEAR & HPV SCREENING",
-    "INFERTILITY TREATMENT",
-    "IUI, IVF, SURROGACY",
-    "CLINICAL HAEMATOLOGY & HAEMATO-ONCOLOGY",
-    "SICKLE CELL DISEASE & CANCER MANAGEMENT",
-    "ENT, UROLOGY, NEUROLOGY, ENDOCRINOLOGY",
-    "INTERNAL MEDICINE",
-    "ADOLESCENT HEALTH",
-    "COSMETIC SURGERY",
-    "MINIMAL ACCESS/GENERAL SURGERIES",
-    "FAMILY/INDIVIDUAL RETAINERSHIPS",
-    "COMPANY/CORPORATE RETAINERSHIPS",
-    "HEALTH INSURANCE",
-  ];
-
   return (
-    <div className={styles.landing}>
-      {/* Left Side - Content */}
-      <div className={styles.contentSide}>
-        <div className={styles.content}>
-          <Logo size="large" />
-          
-          <h2 className={styles.headline}>
-            Quality Healthcare, Compassionate Care
-          </h2>
-          
-          <p className={styles.subheadline}>
-            Lifeway Medical Centre Ltd's comprehensive Electronic Medical Record system.
-            Secure, efficient, and compliant with industry standards.
-          </p>
+    <div className={styles.page}>
+      <section className={styles.heroSplit} aria-label="Welcome">
+        <HeroGeometric
+          className={styles.heroGeometricFull}
+          color1="#0D47A1"
+          color2="#E8F4FC"
+          speed={0.75}
+        />
 
-          <div className={styles.features}>
-            <div className={styles.feature}>
-              <span className={styles.featureIcon}>🔒</span>
-              <div>
-                <h3>Secure & Compliant</h3>
-                <p>HIPAA-compliant with role-based access control</p>
-              </div>
-            </div>
-            <div className={styles.feature}>
-              <span className={styles.featureIcon}>⚡</span>
-              <div>
-                <h3>Fast & Efficient</h3>
-                <p>Streamlined workflows for all medical staff</p>
-              </div>
-            </div>
-            <div className={styles.feature}>
-              <span className={styles.featureIcon}>📊</span>
-              <div>
-                <h3>Comprehensive</h3>
-                <p>Complete patient records and audit trails</p>
-              </div>
-            </div>
-          </div>
-
-          <section className={styles.servicesSection}>
-            <h2 className={styles.servicesTitle}>OUR SERVICES</h2>
-            <ul className={styles.servicesGrid}>
-              {services.map((service) => (
-                <li key={service} className={styles.servicesItem}>
-                  {service}
-                </li>
+        <div className={styles.heroContentGrid}>
+          <div className={styles.capabilitiesPane}>
+            <section className={`${styles.capabilities} ${styles.reveal} ${styles.revealDelay1}`}>
+              {CAPABILITIES.map((item) => (
+                <article key={item.title} className={styles.capabilityCard}>
+                  <div className={styles.capabilityIcon}>
+                    {React.createElement(item.icon, { 'aria-hidden': true })}
+                  </div>
+                  <div>
+                    <h3>{item.title}</h3>
+                    <p>{item.description}</p>
+                  </div>
+                </article>
               ))}
-            </ul>
-          </section>
-
-          <div className={styles.ctaButtons}>
-            <button
-              className={styles.primaryButton}
-              onClick={() => navigate('/login')}
-            >
-              Sign In
-            </button>
-            <button
-              className={styles.secondaryButton}
-              onClick={() => navigate('/register')}
-            >
-              Create Account
-            </button>
+            </section>
           </div>
 
-          <div className={styles.footer}>
-            <p>© 2026 Lifeway Medical Centre Ltd. All rights reserved.</p>
+          <div className={styles.heroOverlayPane}>
+            <div className={styles.heroOverlay}>
+              <header className={styles.topBar}>
+                <div className={`${styles.reveal} ${styles.revealDelay1}`}>
+                  <Logo size="medium" className={styles.navLogo} />
+                </div>
+                <button
+                  type="button"
+                  className={`${styles.navSignIn} ${styles.reveal} ${styles.revealDelay2}`}
+                  onClick={() => navigate('/login')}
+                >
+                  Sign In
+                </button>
+              </header>
+
+              <main className={styles.heroMain}>
+                <div className={`${styles.eyebrow} ${styles.reveal} ${styles.revealDelay2}`}>
+                  <span className={styles.eyebrowDot} />
+                  Modern EMR for Lifeway Medical Centre
+                </div>
+
+                <h1 className={`${styles.heroTitle} ${styles.reveal} ${styles.revealDelay3}`}>
+                  <span className={styles.titleLine}>Care that moves</span>
+                  <span className={styles.titleAccent}>at the speed of life.</span>
+                </h1>
+
+                <p className={`${styles.heroSubtitle} ${styles.reveal} ${styles.revealDelay4}`}>
+                  A premium clinical platform — secure records, intelligent workflows,
+                  and NHIA-ready billing — designed for teams who refuse to compromise on care.
+                </p>
+
+                <div className={`${styles.heroActions} ${styles.reveal} ${styles.revealDelay5}`}>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={() => navigate('/login')}
+                  >
+                    Get Started
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={() => navigate('/register')}
+                  >
+                    Create Account
+                  </button>
+                </div>
+
+                <div className={`${styles.statsRow} ${styles.reveal} ${styles.revealDelay6}`}>
+                  <div className={styles.stat}>
+                    <strong>HIPAA</strong>
+                    <span>Compliant architecture</span>
+                  </div>
+                  <div className={styles.statDivider} />
+                  <div className={styles.stat}>
+                    <strong>24/7</strong>
+                    <span>Secure cloud access</span>
+                  </div>
+                  <div className={styles.statDivider} />
+                  <div className={styles.stat}>
+                    <strong>GH</strong>
+                    <span>NHIA &amp; local workflows</span>
+                  </div>
+                </div>
+              </main>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Right Side - Visual */}
-      <div className={styles.visualSide}>
-        <div className={styles.visualContent}>
-          <div className={styles.visualCard}>
-            <div className={styles.cardHeader}>
-              <div className={styles.cardDot}></div>
-              <div className={styles.cardDot}></div>
-              <div className={styles.cardDot}></div>
-            </div>
-            <div className={styles.cardBody}>
-              <div className={styles.cardIcon}>📋</div>
-              <h3>Patient Management</h3>
-              <p>Complete patient records at your fingertips</p>
-            </div>
-          </div>
-
-          <div className={styles.visualCard}>
-            <div className={styles.cardHeader}>
-              <div className={styles.cardDot}></div>
-              <div className={styles.cardDot}></div>
-              <div className={styles.cardDot}></div>
-            </div>
-            <div className={styles.cardBody}>
-              <div className={styles.cardIcon}>💊</div>
-              <h3>Clinical Workflow</h3>
-              <p>Seamless consultation to prescription flow</p>
-            </div>
-          </div>
-
-          <div className={styles.visualCard}>
-            <div className={styles.cardHeader}>
-              <div className={styles.cardDot}></div>
-              <div className={styles.cardDot}></div>
-              <div className={styles.cardDot}></div>
-            </div>
-            <div className={styles.cardBody}>
-              <div className={styles.cardIcon}>🔍</div>
-              <h3>Lab & Radiology</h3>
-              <p>Integrated test ordering and results</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <footer className={styles.footer}>
+        <p>© 2026 Lifeway Medical Centre Ltd. All rights reserved.</p>
+      </footer>
     </div>
   );
 }

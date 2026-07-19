@@ -4,38 +4,19 @@
  * Provides authentication state and methods throughout the app.
  */
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { User, AuthTokens, UserRole } from '../types/auth';
-import {
-  loginUser,
-  logoutUser,
-  refreshAccessToken as refreshTokenAPI,
-  getCurrentUser,
-  isAccessTokenExpired,
-  assumeRole as assumeRoleAPI,
-  clearAssumedRole as clearAssumedRoleAPI,
-} from '../api/auth';
-import { isViewingAsRole as checkViewingAsRole, isAdminUser } from '../utils/roleContext';
-
-function normalizeAuthUser(raw: User): User {
-  return {
-    ...raw,
-    actual_role: raw.actual_role ?? raw.role,
-    viewing_as_role: raw.viewing_as_role ?? false,
-  };
-}
+import { User, AuthTokens } from '../types/auth';
+import { loginUser, logoutUser, refreshAccessToken as refreshTokenAPI, getCurrentUser, isAccessTokenExpired } from '../api/auth';
+import { setOrganizationId, getOrganizationId } from '../utils/apiClient';
+import { ensureOrganizationContext } from '../utils/organizationContext';
 
 interface AuthContextType {
   user: User | null;
   tokens: AuthTokens | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  isAdmin: boolean;
-  isViewingAsRole: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshAccessToken: () => Promise<void>;
-  assumeRole: (role: UserRole) => Promise<void>;
-  clearAssumedRole: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -54,8 +35,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (storedTokens && storedUser) {
         try {
           const parsedTokens = JSON.parse(storedTokens);
-          const parsedUser = normalizeAuthUser(JSON.parse(storedUser));
-
+          const parsedUser = JSON.parse(storedUser);
+          
           setTokens(parsedTokens);
           setUser(parsedUser);
 
@@ -66,24 +47,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             localStorage.removeItem('auth_tokens');
             localStorage.removeItem('auth_user');
             localStorage.removeItem('auth_token');
+            setOrganizationId(null);
           } else {
             try {
-              const currentUser = normalizeAuthUser(await getCurrentUser());
+              await ensureOrganizationContext(access);
+              const currentUser = await getCurrentUser();
               setUser(currentUser);
-              localStorage.setItem('auth_user', JSON.stringify(currentUser));
             } catch {
               setTokens(null);
               setUser(null);
               localStorage.removeItem('auth_tokens');
               localStorage.removeItem('auth_user');
               localStorage.removeItem('auth_token');
+              setOrganizationId(null);
             }
           }
         } catch (error) {
           // Invalid stored data, clear it
           localStorage.removeItem('auth_tokens');
           localStorage.removeItem('auth_user');
-          localStorage.removeItem('auth_token'); // Legacy
+          localStorage.removeItem('auth_token');
+          setOrganizationId(null);
         }
       }
       
@@ -114,19 +98,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await loginUser(username, password);
       
-      const nextUser = normalizeAuthUser(response.user);
-      setUser(nextUser);
+      setUser(response.user);
       setTokens({
         access: response.access,
         refresh: response.refresh,
       });
-
+      
+      // Store in localStorage
       localStorage.setItem('auth_tokens', JSON.stringify({
         access: response.access,
         refresh: response.refresh,
       }));
-      localStorage.setItem('auth_user', JSON.stringify(nextUser));
+      localStorage.setItem('auth_user', JSON.stringify(response.user));
       localStorage.setItem('auth_token', response.access); // Legacy support
+      
+      await ensureOrganizationContext(response.access);
+      // Also honor login payload memberships when JWT has no org claim
+      const orgs = response.organizations || [];
+      if (!getOrganizationId() && orgs.length > 0) {
+        const defaultOrg = orgs.find((m: { is_default: boolean }) => m.is_default);
+        const membership = defaultOrg || orgs[0];
+        if (membership?.organization?.id) {
+          setOrganizationId(membership.organization.id);
+        }
+      }
     } catch (error) {
       throw error;
     }
@@ -146,18 +141,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('auth_tokens');
       localStorage.removeItem('auth_user');
       localStorage.removeItem('auth_token');
+      setOrganizationId(null);
     }
   }, [tokens]);
-
-  const persistAuth = useCallback((nextUser: User, access: string, refresh: string) => {
-    const normalized = normalizeAuthUser(nextUser);
-    const nextTokens = { access, refresh };
-    setUser(normalized);
-    setTokens(nextTokens);
-    localStorage.setItem('auth_tokens', JSON.stringify(nextTokens));
-    localStorage.setItem('auth_user', JSON.stringify(normalized));
-    localStorage.setItem('auth_token', access);
-  }, []);
 
   const refreshAccessToken = useCallback(async () => {
     if (!tokens?.refresh) {
@@ -166,55 +152,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const response = await refreshTokenAPI(tokens.refresh);
-
+      
       const newTokens = {
         access: response.access,
         refresh: response.refresh,
       };
-
+      
       setTokens(newTokens);
       localStorage.setItem('auth_tokens', JSON.stringify(newTokens));
-      localStorage.setItem('auth_token', response.access);
-
-      try {
-        const currentUser = normalizeAuthUser(await getCurrentUser());
-        setUser(currentUser);
-        localStorage.setItem('auth_user', JSON.stringify(currentUser));
-      } catch {
-        // Keep existing user if /me fails after refresh
-      }
+      localStorage.setItem('auth_token', response.access); // Legacy support
     } catch (error) {
+      // Refresh failed, clear auth state
       setUser(null);
       setTokens(null);
       localStorage.removeItem('auth_tokens');
       localStorage.removeItem('auth_user');
       localStorage.removeItem('auth_token');
+      setOrganizationId(null);
       throw error;
     }
   }, [tokens]);
-
-  const assumeRole = useCallback(async (role: UserRole) => {
-    const response = await assumeRoleAPI(role);
-    persistAuth(response.user, response.access, response.refresh);
-  }, [persistAuth]);
-
-  const clearAssumedRole = useCallback(async () => {
-    const response = await clearAssumedRoleAPI();
-    persistAuth(response.user, response.access, response.refresh);
-  }, [persistAuth]);
 
   const value: AuthContextType = {
     user,
     tokens,
     isAuthenticated: !!user && !!tokens,
     isLoading,
-    isAdmin: isAdminUser(user),
-    isViewingAsRole: checkViewingAsRole(user),
     login,
     logout,
     refreshAccessToken,
-    assumeRole,
-    clearAssumedRole,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

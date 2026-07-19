@@ -12,6 +12,9 @@ import { LabOrder } from '../types/lab';
 import { useToast } from '../hooks/useToast';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import BackToDashboard from '../components/common/BackToDashboard';
+import WorkflowRail from '../components/guide/WorkflowRail';
+import ClinicalAlertsInline from '../components/clinical/ClinicalAlertsInline';
+import { PatientAllergyBannerForPatient } from '../components/clinical/PatientAllergyBanner';
 import LockIndicator from '../components/locks/LockIndicator';
 import { useActionLock } from '../hooks/useActionLock';
 import styles from '../styles/LabOrders.module.css';
@@ -147,6 +150,7 @@ export default function LabOrdersPage() {
         abnormal_flag: resultFlag[orderId] || 'NORMAL'
       });
       showSuccess('Lab result recorded successfully');
+      window.dispatchEvent(new CustomEvent('clinical-alerts-changed'));
       setCreatingResult(null);
       setResultData(prev => {
         const next = { ...prev };
@@ -182,9 +186,17 @@ export default function LabOrdersPage() {
       <header className={styles.header}>
         <h1>Lab Orders</h1>
         <p>Select a visit to view migrated and current lab orders</p>
+        {selectedVisit && <WorkflowRail visitId={selectedVisit} />}
+        {(() => {
+          const visitRow = visits.find((v) => v.id === selectedVisit);
+          return visitRow?.patient ? (
+            <PatientAllergyBannerForPatient patientId={visitRow.patient} />
+          ) : null;
+        })()}
+        {selectedVisit && <ClinicalAlertsInline visitId={selectedVisit.toString()} />}
       </header>
 
-      <div className={styles.content}>
+      <div className={styles.content} data-guide-id="lab-worklist">
         <div className={styles.visitsPanel}>
           <h2>Visits with Lab Orders</h2>
           {loading ? (
@@ -267,7 +279,7 @@ export default function LabOrdersPage() {
                       
                       {/* Create result form */}
                       {creatingResult === order.id && (
-                        <div className={styles.resultForm}>
+                        <div className={styles.resultForm} data-guide-id="lab-result-form">
                           <h4>Record Lab Result</h4>
                           <div className={styles.formGroup}>
                             <label>Result Data *</label>

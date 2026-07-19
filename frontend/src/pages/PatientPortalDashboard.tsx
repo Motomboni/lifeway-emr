@@ -14,6 +14,9 @@ import {
   getPatientLabResults,
   getPatientRadiologyResults,
   getPatientPrescriptions,
+  getOutstandingBills,
+  payOutstandingBill,
+  OutstandingBill,
 } from '../api/patientPortal';
 import { Patient } from '../types/patient';
 import { Visit } from '../types/visit';
@@ -24,13 +27,14 @@ import { RadiologyResult } from '../types/patientPortal';
 import { useToast } from '../hooks/useToast';
 import { logger } from '../utils/logger';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
+import PatientAllergiesReadOnly from '../components/patients/PatientAllergiesReadOnly';
 import styles from '../styles/PatientPortal.module.css';
 
 export default function PatientPortalDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { showError } = useToast();
+  const { showError, showSuccess } = useToast();
 
   const [patient, setPatient] = useState<Patient | null>(null);
   const [visits, setVisits] = useState<Visit[]>([]);
@@ -38,6 +42,8 @@ export default function PatientPortalDashboard() {
   const [labResults, setLabResults] = useState<LabResult[]>([]);
   const [radiologyResults, setRadiologyResults] = useState<RadiologyResult[]>([]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [outstandingBills, setOutstandingBills] = useState<OutstandingBill[]>([]);
+  const [payingVisitId, setPayingVisitId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const lastLoadTimeRef = React.useRef<number>(0);
 
@@ -60,6 +66,12 @@ export default function PatientPortalDashboard() {
     }
   }, [user, navigate, location.pathname]);
 
+  useEffect(() => {
+    if (location.search.includes('payment=success')) {
+      showSuccess('Payment submitted. Balance updates once Paystack confirms.');
+    }
+  }, [location.search, showSuccess]);
+
   const loadDashboardData = async () => {
     try {
       logger.debug('Patient Portal Dashboard: Starting data load...');
@@ -72,6 +84,7 @@ export default function PatientPortalDashboard() {
         getPatientLabResults(),
         getPatientRadiologyResults(),
         getPatientPrescriptions(),
+        getOutstandingBills(),
       ]);
       logger.debug('Patient Portal Dashboard: Data load complete');
 
@@ -113,13 +126,35 @@ export default function PatientPortalDashboard() {
         setPrescriptions(results[5].value);
       } else {
         console.warn('Failed to load prescriptions:', results[5].reason);
-        setPrescriptions([]); // Set empty array on error
+        setPrescriptions([]);
+      }
+
+      if (results[6]?.status === 'fulfilled') {
+        setOutstandingBills(results[6].value);
+      } else {
+        setOutstandingBills([]);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load dashboard data';
       showError(errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePayBill = async (visitId: number) => {
+    setPayingVisitId(visitId);
+    try {
+      const res = await payOutstandingBill(visitId);
+      if (res.authorization_url) {
+        window.location.href = res.authorization_url;
+      } else {
+        showError('Could not start payment. Try again or pay at the clinic.');
+      }
+    } catch (e: unknown) {
+      showError(e instanceof Error ? e.message : 'Payment failed');
+    } finally {
+      setPayingVisitId(null);
     }
   };
 
@@ -196,13 +231,48 @@ export default function PatientPortalDashboard() {
                 <strong>Blood Group:</strong> {patient.blood_group}
               </div>
             )}
-            {patient?.allergies && (
+            {(patient?.structured_allergies?.length || patient?.allergies) && (
               <div className={styles.infoRow}>
-                <strong>Allergies:</strong> {patient.allergies}
+                <strong>Allergies</strong>
+                <PatientAllergiesReadOnly
+                  structuredAllergies={patient.structured_allergies}
+                  allergiesSummary={patient.allergies}
+                />
               </div>
             )}
           </div>
         </section>
+
+        {outstandingBills.length > 0 && (
+          <section className={styles.section}>
+            <h2>Pay outstanding bills</h2>
+            <p className={styles.hintText}>Pay securely with Paystack — card, bank transfer, or USSD.</p>
+            <div className={styles.billsList}>
+              {outstandingBills.map((bill) => (
+                <div key={bill.visit_id} className={styles.billCard}>
+                  <div>
+                    <strong>Visit #{bill.visit_id}</strong>
+                    <p>{formatDate(bill.created_at)}</p>
+                    {bill.chief_complaint && <p>{bill.chief_complaint}</p>}
+                  </div>
+                  <div className={styles.billActions}>
+                    <span className={styles.billAmount}>
+                      ₦{parseFloat(bill.outstanding_balance).toLocaleString()}
+                    </span>
+                    <button
+                      type="button"
+                      className={styles.payBtn}
+                      disabled={payingVisitId === bill.visit_id}
+                      onClick={() => handlePayBill(bill.visit_id)}
+                    >
+                      {payingVisitId === bill.visit_id ? 'Redirecting…' : 'Pay now'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Quick Stats */}
         <div className={styles.statsGrid}>
@@ -395,6 +465,12 @@ export default function PatientPortalDashboard() {
               onClick={() => navigate('/patient-portal/prescriptions')}
             >
               💊 Prescriptions
+            </button>
+            <button
+              className={styles.quickLinkButton}
+              onClick={() => navigate('/patient-portal/immunizations')}
+            >
+              💉 Immunizations
             </button>
             <button
               className={styles.quickLinkButton}

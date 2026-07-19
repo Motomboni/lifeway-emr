@@ -24,7 +24,12 @@ export default function ClinicalAlertsInline({ visitId }: ClinicalAlertsInlinePr
     if (!user) return;
     loadAlerts();
     const interval = setInterval(loadAlerts, 30000);
-    return () => clearInterval(interval);
+    const onAlertsChanged = () => loadAlerts();
+    window.addEventListener('clinical-alerts-changed', onAlertsChanged);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('clinical-alerts-changed', onAlertsChanged);
+    };
   }, [visitId, user]);
 
   const loadAlerts = async () => {

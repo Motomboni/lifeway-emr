@@ -1,0 +1,27 @@
+/**
+ * Page chrome subtitles — readable on the app gradient canvas (not card interiors).
+ * Dark theme keeps a pale header gradient; use shadowed light text like page titles.
+ */
+
+.emr-page-desc {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  font-weight: 600 !important;
+  line-height: 1.55 !important;
+  max-width: 42rem;
+}
+
+html:not([data-theme='dark']) [data-page-chrome] .emr-page-desc,
+html:not([data-theme='dark']) [data-page-chrome] [data-page-subtitle] {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.95), 0 0 20px rgba(255, 255, 255, 0.65) !important;
+}
+
+html[data-theme='dark'] [data-page-chrome] .emr-page-desc,
+html[data-theme='dark'] [data-page-chrome] [data-page-subtitle] {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 1px rgba(0, 0, 0, 0.9) !important;
+}

@@ -14,7 +14,7 @@ import { getVisit } from '../api/visits';
 import { getPatient } from '../api/patient';
 import { fetchConsultation } from '../api/consultation';
 import { fetchPayments } from '../api/payment';
-import { getBillingSummary, getHMOProviders, getVisitCharges, BillingSummary, VisitCharge } from '../api/billing';
+import { getBillingSummary, getHMOProviders, getVisitCharges, downloadVisitClaimPackCsv, BillingSummary, VisitCharge } from '../api/billing';
 import { Visit } from '../types/visit';
 import { Patient } from '../types/patient';
 import { Consultation } from '../types/consultation';
@@ -32,11 +32,15 @@ import { useActionLock } from '../hooks/useActionLock';
 import WalletPaymentButton from '../components/wallet/WalletPaymentButton';
 import WalletTopUpButton from '../components/wallet/WalletTopUpButton';
 import BillingSection from '../components/billing/BillingSection';
+import WorkflowRail from '../components/guide/WorkflowRail';
 import VisitChargesReadOnly from '../components/billing/VisitChargesReadOnly';
 import InvoiceReceiptPanel from '../components/billing/InvoiceReceiptPanel';
 import { PaystackReturnHandler } from '../components/billing/PaystackCheckout';
 import AINotesPanel from '../components/ai/AINotesPanel';
+import { canViewConsultationAndAdmissionRecords } from '../utils/roleUtils';
 import PrescriptionModule from '../components/pharmacy/PrescriptionModule';
+import NHIAVisitClaimPanel from '../components/billing/NHIAVisitClaimPanel';
+import { PatientAllergyBannerForPatient } from '../components/clinical/PatientAllergyBanner';
 import styles from '../styles/VisitDetails.module.css';
 
 export default function VisitDetailsPage() {
@@ -44,7 +48,7 @@ export default function VisitDetailsPage() {
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { showError } = useToast();
+  const { showError, showSuccess } = useToast();
 
   const [visit, setVisit] = useState<Visit | null>(null);
   const [patient, setPatient] = useState<Patient | null>(null);
@@ -56,13 +60,16 @@ export default function VisitDetailsPage() {
   // Billing state (Receptionist only) - passed to BillingSection component
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
   const [hmoProviders, setHmoProviders] = useState<any[]>([]);
+  const [exportingClaimPack, setExportingClaimPack] = useState(false);
   
   // Lock checks for explainable locks
   const consultationLock = useActionLock({
     actionType: 'consultation',
     params: { visit_id: visitId ? parseInt(visitId) : 0 },
-    enabled: !!visitId && !!visit,
+    enabled: !!visitId && !!visit && canViewConsultationAndAdmissionRecords(user),
   });
+
+  const showClinicalRecords = canViewConsultationAndAdmissionRecords(user);
 
   const loadVisitDetails = useCallback(async (retryCount = 0): Promise<void> => {
     if (!visitId) return;
@@ -121,21 +128,28 @@ export default function VisitDetailsPage() {
           setPayments(paymentsData.value as Payment[]);
         }
 
-        try {
-          const data = await fetchConsultation(visitId);
-          if (Array.isArray(data)) {
-            setConsultation(data.length > 0 ? data[0] : null);
-          } else {
-            setConsultation(data);
+        if (canViewConsultationAndAdmissionRecords(user) && billingSummaryValue?.payment_gates?.registration_paid) {
+          try {
+            const data = await fetchConsultation(visitId);
+            if (Array.isArray(data)) {
+              setConsultation(data.length > 0 ? data[0] : null);
+            } else {
+              setConsultation(data);
+            }
+          } catch (err) {
+            const status = (err as { status?: number }).status;
+            const message = err instanceof Error ? err.message : '';
+            const isExpected =
+              status === 403 ||
+              status === 404 ||
+              message.includes('404') ||
+              message.includes('403');
+            if (!isExpected) {
+              console.warn('Failed to load consultation:', err);
+            }
           }
-        } catch (err) {
-          // 404 = no consultation yet
-          if (
-            err instanceof Error &&
-            !err.message.includes('404')
-          ) {
-            console.warn('Failed to load consultation:', err);
-          }
+        } else {
+          setConsultation(null);
         }
         
         // Load charges for displaying costs with services
@@ -245,7 +259,7 @@ export default function VisitDetailsPage() {
 
   if (authLoading || (loading && !visit)) {
     return (
-      <div className={styles.visitDetailsPage}>
+      <div className={styles.visitDetailsPage} data-content-surface="visit">
         <LoadingSkeleton count={10} />
       </div>
     );
@@ -253,7 +267,7 @@ export default function VisitDetailsPage() {
 
   if (!visit) {
     return (
-      <div className={styles.visitDetailsPage}>
+      <div className={styles.visitDetailsPage} data-content-surface="visit">
         <BackToDashboard />
         <div className={styles.errorContainer}>
           <h2>Visit Not Found</h2>
@@ -287,8 +301,14 @@ export default function VisitDetailsPage() {
   };
 
   return (
-    <div className={styles.visitDetailsPage}>
+    <div className={styles.visitDetailsPage} data-content-surface="visit">
       <BackToDashboard />
+      {patient && (
+        <PatientAllergyBannerForPatient
+          patientId={patient.id}
+          allergiesText={patient.allergies}
+        />
+      )}
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <div>
@@ -311,7 +331,7 @@ export default function VisitDetailsPage() {
                 onClick={() => printVisitSummary({
                   visit,
                   patient,
-                  consultation,
+                  consultation: showClinicalRecords ? consultation : null,
                   payments
                 })}
                 title="Print visit summary"
@@ -323,7 +343,7 @@ export default function VisitDetailsPage() {
                 onClick={() => downloadVisitSummaryAsText({
                   visit,
                   patient,
-                  consultation,
+                  consultation: showClinicalRecords ? consultation : null,
                   payments
                 })}
                 title="Download as text file"
@@ -335,7 +355,7 @@ export default function VisitDetailsPage() {
                 onClick={() => downloadVisitSummaryAsHTML({
                   visit,
                   patient,
-                  consultation,
+                  consultation: showClinicalRecords ? consultation : null,
                   payments
                 })}
                 title="Download as HTML file"
@@ -373,21 +393,35 @@ export default function VisitDetailsPage() {
                     </>
                   );
                 })()}
-                <button
-                  className={styles.telemedicineButton}
-                  onClick={() => navigate(`/visits/${visitId}/telemedicine`)}
-                  title="Start or join telemedicine video call"
-                >
-                  📹 Telemedicine
-                </button>
+                {billingSummary?.payment_gates?.registration_paid ? (
+                  <button
+                    className={styles.telemedicineButton}
+                    onClick={() => navigate(`/visits/${visitId}/telemedicine`)}
+                    title="Start or join telemedicine video call"
+                  >
+                    📹 Telemedicine
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.telemedicineButton}
+                    disabled
+                    title="Registration payment is required before telemedicine"
+                  >
+                    📹 Telemedicine (registration unpaid)
+                  </button>
+                )}
               </>
             )}
           </div>
         </div>
       </header>
 
+      {visitId && <WorkflowRail visitId={visitId} />}
+
       <div className={styles.content}>
-        {/* Consultation Section */}
+        {/* Consultation Section — hidden from receptionists */}
+        {showClinicalRecords && (
         <section className={styles.section}>
           <h2>Consultation</h2>
           {consultationLock.isLocked && consultationLock.lockResult && (
@@ -440,9 +474,10 @@ export default function VisitDetailsPage() {
             </div>
           )}
         </section>
+        )}
 
         {/* Admission Section - doctors & administrators */}
-        {visit && (
+        {showClinicalRecords && visit && (
           <AdmissionSection
             visitId={visit.id}
             visitStatus={visit.status}
@@ -519,7 +554,12 @@ export default function VisitDetailsPage() {
         {/* Billing Section - Receptionist only */}
         {/* Per billing_context.md: Billing is VISIT-SCOPED and Receptionist-only */}
         {user?.role === 'RECEPTIONIST' && visit && (
-          <div id="billing-section" data-testid="billing-section-wrapper">
+          <div
+            id="billing-section"
+            data-content-surface="billing"
+            data-testid="billing-section-wrapper"
+            data-guide-id="billing-dashboard"
+          >
             <BillingSection
               visitId={visit.id}
               visit={visit}
@@ -538,7 +578,31 @@ export default function VisitDetailsPage() {
                 visit={visit}
               />
             </div>
+
+            <div style={{ marginTop: '16px' }}>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    setExportingClaimPack(true);
+                    await downloadVisitClaimPackCsv(visit.id);
+                    showSuccess('NHIA claim pack CSV downloaded');
+                  } catch (e: unknown) {
+                    showError(e instanceof Error ? e.message : 'Claim pack export failed');
+                  } finally {
+                    setExportingClaimPack(false);
+                  }
+                }}
+                disabled={exportingClaimPack}
+              >
+                {exportingClaimPack ? 'Exporting…' : 'Export NHIA claim pack (CSV)'}
+              </button>
+            </div>
           </div>
+        )}
+
+        {(user?.role === 'RECEPTIONIST' || user?.role === 'ADMIN') && visit && (
+          <NHIAVisitClaimPanel visitId={visit.id} />
         )}
 
         {/* Payments Section */}

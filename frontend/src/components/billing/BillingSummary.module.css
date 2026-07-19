@@ -24,37 +24,46 @@
 }
 
 .metricCard {
-  border-radius: 8px;
-  padding: 1rem;
-  border: 1px solid;
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.metricCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
 }
 
 .metricCardBlue {
-  background: #eff6ff;
-  border-color: #dbeafe;
+  background: color-mix(in srgb, #2563eb 14%, var(--bg-secondary-solid));
+  border-color: color-mix(in srgb, #2563eb 38%, var(--border-color));
 }
 
 .metricCardGreen {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
+  background: color-mix(in srgb, #16a34a 14%, var(--bg-secondary-solid));
+  border-color: color-mix(in srgb, #16a34a 38%, var(--border-color));
 }
 
 .metricCardPurple {
-  background: #faf5ff;
-  border-color: #e9d5ff;
+  background: color-mix(in srgb, #9333ea 14%, var(--bg-secondary-solid));
+  border-color: color-mix(in srgb, #9333ea 38%, var(--border-color));
 }
 
 .metricCardEmerald {
-  background: #ecfdf5;
-  border-color: #a7f3d0;
+  background: color-mix(in srgb, #10b981 14%, var(--bg-secondary-solid));
+  border-color: color-mix(in srgb, #10b981 38%, var(--border-color));
 }
 
 .metricCardOrange {
-  background: #fff7ed;
-  border-color: #fed7aa;
+  background: color-mix(in srgb, #ea580c 14%, var(--bg-secondary-solid));
+  border-color: color-mix(in srgb, #ea580c 38%, var(--border-color));
 }
 
 .metricContent {
@@ -131,24 +140,31 @@
 }
 
 .outstandingCard {
-  border-radius: 8px;
-  padding: 1.5rem;
-  border: 2px solid;
+  border-radius: var(--radius-md);
+  padding: 2rem;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.outstandingCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
 }
 
 .outstandingCardCleared {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
+  background: linear-gradient(135deg, #f0fdf4 0%, #bbf7d0 100%);
+  border-color: #86efac;
 }
 
 .outstandingCardPending {
-  background: #fef2f2;
-  border-color: #fecaca;
+  background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+  border-color: #fca5a5;
 }
 
 .outstandingCardInsurance {
-  background: #eff6ff;
-  border-color: #bfdbfe;
+  background: linear-gradient(135deg, #eff6ff 0%, #bfdbfe 100%);
+  border-color: #93c5fd;
 }
 
 .outstandingHeader {
@@ -273,21 +289,226 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem;
-  background: #f9fafb;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  padding: 1rem 1.25rem;
+  background: var(--bg-primary-solid);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.paymentStatusItem:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .paymentStatusLabel {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--text-on-glass-secondary);
   font-weight: 500;
 }
 
 .paymentStatusValue {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-on-glass);
 }
 
+.breakdownPanel {
+  background: var(--bg-secondary-solid);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+}
+
+.breakdownTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--page-title-color);
+  margin: 0 0 1rem 0;
+}
+
+.breakdownPanel .paymentStatusGrid {
+  margin-top: 0;
+}
+
+.breakdownTotalRow {
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.breakdownTotalLabel {
+  font-weight: 600;
+  color: var(--page-title-color);
+}
+
+.breakdownTotalValue {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--page-title-color);
+}
+
+.insurancePanel {
+  background: color-mix(in srgb, var(--primary) 10%, var(--bg-secondary-solid));
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border-color));
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+}
+
+.insurancePanelTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--page-title-color);
+  margin: 0 0 1rem 0;
+}
+
+.insurancePanelLabel {
+  color: var(--text-on-glass-secondary);
+}
+
+.insurancePanelValue {
+  font-weight: 500;
+  color: var(--page-title-color);
+}
+
+.visitInfoPanel {
+  background: var(--bg-secondary-solid);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+
+.visitInfoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.visitInfoLabel {
+  color: var(--text-on-glass-secondary);
+}
+
+.visitInfoValue {
+  margin-left: 0.5rem;
+  font-weight: 500;
+  color: var(--page-title-color);
+}
+
+.paymentGates {
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.gateBadge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.gateBadgePaid {
+  background: var(--badge-open-bg);
+  color: var(--badge-open-text);
+}
+
+.gateBadgeUnpaid {
+  background: var(--badge-pending-bg);
+  color: var(--badge-pending-text);
+}
+
+.statusInfoValue {
+  font-weight: 500;
+}
+
+[data-theme="dark"] .breakdownTitle,
+[data-theme="dark"] .breakdownTotalLabel,
+[data-theme="dark"] .breakdownTotalValue,
+[data-theme="dark"] .insurancePanelTitle,
+[data-theme="dark"] .insurancePanelValue,
+[data-theme="dark"] .visitInfoValue {
+  color: var(--text-on-glass);
+  text-shadow: var(--glass-text-shadow);
+}
+
+/* Metric summary cards — readable on dark dashboard */
+[data-theme="dark"] .metricCardBlue {
+  background: color-mix(in srgb, #60a5fa 18%, var(--bg-secondary-solid));
+  border-color: color-mix(in srgb, #60a5fa 42%, var(--border-color));
+}
+
+[data-theme="dark"] .metricCardPurple {
+  background: color-mix(in srgb, #a78bfa 18%, var(--bg-secondary-solid));
+  border-color: color-mix(in srgb, #a78bfa 42%, var(--border-color));
+}
+
+[data-theme="dark"] .metricCardEmerald {
+  background: color-mix(in srgb, #34d399 18%, var(--bg-secondary-solid));
+  border-color: color-mix(in srgb, #34d399 42%, var(--border-color));
+}
+
+[data-theme="dark"] .metricCardGreen {
+  background: color-mix(in srgb, #4ade80 18%, var(--bg-secondary-solid));
+  border-color: color-mix(in srgb, #4ade80 42%, var(--border-color));
+}
+
+[data-theme="dark"] .metricCardOrange {
+  background: color-mix(in srgb, #fb923c 18%, var(--bg-secondary-solid));
+  border-color: color-mix(in srgb, #fb923c 42%, var(--border-color));
+}
+
+[data-theme="dark"] .metricLabelBlue {
+  color: #dbeafe;
+}
+
+[data-theme="dark"] .metricLabelPurple {
+  color: #e9d5ff;
+}
+
+[data-theme="dark"] .metricLabelEmerald {
+  color: #a7f3d0;
+}
+
+[data-theme="dark"] .metricLabelGreen {
+  color: #bbf7d0;
+}
+
+[data-theme="dark"] .metricLabelOrange {
+  color: #fed7aa;
+}
+
+[data-theme="dark"] .metricValueBlue {
+  color: #93c5fd;
+  text-shadow: var(--glass-text-shadow);
+}
+
+[data-theme="dark"] .metricValuePurple {
+  color: #c4b5fd;
+  text-shadow: var(--glass-text-shadow);
+}
+
+[data-theme="dark"] .metricValueEmerald {
+  color: #6ee7b7;
+  text-shadow: var(--glass-text-shadow);
+}
+
+[data-theme="dark"] .metricValueGreen {
+  color: #86efac;
+  text-shadow: var(--glass-text-shadow);
+}
+
+[data-theme="dark"] .metricValueOrange {
+  color: #fdba74;
+  text-shadow: var(--glass-text-shadow);
+}
+
+[data-theme="dark"] .metricSubtextGreen {
+  color: #86efac;
+}
+
+[data-theme="dark"] .metricSubtextOrange {
+  color: #fdba74;
+}

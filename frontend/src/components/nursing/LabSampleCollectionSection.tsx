@@ -10,6 +10,7 @@ import { fetchLabSampleCollections, createLabSampleCollection, updateLabSampleCo
 import { fetchLabOrders } from '../../api/lab';
 import { LabSampleCollection, LabSampleCollectionCreate } from '../../types/nursing';
 import { LabOrder } from '../../types/lab';
+import VoiceTextareaField from '../common/VoiceTextareaField';
 import styles from '../../styles/NurseVisit.module.css';
 
 interface LabSampleCollectionSectionProps {
@@ -270,9 +271,9 @@ export default function LabSampleCollectionSection({ visitId, canCreate }: LabSa
           {formData.status === 'FAILED' && (
             <div className={styles.formField}>
               <label>Reason if Failed *</label>
-              <textarea
-                value={formData.reason_if_failed}
-                onChange={(e) => setFormData({ ...formData, reason_if_failed: e.target.value })}
+              <VoiceTextareaField
+                value={formData.reason_if_failed || ''}
+                onValueChange={(text) => setFormData({ ...formData, reason_if_failed: text })}
                 rows={3}
                 required
                 placeholder="Explain why collection failed..."
@@ -281,9 +282,9 @@ export default function LabSampleCollectionSection({ visitId, canCreate }: LabSa
           )}
           <div className={styles.formField}>
             <label>Collection Notes</label>
-            <textarea
-              value={formData.collection_notes}
-              onChange={(e) => setFormData({ ...formData, collection_notes: e.target.value })}
+            <VoiceTextareaField
+              value={formData.collection_notes || ''}
+              onValueChange={(text) => setFormData({ ...formData, collection_notes: text })}
               rows={3}
               placeholder="Additional notes about collection..."
             />

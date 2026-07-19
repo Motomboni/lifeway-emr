@@ -1,5 +1,5 @@
 """
 Visits app.
 """
-default_app_config = 'apps.visits.apps.VisitsConfig'
 
+default_app_config = "apps.visits.apps.VisitsConfig"

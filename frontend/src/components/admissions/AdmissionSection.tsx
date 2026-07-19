@@ -53,6 +53,7 @@ export default function AdmissionSection({
 }: AdmissionSectionProps) {
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
+
   const [admission, setAdmission] = useState<Admission | null>(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -98,9 +99,12 @@ export default function AdmissionSection({
   const canTransfer = canManageAdmission && admission && admission.admission_status === 'ADMITTED';
 
   useEffect(() => {
+    if (user?.role === 'RECEPTIONIST') {
+      return;
+    }
     loadAdmission();
     loadWards();
-  }, [visitId]);
+  }, [visitId, user?.role]);
 
   useEffect(() => {
     if (selectedWardId) {
@@ -370,6 +374,10 @@ export default function AdmissionSection({
       setSaving(false);
     }
   };
+
+  if (user?.role === 'RECEPTIONIST') {
+    return null;
+  }
 
   if (loading) {
     return (

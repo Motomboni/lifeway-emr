@@ -3,7 +3,13 @@
  * 
  * Tests for error handling and validation utilities.
  */
-import { parseApiError, isNetworkError, isTimeoutError, formatError } from '../utils/errorHandler';
+import {
+  parseApiError,
+  extractApiFieldErrors,
+  isNetworkError,
+  isTimeoutError,
+  formatError,
+} from '../utils/errorHandler';
 import {
   validateRequired,
   validateEmail,
@@ -34,6 +40,31 @@ describe('Error Handler', () => {
         }
       };
       expect(parseApiError(error)).toBe('Bad request');
+    });
+
+    it('should extract field errors from DRF payload', () => {
+      expect(
+        extractApiFieldErrors({
+          success: false,
+          error: 'Validation failed',
+          national_id: ['Patient with this national id already exists.'],
+        })
+      ).toEqual({
+        national_id: 'Patient with this national id already exists.',
+      });
+    });
+
+    it('should extract field errors from stringified detail', () => {
+      expect(
+        extractApiFieldErrors({
+          success: false,
+          error: 'Validation failed',
+          detail:
+            "{'national_id': [ErrorDetail(string='Patient with this national id already exists.', code='unique')]}",
+        })
+      ).toEqual({
+        national_id: 'Patient with this national id already exists.',
+      });
     });
 
     it('should handle 401 errors', () => {

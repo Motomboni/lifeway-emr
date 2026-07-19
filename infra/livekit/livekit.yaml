@@ -1,0 +1,28 @@
+# Self-hosted LiveKit — production template (single clinic)
+# 1. Generate keys: docker run --rm livekit/livekit-server:latest generate-keys
+# 2. Replace LIVEKIT_API_KEY / LIVEKIT_API_SECRET below and in .env
+# 3. Set rtc.use_external_ip: true when clients reach the server over the public internet
+
+port: 7880
+bind_addresses:
+  - ""
+
+log_level: info
+
+redis:
+  address: redis:6379
+
+rtc:
+  tcp_port: 7881
+  port_range_start: 50100
+  port_range_end: 50200
+  use_external_ip: true
+
+room:
+  empty_timeout: 600
+  max_participants: 10
+
+keys:
+  # key: secret (must match LIVEKIT_API_KEY / LIVEKIT_API_SECRET in .env)
+  # REPLACE_ME_KEY: REPLACE_ME_SECRET
+

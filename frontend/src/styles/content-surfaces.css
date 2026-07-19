@@ -1,0 +1,441 @@
+/**
+ * Solid content surfaces — readable text on visit, billing, and list panels.
+ * Loaded after module CSS; use sparingly with !important only where glass globals win.
+ */
+
+/* ----- Visit details ----- */
+[class*="VisitDetails_visitDetailsPage"],
+[class*="VisitDetails_section"],
+[class*="VisitDetails_header"],
+[class*="VisitDetails_consultationCard"],
+[class*="VisitDetails_orderCard"],
+[class*="VisitDetails_resultCard"],
+[class*="VisitDetails_dischargeForm"],
+[class*="VisitDetails_dischargeCard"],
+[class*="VisitDetails_emptyState"],
+[class*="VisitDetails_emptyText"],
+[class*="VisitDetails_errorContainer"] {
+  background: var(--bg-primary-solid) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-on-glass);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[class*="VisitDetails_section"] :is(h1, h2, h3, h4, label, strong),
+[class*="VisitDetails_header"] :is(h1, h2, h3),
+[class*="VisitDetails_consultationCard"] :is(h3, label, strong),
+[class*="VisitDetails_orderCard"] :is(h3, strong) {
+  color: var(--page-title-color) !important;
+  text-shadow: none !important;
+}
+
+[class*="VisitDetails_visitMeta"],
+[class*="VisitDetails_detailItem"] label,
+[class*="VisitDetails_consultationMeta"],
+[class*="VisitDetails_orderDetails"] p,
+[class*="VisitDetails_resultDetails"] p,
+[class*="VisitDetails_emptyState"],
+[class*="VisitDetails_emptyText"],
+[class*="VisitDetails_errorHint"] {
+  color: var(--text-on-glass-secondary) !important;
+}
+
+[class*="VisitDetails_detailItem"] p {
+  color: var(--text-on-glass) !important;
+}
+
+/* ----- Billing & payments (visit-scoped dashboard) ----- */
+[class*="BillingDashboard_dashboard"],
+[class*="BillingDashboard_header"],
+[class*="BillingDashboard_permissionMessage"],
+[class*="BillingDashboard_tabContent"],
+[class*="PaymentOptions_paymentForm"],
+[class*="PaymentOptions_paymentMethodButton"],
+[class*="PaymentOptions_permissionMessage"],
+[class*="ChargesBreakdown_addFormContainer"],
+[class*="ChargesBreakdown_serviceSearchContainer"],
+[class*="ChargesBreakdown_chargesTable"],
+[class*="BillingSummary_paymentStatusItem"],
+[class*="ServiceSearchInput_dropdown"],
+[class*="ServiceSearchInput_resultItem"] {
+  background: var(--bg-primary-solid) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-on-glass);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[class*="BillingDashboard_headerTitle"],
+[class*="ChargesBreakdown_headerTitle"],
+[class*="PaymentOptions_paymentFormTitle"],
+[class*="PaymentOptions_paymentMethodTitle"] {
+  color: var(--page-title-color) !important;
+  text-shadow: none !important;
+}
+
+[class*="BillingDashboard_headerSubtitle"],
+[class*="BillingDashboard_permissionText"],
+[class*="ChargesBreakdown_headerSubtitle"],
+[class*="ChargesBreakdown_serviceSearchDescription"],
+[class*="PaymentOptions_paymentMethodDescription"],
+[class*="PaymentOptions_helpText"],
+[class*="PaymentOptions_permissionText"],
+[class*="BillingSummary_paymentStatusLabel"] {
+  color: var(--text-on-glass-secondary) !important;
+}
+
+/* Visit billing dashboard tabs (Summary, Charges, Payments, …) — use data-billing-tab (CSS modules omit file name in class hash) */
+:is([data-content-surface="billing"], #billing-section) button[data-billing-tab="inactive"] {
+  color: var(--text-on-glass-secondary) !important;
+  background: transparent !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: currentColor !important;
+  opacity: 1 !important;
+}
+
+:is([data-content-surface="billing"], #billing-section) button[data-billing-tab="inactive"]:hover {
+  color: var(--text-on-glass) !important;
+}
+
+:is([data-content-surface="billing"], #billing-section) button[data-billing-tab="active"] {
+  color: var(--primary) !important;
+  background: transparent !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: currentColor !important;
+  opacity: 1 !important;
+}
+
+[data-theme="dark"] :is([data-content-surface="billing"], #billing-section) button[data-billing-tab="inactive"] {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] :is([data-content-surface="billing"], #billing-section) button[data-billing-tab="inactive"]:hover {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] :is([data-content-surface="billing"], #billing-section) button[data-billing-tab="active"] {
+  color: var(--primary) !important;
+}
+
+[class*="breakdownTitle"],
+[class*="breakdownTotalLabel"],
+[class*="breakdownTotalValue"],
+[class*="insurancePanelTitle"],
+[class*="cardTitle"] {
+  color: var(--page-title-color) !important;
+  text-shadow: none !important;
+}
+
+[data-theme="dark"] :is(
+  [class*="breakdownTitle"],
+  [class*="breakdownTotalLabel"],
+  [class*="breakdownTotalValue"],
+  [class*="insurancePanelTitle"],
+  [class*="cardTitle"]
+) {
+  color: var(--text-on-glass) !important;
+  text-shadow: var(--glass-text-shadow) !important;
+}
+
+[class*="BillingSummary_breakdownPanel"],
+[class*="BillingSummary_visitInfoPanel"] {
+  background: var(--bg-secondary-solid) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+[class*="BillingDocuments_panel"],
+[class*="BillingDocuments_documentCard"] {
+  background: var(--bg-primary-solid) !important;
+  border-color: var(--border-color) !important;
+}
+
+[class*="BillingDocuments_documentCard"] {
+  background: var(--bg-secondary-solid) !important;
+}
+
+[class*="metricCard"],
+[class*="outstandingCard"],
+[class*="OutstandingBalance_container"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-theme="dark"] :is([data-content-surface="billing"], #billing-section) [class*="metricCard"] :is(
+  [class*="metricLabel"],
+  [class*="metricValue"],
+  [class*="metricSubtext"]
+) {
+  text-shadow: none !important;
+}
+
+[data-theme="dark"] :is([data-content-surface="billing"], #billing-section) [class*="metricValue"] {
+  text-shadow: var(--glass-text-shadow) !important;
+}
+
+/* ----- Visits, patients, consultation workspace ----- */
+[class*="VisitsList_visitCard"],
+[class*="VisitsList_filters"],
+[class*="PatientManagement_patientCard"],
+[class*="PatientManagement_searchPanel"],
+[class*="PatientManagement_detailPanel"],
+[class*="ConsultationWorkspace_consultationSection"],
+[class*="ConsultationWorkspace_consultationHeader"],
+[class*="ConsultationWorkspace_consultationActions"],
+[class*="ConsultationWorkspace_patientSummary"] {
+  background: var(--bg-primary-solid) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-on-glass);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[class*="VisitsList_visitCard"] :is(h3, strong),
+[class*="PatientManagement_patientCard"] :is(h3, strong),
+[class*="ConsultationWorkspace_consultationSection"] :is(h3, label),
+[class*="ConsultationWorkspace_patientSummary"] h3 {
+  color: var(--page-title-color) !important;
+}
+
+[class*="VisitsList_visitMeta"],
+[class*="PatientManagement_patientMeta"],
+[class*="ConsultationWorkspace_sectionDescription"],
+[class*="ConsultationWorkspace_patientField"] label {
+  color: var(--text-on-glass-secondary) !important;
+}
+
+/* ----- Dark mode title shadow on solid panels ----- */
+[data-theme="dark"] :is(
+  [data-content-surface="visit"] [class*="VisitDetails_section"],
+  [data-content-surface="billing"],
+  #billing-section,
+  [class*="ConsultationWorkspace_consultationSection"]
+) :is(h1, h2, h3, h4, label, strong):not(:where([class*="expandedDetails"] *, [data-content-surface="elevated"] *)) {
+  color: var(--text-on-glass) !important;
+  text-shadow: var(--glass-text-shadow) !important;
+}
+
+[data-theme="dark"] :is(
+  [data-content-surface="visit"] [class*="VisitDetails_section"],
+  [data-content-surface="billing"],
+  #billing-section,
+  [class*="ConsultationWorkspace_consultationSection"]
+) :is(p, span, li):not([data-billing-tab]):not([class*="badge"]):not([class*="Badge"]):not([class*="status"]):not([class*="Department"]):not([class*="tagPill"]):not([class*="breakdownTotalLabel"]):not([class*="breakdownTotalValue"]):not([class*="paymentStatusValue"]):not([class*="metricLabel"]):not([class*="metricValue"]):not([class*="metricSubtext"]) {
+  color: var(--text-on-glass-secondary) !important;
+}
+
+/* ----- Billing: additional module panels ----- */
+[class*="BillingDashboard_tabsContainer"],
+[class*="ChargesBreakdown_departmentGroup"],
+[class*="ChargesBreakdown_departmentHeader"],
+[class*="ChargesBreakdown_chargeItem"],
+[class*="ChargesBreakdown_totalSummary"],
+[class*="ChargesBreakdown_emptyState"],
+[class*="ChargesBreakdown_readOnlyPanel"],
+[class*="BillingSummary_container"],
+[class*="PaymentOptions_container"],
+[class*="PaymentOptions_walletBalanceInfo"],
+[class*="PaymentOptions_paymentIntentCard"] {
+  background: var(--bg-primary-solid) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-on-glass);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[class*="ChargesBreakdown_departmentHeader"],
+[class*="ChargesBreakdown_totalSummary"],
+[class*="ChargesBreakdown_emptyState"] {
+  background: var(--bg-secondary-solid) !important;
+}
+
+[class*="ChargesBreakdown_departmentName"],
+[class*="ChargesBreakdown_chargeDescription"],
+[class*="ChargesBreakdown_chargeAmount"],
+[class*="ChargesBreakdown_totalSummaryLabel"],
+[class*="ChargesBreakdown_formTitle"],
+[class*="ChargesBreakdown_serviceSearchTitle"],
+[class*="BillingSummary_paymentStatusValue"],
+[class*="PaymentOptions_paymentIntentAmount"] {
+  color: var(--page-title-color) !important;
+}
+
+[class*="ChargesBreakdown_departmentCount"],
+[class*="ChargesBreakdown_chargeDate"],
+[class*="ChargesBreakdown_emptyStateText"],
+[class*="ChargesBreakdown_formDescription"],
+[class*="ChargesBreakdown_serviceSearchDescription"],
+[class*="PaymentOptions_walletBalanceText"],
+[class*="PaymentOptions_paymentIntentReference"],
+[class*="PaymentOptions_paymentIntentStatus"] {
+  color: var(--text-on-glass-secondary) !important;
+}
+
+[class*="ChargesBreakdown_formInput"],
+[class*="PaymentOptions_formInput"],
+[class*="PaymentOptions_formTextarea"] {
+  background: var(--input-bg) !important;
+  color: var(--text-on-glass) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* ----- Tailwind panels inside billing / visit surfaces ----- */
+:is([data-content-surface="billing"], [data-content-surface="billing-modal"], [data-content-surface="visit"], #billing-section) {
+  color: var(--text-on-glass);
+}
+
+:is([data-content-surface="billing"], [data-content-surface="billing-modal"], [data-content-surface="visit"], #billing-section) :is(
+  .text-gray-900,
+  .text-gray-800,
+  .text-blue-900,
+  .text-yellow-900,
+  .text-red-800
+) {
+  color: var(--page-title-color) !important;
+}
+
+:is([data-content-surface="billing"], [data-content-surface="billing-modal"], [data-content-surface="visit"], #billing-section) :is(
+  .text-gray-600,
+  .text-gray-500,
+  .text-gray-700,
+  .text-gray-400,
+  .text-blue-700,
+  .text-yellow-800
+) {
+  color: var(--text-on-glass-secondary) !important;
+}
+
+:is([data-content-surface="billing"], [data-content-surface="billing-modal"], [data-content-surface="visit"], #billing-section) :is(
+  .text-blue-600,
+  .text-blue-800
+) {
+  color: var(--primary) !important;
+}
+
+:is([data-content-surface="billing"], [data-content-surface="billing-modal"], [data-content-surface="visit"], #billing-section) :is(
+  .bg-gray-50,
+  .bg-gray-100
+) {
+  background: var(--bg-secondary-solid) !important;
+  border-color: var(--border-color) !important;
+}
+
+:is([data-content-surface="billing"], [data-content-surface="billing-modal"], [data-content-surface="visit"], #billing-section) :is(
+  .bg-blue-50,
+  .bg-yellow-50,
+  .bg-red-50
+) {
+  background: color-mix(in srgb, var(--primary) 10%, var(--bg-primary-solid)) !important;
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--border-color)) !important;
+}
+
+:is([data-content-surface="billing"], [data-content-surface="billing-modal"], [data-content-surface="visit"], #billing-section) :is(
+  .border-gray-200,
+  .border-gray-300,
+  .border-blue-200,
+  .border-yellow-200,
+  .border-red-200
+) {
+  border-color: var(--border-color) !important;
+}
+
+:is([data-content-surface="billing"], [data-content-surface="billing-modal"], [data-content-surface="visit"], #billing-section) :is(
+  input,
+  select,
+  textarea
+):not([type="checkbox"]):not([type="radio"]) {
+  background: var(--input-bg) !important;
+  color: var(--text-on-glass) !important;
+  border-color: var(--border-color) !important;
+}
+
+:is([data-content-surface="billing"], [data-content-surface="billing-modal"]) thead.bg-gray-50,
+:is([data-content-surface="billing"], [data-content-surface="billing-modal"]) tfoot.bg-gray-50 {
+  background: var(--bg-secondary-solid) !important;
+}
+
+:is([data-content-surface="billing"], [data-content-surface="billing-modal"]) :is(th.text-gray-700, td.text-gray-900) {
+  color: var(--page-title-color) !important;
+}
+
+[data-content-surface="billing-modal"] {
+  background: var(--bg-primary-solid) !important;
+  color: var(--text-on-glass);
+}
+
+/* ----- Payment processing, registration, nursing, admission ----- */
+[class*="PaymentProcessing_paymentProcessingPage"],
+[class*="PaymentProcessing_paymentSummary"],
+[class*="PaymentProcessing_visitCard"],
+[class*="PaymentProcessing_modalPanel"],
+[class*="PatientRegistration_registrationCard"],
+[class*="PatientRegistration_formSection"],
+[class*="NurseVisit_nurseVisitPage"],
+[class*="NurseVisit_section"],
+[class*="NurseVisit_patientCard"],
+[class*="Admission_section"],
+[class*="Admission_modal"],
+[class*="InvoiceReceipt_viewerContainer"],
+[class*="InvoiceReceipt_actionBar"],
+[class*="BillingDocuments_panel"],
+[class*="CreateVisit_createVisitCard"] {
+  background: var(--bg-primary-solid) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-on-glass);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[class*="PaymentProcessing_paymentSummary"],
+[class*="PatientRegistration_formSection"],
+[class*="NurseVisit_patientCard"],
+[class*="InvoiceReceipt_actionBar"] {
+  background: var(--bg-secondary-solid) !important;
+}
+
+[class*="PaymentProcessing_summaryLabel"],
+[class*="PaymentProcessing_balanceHint"],
+[class*="PatientRegistration_formSection"] label,
+[class*="NurseVisit_section"] :is(h2, h3, label),
+[class*="Admission_section"] :is(h2, h3, label) {
+  color: var(--text-on-glass-secondary) !important;
+}
+
+[class*="PaymentProcessing_summaryValue"],
+[class*="PaymentProcessing_visitCard"] :is(h3, strong),
+[class*="PatientRegistration_registrationCard"] h1,
+[class*="PatientRegistration_formSection"] h2,
+[class*="NurseVisit_section"] h2,
+[class*="InvoiceReceipt_viewerContainer"] {
+  color: var(--page-title-color) !important;
+}
+
+[class*="VisitDetails_nhiaManualWorkflowNote"] {
+  background: color-mix(in srgb, var(--warning) 12%, var(--bg-primary-solid)) !important;
+  border-left-color: var(--warning) !important;
+  color: var(--page-title-color) !important;
+}
+
+[data-theme="dark"] :is(
+  [data-content-surface="billing"],
+  [data-content-surface="billing-modal"],
+  [data-content-surface="visit"],
+  #billing-section
+) :is(h1, h2, h3, h4, label, strong, th) {
+  color: var(--text-on-glass) !important;
+  text-shadow: var(--glass-text-shadow) !important;
+}
+
+[data-theme="dark"] :is(
+  [data-content-surface="billing"],
+  #billing-section
+) :is(
+  [class*="breakdownTitle"],
+  [class*="breakdownTotalLabel"],
+  [class*="breakdownTotalValue"],
+  [class*="headerTitle"],
+  [class*="cardTitle"]
+) {
+  color: var(--text-on-glass) !important;
+  text-shadow: var(--glass-text-shadow) !important;
+}

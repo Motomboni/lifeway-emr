@@ -37,7 +37,7 @@ export default function ConsultationActions({
   const isClosed = visitStatus === 'CLOSED';
   
   return (
-    <div className={styles.consultationActions}>
+    <div className={styles.consultationActions} data-guide-id="consultation-actions">
       {!isClosed && (
         <>
           <div className={styles.mergeOption}>

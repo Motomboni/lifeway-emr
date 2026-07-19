@@ -12,6 +12,9 @@ import { Prescription } from '../types/prescription';
 import { useToast } from '../hooks/useToast';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import BackToDashboard from '../components/common/BackToDashboard';
+import WorkflowRail from '../components/guide/WorkflowRail';
+import ClinicalAlertsInline from '../components/clinical/ClinicalAlertsInline';
+import { PatientAllergyBannerForPatient } from '../components/clinical/PatientAllergyBanner';
 import LockIndicator from '../components/locks/LockIndicator';
 import { useActionLock } from '../hooks/useActionLock';
 import styles from '../styles/Prescriptions.module.css';
@@ -188,9 +191,14 @@ export default function PrescriptionsPage() {
       <header className={styles.header}>
         <h1>Prescriptions</h1>
         <p>Select a visit to view migrated and current prescriptions</p>
+        {selectedVisit && <WorkflowRail visitId={selectedVisit} />}
+        {selectedVisitData?.patient && (
+          <PatientAllergyBannerForPatient patientId={selectedVisitData.patient} />
+        )}
+        {selectedVisit && <ClinicalAlertsInline visitId={selectedVisit.toString()} />}
       </header>
 
-      <div className={styles.content}>
+      <div className={styles.content} data-guide-id="pharmacy-worklist">
         <div className={styles.visitsPanel}>
           <h2>Visits with Prescriptions</h2>
           {loading ? (
@@ -266,7 +274,7 @@ export default function PrescriptionsPage() {
                           <p><strong>Dispensed Quantity:</strong> {prescription.dispensed_quantity}</p>
                         )}
                       </div>
-                      <div className={styles.prescriptionActions}>
+                      <div className={styles.prescriptionActions} data-guide-id="pharmacy-dispense">
                         {prescription.status === 'PENDING' && 
                          selectedVisitData?.status === 'OPEN' && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>

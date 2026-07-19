@@ -5,17 +5,15 @@ Endpoint pattern: /api/v1/billing/hmo-providers/
 
 Receptionist-only access.
 """
-from django.urls import path, include
+
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+
 from .insurance_views import HMOProviderViewSet
 
 router = DefaultRouter()
-router.register(
-    r'',
-    HMOProviderViewSet,
-    basename='hmo-provider'
-)
+router.register(r"", HMOProviderViewSet, basename="hmo-provider")
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path("", include(router.urls)),
 ]

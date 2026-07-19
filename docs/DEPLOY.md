@@ -45,6 +45,8 @@ python backend/create_superuser.py
 unset DJANGO_SUPERUSER_PASSWORD
 ```
 
+The script is idempotent: if the username already exists, it exits without changing the account.
+
 Do not put real admin passwords, API tokens, or database passwords into source-controlled files.
 
 ### 2. Option A – Multi-service (recommended for production)
@@ -60,6 +62,35 @@ docker compose -f docker-compose.prod.yml up -d
 - Backend health: service `backend` on port 8000 (internal)
 - Persistence: `postgres_data`, `media_data` volumes
 
+### 3a. Radiology imaging stack (Orthanc + MinIO + OHIF)
+
+Add DICOMweb storage and an in-browser OHIF viewer alongside the main compose file:
+
+```bash
+docker compose -f docker-compose.standalone.yml -f docker-compose.imaging.yml -f docker-compose.imaging.env.yml up -d
+# or multi-service:
+docker compose -f docker-compose.prod.yml -f docker-compose.imaging.yml -f docker-compose.imaging.env.yml up -d
+```
+
+Set in `.env` (see `.env.prod.example`):
+
+- `ORTHANC_URL=http://orthanc:8042`
+- `ORTHANC_USERNAME` / `ORTHANC_PASSWORD` — match `docker/orthanc/orthanc.json`
+- `OHIF_VIEWER_URL=/ohif/viewer` — same-origin path proxied by nginx to Orthanc
+- `AWS_S3_ENDPOINT_URL=http://minio:9000` — optional MinIO backing for PACS-lite files
+
+After upload from **Radiology Orders → DICOM Imaging**, open **Open Viewer** to load the study in OHIF.
+
+Local dev (Orthanc on port 8042):
+
+```bash
+docker compose -f docker-compose.imaging.yml up -d
+cd backend && ORTHANC_URL=http://127.0.0.1:8042 OHIF_VIEWER_URL=/ohif/viewer python manage.py runserver
+cd frontend && npm run dev
+```
+
+Vite proxies `/ohif` and `/orthanc` to Orthanc with basic auth.
+
 ### 3. Option B – Single-container (all-in-one)
 
 One app image (nginx + Gunicorn) plus Postgres. Good for simple VPS or single-node deploy.
@@ -68,6 +99,14 @@ One app image (nginx + Gunicorn) plus Postgres. Good for simple VPS or single-no
 docker compose -f docker-compose.standalone.yml build
 docker compose -f docker-compose.standalone.yml up -d
 ```
+
+For DICOM/OHIF (`/ohif/`, `/orthanc/` nginx routes), also merge the imaging stack:
+
+```bash
+docker compose -f docker-compose.standalone.yml -f docker-compose.imaging.yml -f docker-compose.imaging.env.yml up -d
+```
+
+Without the imaging overlay, radiology uploads still work (PACS-lite + optional Orthanc STOW via `ORTHANC_URL`), but in-container nginx will not proxy OHIF until Orthanc is on the compose network.
 
 - App: **http://localhost:80**
 - Persistence: `postgres_data`, `media_data` volumes
@@ -96,6 +135,8 @@ docker build -t emr-app:latest .
 | `docker-compose.yml` | Local dev: backend (runserver) + frontend (built) + db |
 | `docker-compose.prod.yml` | Production: backend (Gunicorn) + frontend (nginx) + db |
 | `docker-compose.standalone.yml` | Production: one app container (root Dockerfile) + db |
+| `docker-compose.imaging.yml` | Orthanc + MinIO imaging stack (merge with prod/standalone) |
+| `docker-compose.imaging.env.yml` | EMR app env for Orthanc/MinIO (merge with imaging stack) |
 
 ---
 
@@ -124,7 +165,28 @@ Then confirm these user flows against the staging URL:
 - Open a migrated patient and a migrated visit.
 - Open visit billing, lab, prescription, and radiology panels.
 - Generate a receipt/invoice if PDF features are in scope.
+- **Telemedicine:** create session (with recording consent), confirm Termii SMS invite, join `/telemedicine/room/{id}`.
+- **NHIA:** open visit NHIA claim panel — validate, download claim pack CSV, upload manually via the official NHIA portal (no public API), then record submitted/paid/denied in the EMR.
 - Verify `tmp/lmc_migration/reconciliation.csv` or the archived migration report has business sign-off.
+
+### Quick server deploy (lmcemr.com.ng)
+
+On the production VPS after pushing to `main`:
+
+```bash
+cd ~/lifeway-emr
+bash scripts/deploy-lifeway-production.sh
+```
+
+Required production env for telemedicine + NHIA workflows:
+
+| Variable | Purpose |
+|----------|---------|
+| `FRONTEND_URL` | Meeting links in SMS (`/telemedicine/room/{id}`) |
+| `SMS_ENABLED` + `TERMII_*` | Patient telemedicine invites |
+| `TWILIO_*` | Video rooms and recording |
+| `OPENAI_API_KEY` | Post-call transcription (optional) |
+
 
 Known deployment dependencies:
 

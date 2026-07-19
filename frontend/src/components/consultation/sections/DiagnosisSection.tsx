@@ -1,18 +1,25 @@
 /**
  * DiagnosisSection Component
- * 
- * Clinical diagnosis, differential diagnosis, and assessment.
  */
 import React from 'react';
 import SpeechToTextButton from '../../common/SpeechToTextButton';
+import MacroAwareTextarea from '../MacroAwareTextarea';
+import { ConsultationData } from '../../../types/consultation';
 import styles from '../../../styles/ConsultationWorkspace.module.css';
 
 interface DiagnosisSectionProps {
   value: string;
+  formData: Pick<ConsultationData, 'history' | 'examination' | 'diagnosis' | 'clinical_notes'>;
   onChange: (value: string) => void;
+  onMacroExpand: (updates: Partial<ConsultationData>) => void;
 }
 
-export default function DiagnosisSection({ value, onChange }: DiagnosisSectionProps) {
+export default function DiagnosisSection({
+  value,
+  formData,
+  onChange,
+  onMacroExpand,
+}: DiagnosisSectionProps) {
   return (
     <div className={styles.consultationSection}>
       <label htmlFor="diagnosis">
@@ -22,11 +29,14 @@ export default function DiagnosisSection({ value, onChange }: DiagnosisSectionPr
         </span>
       </label>
       <div style={{ position: 'relative', paddingTop: '2rem' }}>
-        <textarea
+        <MacroAwareTextarea
           id="diagnosis"
+          field="diagnosis"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Enter clinical diagnosis, differential diagnosis, and assessment..."
+          formData={formData}
+          onChange={onChange}
+          onMacroExpand={onMacroExpand}
+          placeholder="Enter diagnosis… Type .dm2 + Tab for macros"
           rows={6}
           className={styles.consultationTextarea}
         />

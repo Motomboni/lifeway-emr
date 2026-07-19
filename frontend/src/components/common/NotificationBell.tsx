@@ -30,7 +30,12 @@ export default function NotificationBell() {
     };
   }, [isOpen]);
 
-  const handleNotificationClick = (notification: { id: string; type: string; visitId: number }) => {
+  const handleNotificationClick = (notification: {
+    id: string;
+    type: string;
+    visitId: number;
+    sessionId?: number;
+  }) => {
     markAsRead(notification.id);
     setIsOpen(false);
 
@@ -70,6 +75,13 @@ export default function NotificationBell() {
         break;
       case 'patient_verification':
         navigate('/patients/verification');
+        break;
+      case 'telemedicine_invite':
+        if (notification.sessionId) {
+          navigate(`/telemedicine/room/${notification.sessionId}`);
+        } else {
+          navigate('/telemedicine');
+        }
         break;
       default:
         if (notification.visitId > 0) {

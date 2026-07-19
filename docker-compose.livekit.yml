@@ -1,0 +1,24 @@
+# Self-hosted LiveKit for telemedicine (optional overlay)
+# Dev:  docker compose -f docker-compose.livekit.yml up -d
+# Prod: docker compose -f docker-compose.prod.yml -f docker-compose.livekit.yml up -d
+#       (set LIVEKIT_CONFIG=infra/livekit/livekit.yaml and production keys in .env)
+
+services:
+  livekit:
+    image: livekit/livekit-server:v1.9.11
+    container_name: emr-livekit
+    command: --config /etc/livekit.yaml
+    restart: unless-stopped
+    volumes:
+      - ${LIVEKIT_CONFIG:-./infra/livekit/livekit.dev.yaml}:/etc/livekit.yaml:ro
+    ports:
+      - "${LIVEKIT_PORT:-7880}:7880"
+      - "${LIVEKIT_TCP_PORT:-7881}:7881"
+      - "${LIVEKIT_UDP_PORT:-7882}:7882/udp"
+      - "${LIVEKIT_ICE_UDP_START:-50100}-${LIVEKIT_ICE_UDP_END:-50120}:${LIVEKIT_ICE_UDP_START:-50100}-${LIVEKIT_ICE_UDP_END:-50120}/udp"
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep livekit-server || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

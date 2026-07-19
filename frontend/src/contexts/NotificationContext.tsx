@@ -13,14 +13,36 @@ import { fetchRadiologyOrders } from '../api/radiology';
 import { fetchPrescriptions } from '../api/prescription';
 import { getPendingVerificationPatients } from '../api/patient';
 import { fetchAdmission } from '../api/admissions';
+import { fetchTelemedicineSessions } from '../api/telemedicine';
 import { extractPaginatedResults } from '../utils/pagination';
 import { logger } from '../utils/logger';
 
+const VIRTUAL_CLINIC_NOTIFY_ROLES = new Set([
+  'NURSE',
+  'DOCTOR',
+  'LAB_TECH',
+  'RADIOLOGY_TECH',
+  'PHARMACIST',
+  'ADMIN',
+  'IVF_SPECIALIST',
+  'EMBRYOLOGIST',
+]);
+
 export interface Notification {
   id: string;
-  type: 'lab_order' | 'radiology_order' | 'prescription' | 'prescription_dispensed' | 'payment' | 'patient_verification' | 'patient_discharged';
+  type:
+    | 'lab_order'
+    | 'radiology_order'
+    | 'prescription'
+    | 'prescription_dispensed'
+    | 'payment'
+    | 'patient_verification'
+    | 'patient_discharged'
+    | 'telemedicine_invite';
   message: string;
   visitId: number;
+  /** Virtual clinic session id when type is telemedicine_invite */
+  sessionId?: number;
   count: number;
   timestamp: Date;
 }
@@ -280,6 +302,34 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           // Don't log 401/504 errors as they're expected during background polling
           if (error?.status !== 401 && error?.status !== 504) {
             logger.debug('Failed to fetch pending verifications for notifications:', error);
+          }
+        }
+      }
+
+      // Virtual clinic staff invites (nurse, specialist, etc.)
+      if (user.role && VIRTUAL_CLINIC_NOTIFY_ROLES.has(user.role)) {
+        try {
+          const sessions = await fetchTelemedicineSessions();
+          const list = Array.isArray(sessions)
+            ? sessions
+            : ((sessions as { results?: typeof sessions })?.results ?? []);
+          for (const session of list) {
+            if (session.my_invite_status !== 'PENDING') continue;
+            // Host doctor already owns the session — skip self-noise
+            if (user.role === 'DOCTOR' && session.doctor === user.id) continue;
+            newNotifications.push({
+              id: `telemedicine-invite-${session.id}`,
+              type: 'telemedicine_invite',
+              message: `Virtual clinic invite from Dr. ${session.doctor_name || 'doctor'} — ${session.patient_name || `Visit #${session.visit}`}`,
+              visitId: session.visit,
+              sessionId: session.id,
+              count: 1,
+              timestamp: new Date(session.updated_at || session.created_at || Date.now()),
+            });
+          }
+        } catch (error: any) {
+          if (error?.status !== 401 && error?.status !== 403) {
+            logger.debug('Failed to fetch telemedicine invites for notifications:', error);
           }
         }
       }

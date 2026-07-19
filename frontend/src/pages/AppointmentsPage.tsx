@@ -2,11 +2,13 @@
  * Appointments Page
  * 
  * For scheduling and managing patient appointments.
- * Per EMR Rules: Receptionist and Doctor can create/manage appointments, Doctors can view their own.
+ * Receptionist: schedule for any doctor and view all appointments (including doctor-scheduled).
+ * Doctor: schedule and manage their own appointments.
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useRolePermissions } from '../hooks/useRolePermissions';
 import {
   fetchAppointments,
   fetchUpcomingAppointments,
@@ -27,11 +29,12 @@ import { apiRequest } from '../utils/apiClient';
 import { useToast } from '../hooks/useToast';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import BackToDashboard from '../components/common/BackToDashboard';
-import { formatDoctorDisplayName } from '../utils/doctorDisplay';
+import PageSubtitle from '../components/common/PageSubtitle';
 import styles from '../styles/Appointments.module.css';
 
 export default function AppointmentsPage() {
   const { user } = useAuth();
+  const { isAdmin, canManageAppointments, canViewAppointments } = useRolePermissions();
   const navigate = useNavigate();
   const { showError, showSuccess } = useToast();
 
@@ -69,32 +72,33 @@ export default function AppointmentsPage() {
   const [isSearchingPatients, setIsSearchingPatients] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const isDoctorUser = user?.role === 'DOCTOR' || user?.role === 'IVF_SPECIALIST';
+  const isReceptionistUser = user?.role === 'RECEPTIONIST';
+
   useEffect(() => {
     loadAppointments();
   }, [viewMode, filters.status, filters.date_from, filters.date_to]);
 
-  // Load doctors when form is shown
+  // Load doctors when form is shown (receptionist/admin pick any doctor)
   useEffect(() => {
-    if (showCreateForm && canManage && doctors.length === 0) {
+    if (showCreateForm && canManageAppointments && !isDoctorUser && doctors.length === 0) {
       loadDoctors();
     }
-  }, [showCreateForm]);
+  }, [showCreateForm, isDoctorUser]);
 
-  // Auto-select current doctor when doctor opens create form
+  // Doctors schedule only for themselves — no doctors list fetch required
   useEffect(() => {
-    if (showCreateForm && user?.role === 'DOCTOR' && !editingAppointment && doctors.length > 0 && formData.doctor === 0) {
-      // Find current user in doctors list and auto-select
-      const currentDoctor = doctors.find(d => d.id === user.id);
-      if (currentDoctor) {
-        setFormData({ ...formData, doctor: currentDoctor.id });
-      }
+    if (showCreateForm && isDoctorUser && user && !editingAppointment) {
+      setFormData((prev) => (prev.doctor === user.id ? prev : { ...prev, doctor: user.id }));
+      setDoctors((prev) =>
+        prev.some((d) => d.id === user.id) ? prev : [user as User]
+      );
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showCreateForm, doctors, user]);
+  }, [showCreateForm, isDoctorUser, user, editingAppointment]);
 
   // Load initial patients when form is shown
   useEffect(() => {
-    if (showCreateForm && (user?.role === 'RECEPTIONIST' || user?.role === 'DOCTOR')) {
+    if (showCreateForm && canManageAppointments) {
       loadInitialPatients();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -340,26 +344,22 @@ export default function AppointmentsPage() {
     }
   };
 
-  const isAdmin = user?.is_superuser === true || user?.role === 'ADMIN';
-  const canManage = isAdmin || user?.role === 'RECEPTIONIST' || user?.role === 'DOCTOR';
-  const canViewOwn = user?.role === 'DOCTOR';
-
-  // Load doctors when form is shown (only once, avoid infinite loops)
-  useEffect(() => {
-    if (
-      showCreateForm &&
-      (isAdmin || user?.role === 'RECEPTIONIST' || user?.role === 'DOCTOR') &&
-      doctors.length === 0 &&
-      !loadingDoctors
-    ) {
-      loadDoctors();
+  const openCreateForm = () => {
+    if (isDoctorUser && user) {
+      setFormData((prev) => ({
+        ...prev,
+        doctor: user.id,
+      }));
+      setDoctors([user as User]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showCreateForm, isAdmin, user?.role, doctors.length, loadingDoctors]);
+    setShowCreateForm(true);
+  };
 
-  if (!canManage && !canViewOwn) {
+  const canViewOwn = isDoctorUser;
+
+  if (!canViewAppointments) {
     return (
-      <div className={styles.appointmentsPage}>
+      <div className={styles.appointmentsPage} data-page-chrome>
         <BackToDashboard />
         <div className={styles.accessDenied}>
           <h2>Access Denied</h2>
@@ -370,16 +370,25 @@ export default function AppointmentsPage() {
   }
 
   return (
-    <div className={styles.appointmentsPage}>
+    <div className={styles.appointmentsPage} data-page-chrome>
       <BackToDashboard />
-      <header className={styles.header}>
-        <h1>Appointments</h1>
-        {canManage && !showCreateForm && (
+      <header className={styles.header} data-guide-id="appointments">
+        <div>
+          <h1>{isDoctorUser ? 'My Appointments' : 'Appointments'}</h1>
+          <PageSubtitle className={styles.headerSubtitle}>
+            {isDoctorUser
+              ? 'Schedule your own patient appointments. Reception can view and manage them.'
+              : isReceptionistUser
+                ? 'View all appointments, including those scheduled by doctors.'
+                : 'Schedule and manage patient appointments.'}
+          </PageSubtitle>
+        </div>
+        {canManageAppointments && !showCreateForm && (
           <button
             className={styles.createButton}
-            onClick={() => setShowCreateForm(true)}
+            onClick={openCreateForm}
           >
-            + New Appointment
+            {isDoctorUser ? '+ Schedule Appointment' : '+ New Appointment'}
           </button>
         )}
       </header>
@@ -458,7 +467,7 @@ export default function AppointmentsPage() {
       {/* Create/Edit Form */}
       {showCreateForm && (
         <div className={styles.formContainer}>
-          <h2>{editingAppointment ? 'Edit Appointment' : 'Create New Appointment'}</h2>
+          <h2>{editingAppointment ? 'Edit Appointment' : isDoctorUser ? 'Schedule Appointment' : 'Create New Appointment'}</h2>
           
           <div className={styles.formGroup}>
             <label>Patient *</label>
@@ -534,26 +543,29 @@ export default function AppointmentsPage() {
 
           <div className={styles.formGroup}>
             <label>Doctor *</label>
-            {loadingDoctors ? (
+            {isDoctorUser && user ? (
+              <div className={styles.doctorSelfDisplay}>
+                Dr. {user.first_name} {user.last_name} <span>(You)</span>
+              </div>
+            ) : loadingDoctors ? (
               <p>Loading doctors...</p>
             ) : (
               <select
                 value={formData.doctor}
                 onChange={(e) => setFormData({ ...formData, doctor: parseInt(e.target.value) })}
                 required
-                disabled={!!editingAppointment || (user?.role === 'DOCTOR' && !editingAppointment)}
+                disabled={!!editingAppointment}
               >
                 <option value={0}>Select a doctor...</option>
                 {doctors.map((doctor) => (
                   <option key={doctor.id} value={doctor.id}>
-                    {formatDoctorDisplayName(doctor)}
-                    {user?.role === 'DOCTOR' && doctor.id === user.id ? ' (You)' : ''}
+                    Dr. {doctor.first_name} {doctor.last_name}
                   </option>
                 ))}
               </select>
             )}
-            {user?.role === 'DOCTOR' && !editingAppointment && (
-              <p className={styles.helpText}>You are automatically selected as the doctor for this appointment.</p>
+            {isDoctorUser && !editingAppointment && (
+              <p className={styles.helpText}>Appointments you schedule appear on the receptionist schedule.</p>
             )}
           </div>
 
@@ -649,7 +661,10 @@ export default function AppointmentsPage() {
                 </div>
 
                 <div className={styles.appointmentDetails}>
-                  <p><strong>Doctor:</strong> {appointment.doctor_display_name || appointment.doctor_name || 'Unknown'}</p>
+                  <p><strong>Doctor:</strong> {appointment.doctor_name || 'Unknown'}</p>
+                  {isReceptionistUser && appointment.created_by_name && (
+                    <p><strong>Scheduled by:</strong> {appointment.created_by_name}</p>
+                  )}
                   <p><strong>Duration:</strong> {appointment.duration_minutes} minutes</p>
                   {appointment.reason && (
                     <p><strong>Reason:</strong> {appointment.reason}</p>
@@ -671,7 +686,7 @@ export default function AppointmentsPage() {
                 </div>
 
                 <div className={styles.appointmentActions}>
-                  {canManage && (
+                  {canManageAppointments && (
                     <>
                       {appointment.status === 'SCHEDULED' && (
                         <button
@@ -708,7 +723,7 @@ export default function AppointmentsPage() {
                     </>
                   )}
                   {/* Show action buttons for doctors viewing their own appointments if they don't have manage permissions */}
-                  {canViewOwn && !canManage && (
+                  {canViewOwn && !canManageAppointments && (
                     <>
                       {appointment.status === 'SCHEDULED' && (
                         <button

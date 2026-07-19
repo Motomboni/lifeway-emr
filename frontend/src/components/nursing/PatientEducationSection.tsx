@@ -9,7 +9,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useToast } from '../../hooks/useToast';
-import SpeechToTextButton from '../common/SpeechToTextButton';
+import VoiceTextareaField from '../common/VoiceTextareaField';
 import styles from '../../styles/NurseVisit.module.css';
 
 interface PatientEducationSectionProps {
@@ -118,9 +118,9 @@ export default function PatientEducationSection({ visitId, canCreate }: PatientE
           </div>
           <div className={styles.formField}>
             <label>Content *</label>
-            <textarea
+            <VoiceTextareaField
               value={formData.content}
-              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+              onValueChange={(text) => setFormData({ ...formData, content: text })}
               rows={6}
               required
               placeholder="Describe the education provided to the patient..."
@@ -138,21 +138,12 @@ export default function PatientEducationSection({ visitId, canCreate }: PatientE
           </div>
           <div className={styles.formField}>
             <label>Additional Notes</label>
-            <div style={{ position: 'relative', paddingTop: '2rem' }}>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                rows={3}
-                placeholder="Any additional notes about the education session..."
-              />
-              <SpeechToTextButton
-                value={formData.notes}
-                onTranscribe={(text) => setFormData((prev) => ({ ...prev, notes: text }))}
-                appendMode={true}
-                position="top-right"
-                showPreview={true}
-              />
-            </div>
+            <VoiceTextareaField
+              value={formData.notes || ''}
+              onValueChange={(text) => setFormData((prev) => ({ ...prev, notes: text }))}
+              rows={3}
+              placeholder="Any additional notes about the education session..."
+            />
           </div>
           <div className={styles.formActions}>
             <button type="submit" disabled={saving} className={styles.saveButton}>

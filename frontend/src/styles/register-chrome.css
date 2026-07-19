@@ -1,0 +1,24 @@
+/**
+ * Register role picker — loaded last so glass.css cannot override selection border.
+ * Uses data attributes (stable selectors) instead of hashed CSS module class names.
+ */
+[data-register-role] {
+  border: 2px solid color-mix(in srgb, var(--text-muted) 28%, var(--border-color)) !important;
+}
+
+[data-register-role]:hover:not([data-selected='true']) {
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--border-color)) !important;
+}
+
+[data-register-role][data-selected='true'],
+[data-register-role][aria-pressed='true'] {
+  border: 2px solid #2196f3 !important;
+  background: linear-gradient(
+    135deg,
+    rgba(33, 150, 243, 0.14) 0%,
+    rgba(25, 118, 210, 0.08) 100%
+  ) !important;
+  box-shadow:
+    0 0 0 1px #2196f3,
+    0 4px 14px rgba(33, 150, 243, 0.28) !important;
+}

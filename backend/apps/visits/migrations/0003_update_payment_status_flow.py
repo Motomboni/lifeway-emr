@@ -4,15 +4,26 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('visits', '0002_add_visit_type_chief_complaint_appointment'),
+        ("visits", "0002_add_visit_type_chief_complaint_appointment"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='visit',
-            name='payment_status',
-            field=models.CharField(choices=[('UNPAID', 'Unpaid'), ('PARTIALLY_PAID', 'Partially Paid'), ('PAID', 'Paid'), ('INSURANCE_PENDING', 'Insurance Pending'), ('INSURANCE_CLAIMED', 'Insurance Claimed'), ('SETTLED', 'Settled')], default='UNPAID', help_text='Payment status. Must be PAID or SETTLED for clinical actions. Insurance visits can be SETTLED with ₦0 patient payment.', max_length=30),
+            model_name="visit",
+            name="payment_status",
+            field=models.CharField(
+                choices=[
+                    ("UNPAID", "Unpaid"),
+                    ("PARTIALLY_PAID", "Partially Paid"),
+                    ("PAID", "Paid"),
+                    ("INSURANCE_PENDING", "Insurance Pending"),
+                    ("INSURANCE_CLAIMED", "Insurance Claimed"),
+                    ("SETTLED", "Settled"),
+                ],
+                default="UNPAID",
+                help_text="Payment status. Must be PAID or SETTLED for clinical actions. Insurance visits can be SETTLED with ₦0 patient payment.",
+                max_length=30,
+            ),
         ),
     ]

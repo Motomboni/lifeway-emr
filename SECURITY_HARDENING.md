@@ -1,108 +1,67 @@
-# Clinic-Grade Security Hardening
+# Security Hardening — Lifeway EMR v2.0
 
-This document describes the security measures implemented for the Modern EMR and provides a deployment checklist for clinic-grade (HIPAA-aligned) operation.
+Clinic-grade checklist for production. Referenced by `.env.prod.example`.
 
-## Implemented Controls
+## Before go-live
 
-### Authentication & Access
+### Secrets
 
-| Control | Implementation |
-|--------|----------------|
-| **JWT with short-lived access tokens** | Access token 15 min; refresh 7 days with rotation |
-| **Refresh token rotation & blacklist** | New refresh on use; old token blacklisted on logout |
-| **Account lockout** | 5 failed logins → account locked 30 minutes (`User.lock_account`) |
-| **Auth endpoint rate limiting** | Login: 5/min, 20/hr per IP; Refresh: 30/min, 200/hr; Register: 3/min, 10/hr |
-| **Strong passwords** | Min 12 chars; upper, lower, digit, special; common-password and numeric checks |
-| **Production SECRET_KEY enforcement** | App refuses to start if `DEBUG=False` and SECRET_KEY is default or &lt; 32 chars |
+- [ ] `SECRET_KEY` — min 32 chars (`openssl rand -hex 32`)
+- [ ] `DB_PASSWORD` — strong, unique
+- [ ] Rotate Paystack, Termii, and SMTP credentials from dev values
+- [ ] Never commit `.env` to git
 
-### Transport & Headers
+### Django
 
-| Control | Implementation |
-|--------|----------------|
-| **HTTPS in production** | `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, HSTS (1 year, includeSubdomains, preload) when not DEBUG |
-| **Security headers** | `SecurityHeadersMiddleware`: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy, CSP (configurable) |
-| **Cookie hardening** | HttpOnly, SameSite=Lax, Secure in production |
-| **CORS** | Explicit `CORS_ALLOWED_ORIGINS` in production; credentials allowed only to those origins |
+- [ ] `DEBUG=false`
+- [ ] `ALLOWED_HOSTS` — production domain only
+- [ ] `SECURE_SSL_REDIRECT=true` (or handled at nginx)
+- [ ] `SECURE_PROXY_SSL_HEADER=X-Forwarded-Proto` when behind TLS proxy
+- [ ] `CORS_ALLOWED_ORIGINS` — explicit frontend origin(s) only
 
-### Request & Input
+### Authentication
 
-| Control | Implementation |
-|--------|----------------|
-| **Request sanitization** | `RequestSanitizerMiddleware` rejects path traversal (`../`, `..\`, encoded) and null bytes in path/query |
-| **Input sanitization** | `core.utils.input_sanitization`: text, phone, email, numeric, date helpers for XSS/injection |
-| **CSRF** | Django CSRF middleware; cookie-based for session auth |
+- [ ] JWT access token lifetime 15 min (default)
+- [ ] Account lockout after 5 failed attempts (30 min)
+- [ ] `RATE_LIMIT_ENABLED=true` in production
+- [ ] Redis configured for distributed rate limits (`REDIS_URL`)
+- [ ] `PUBLIC_REGISTRATION_ALLOWED_ROLES=PATIENT` (default in production)
+- [ ] `API_DOCS_ENABLED=false` unless you need Swagger behind admin auth
+- [ ] `HEALTH_DETAILED_PUBLIC=false` (keep `/api/v1/health/` public for load balancers)
 
-### Application & Data
+### Data & compliance
 
-| Control | Implementation |
-|--------|----------------|
-| **Audit logging** | Append-only `AuditLog`; 7-year retention (configurable); user, role, action, visit, IP, user-agent; no PHI in metadata |
-| **RBAC** | Role-based permissions per app; visit-scoped clinical actions |
-| **Payment guard** | `PaymentClearedGuard` middleware enforces payment cleared before clinical actions |
-| **Database** | PostgreSQL optional SSL via `DB_SSLMODE`; statement timeout 60s for Postgres |
+- [ ] PostgreSQL with encrypted connections (`DB_SSLMODE=require` where supported)
+- [ ] Audit logging enabled (`EMR_SETTINGS.ENABLE_AUDIT_LOGGING`)
+- [ ] Audit retention aligned with policy (`AUDIT_LOG_RETENTION_DAYS=2555`)
+- [ ] Backups tested on schedule
 
-### Infrastructure (Docker / nginx)
+### Patient portal
 
-| Control | Implementation |
-|--------|----------------|
-| **nginx** | `server_tokens off`; `client_max_body_size 50m`; X-Frame-Options DENY; Permissions-Policy; proxy timeouts |
-| **Secrets** | SECRET_KEY, DB_PASSWORD, API keys via environment (`.env`), not committed |
+- [ ] SMTP configured (`EMAIL_BACKEND`, `EMAIL_HOST`, credentials)
+- [ ] SMS configured for OTP (`SMS_ENABLED`, Termii or Twilio)
+- [ ] OTP email sends in production (not log-only)
 
----
+### Monitoring
 
-## Deployment Checklist
+- [ ] Optional `SENTRY_DSN` (backend) and `VITE_SENTRY_DSN` (frontend build)
 
-Before going live:
+- [ ] HTTPS everywhere
+- [ ] Paystack webhook URL uses HTTPS and signature verification
+- [ ] Admin `/admin/` restricted by IP or VPN if possible
+- [ ] Media files not publicly listable
 
-1. **Secrets**
-   - [ ] Set `SECRET_KEY` to a strong random value (`openssl rand -hex 32`).
-   - [ ] Set a strong `DB_PASSWORD` and restrict DB network access.
-   - [ ] Ensure `.env` is not committed (it is in `.gitignore`).
+## Headers (middleware)
 
-2. **Environment**
-   - [ ] `DEBUG=false`.
-   - [ ] `ALLOWED_HOSTS` and `CORS_ALLOWED_ORIGINS` set to your real domain(s) only (no wildcards).
+Security headers are applied via `core.middleware.security_headers`. Review CSP if adding third-party scripts.
 
-3. **HTTPS**
-   - [ ] Terminate TLS at reverse proxy (e.g. Caddy, Traefik, or nginx) and set `X-Forwarded-Proto` and `X-Forwarded-For`.
-   - [ ] Redirect HTTP → HTTPS.
+## Incident response
 
-4. **Database**
-   - [ ] Use PostgreSQL in production (not SQLite).
-   - [ ] For clinic-grade: set `DB_SSLMODE=require` (or `verify-full` with CA).
+1. Revoke compromised user passwords / lock accounts in Django admin
+2. Rotate `SECRET_KEY` only with planned session invalidation
+3. Review audit logs: `/audit-logs`
+4. Restore from backup if data integrity affected
 
-5. **Backups & retention**
-   - [ ] Automated backups of DB and media; test restore.
-   - [ ] Audit log retention (default 7 years) and backup of audit store.
+## Support
 
-6. **Users**
-   - [ ] Create only necessary accounts; use strong passwords (enforced by validators).
-   - [ ] Disable or remove default/test accounts before production.
-
-7. **Monitoring**
-   - [ ] Monitor auth failures and lockouts; alert on anomalies.
-   - [ ] Review audit logs periodically.
-
----
-
-## Optional Hardening
-
-- **Redis for rate limiting**  
-  Set `REDIS_URL` and switch cache backend to Redis so rate limits and lockout state survive restarts and are shared across workers.
-
-- **Stricter CSP**  
-  Adjust `SecurityHeadersMiddleware` CSP to remove `'unsafe-inline'` / `'unsafe-eval'` once all scripts/styles are non-inline and non-eval.
-
-- **IP allowlist for admin**  
-  Restrict `/admin/` to trusted IPs at reverse proxy or with Django middleware.
-
-- **MFA**  
-  Add two-factor authentication for staff/superuser accounts (e.g. TOTP) for additional clinic-grade assurance.
-
----
-
-## References
-
-- [Django Security](https://docs.djangoproject.com/en/stable/topics/security/)
-- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
-- [HIPAA Security Rule](https://www.hhs.gov/hipaa/for-professionals/security/index.html) (high-level alignment: access control, audit, integrity, transmission security)
+Operations runbook: [docs/OPERATIONS.md](docs/OPERATIONS.md)

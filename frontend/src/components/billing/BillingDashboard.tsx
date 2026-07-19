@@ -62,7 +62,7 @@ export default function BillingDashboard({
   ];
 
   return (
-    <div className={styles.dashboard}>
+    <div className={styles.dashboard} data-content-surface="billing">
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.headerContent}>
@@ -97,6 +97,8 @@ export default function BillingDashboard({
           {tabs.map((tab) => (
             <button
               key={tab.id}
+              type="button"
+              data-billing-tab={activeTab === tab.id ? 'active' : 'inactive'}
               onClick={() => setActiveTab(tab.id)}
               className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ''}`}
               aria-current={activeTab === tab.id ? 'page' : undefined}

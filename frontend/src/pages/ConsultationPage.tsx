@@ -15,11 +15,14 @@
  *   │   ├── ExaminationSection
  *   │   ├── DiagnosisSection
  *   │   └── ClinicalNotesSection
+ *   ├── ServiceCatalogInline (doctor — after clinical notes)
  *   └── ConsultationActions (save, cancel)
  */
-import React, { useState, useEffect } from 'react';
-import ConsultationHeader from '../components/consultation/ConsultationHeader';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import ConsultationForm from '../components/consultation/ConsultationForm';
+import ConsultationHeader from '../components/consultation/ConsultationHeader';
+import WorkflowRail from '../components/guide/WorkflowRail';
 import ConsultationActions from '../components/consultation/ConsultationActions';
 import ToastContainer from '../components/common/ToastContainer';
 import OfflineIndicator from '../components/common/OfflineIndicator';
@@ -30,8 +33,10 @@ import { useToast } from '../hooks/useToast';
 import { useOffline } from '../hooks/useOffline';
 import { ConsultationData, Consultation } from '../types/consultation';
 import { closeVisit } from '../api/visits';
+import { getBillingSummary } from '../api/billing';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useRegisterGuidePage, useGuidePage } from '../contexts/GuidePageContext';
+import { applyMacroTrigger } from '../utils/consultationMacroExpand';
 import ServiceCatalogInline from '../components/inline/ServiceCatalogInline';
 import VisitChargesReadOnly from '../components/billing/VisitChargesReadOnly';
 import VitalSignsInline from '../components/clinical/VitalSignsInline';
@@ -44,6 +49,7 @@ import PreviousConsultationsPanel from '../components/consultation/PreviousConsu
 import PrescriptionInline from '../components/inline/PrescriptionInline';
 import RadiologyInline from '../components/inline/RadiologyInline';
 import DiagnosisCodes from '../components/consultation/DiagnosisCodes';
+import ConsultationScribePanel from '../components/ai/ConsultationScribePanel';
 import styles from '../styles/ConsultationWorkspace.module.css';
 
 interface ConsultationPageProps {
@@ -51,6 +57,40 @@ interface ConsultationPageProps {
 }
 
 export default function ConsultationPage({ visitId }: ConsultationPageProps) {
+  const location = useLocation();
+  const telemedicineTranscript = (
+    location.state as { telemedicineTranscript?: string } | null
+  )?.telemedicineTranscript;
+  const [registrationPaid, setRegistrationPaid] = useState<boolean | null>(null);
+  const [gatesLoading, setGatesLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadGates = async () => {
+      setGatesLoading(true);
+      try {
+        const summary = await getBillingSummary(parseInt(visitId, 10));
+        if (!cancelled) {
+          setRegistrationPaid(summary.payment_gates?.registration_paid === true);
+        }
+      } catch {
+        if (!cancelled) {
+          setRegistrationPaid(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setGatesLoading(false);
+        }
+      }
+    };
+    loadGates();
+    return () => {
+      cancelled = true;
+    };
+  }, [visitId]);
+
+  const consultationEnabled = registrationPaid === true;
+
   const {
     consultation,
     loading,
@@ -58,17 +98,23 @@ export default function ConsultationPage({ visitId }: ConsultationPageProps) {
     saveConsultation,
     updateConsultation,
     isSaving
-  } = useConsultation(visitId);
+  } = useConsultation(visitId, { enabled: consultationEnabled });
 
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toasts, showSuccess, showError, removeToast } = useToast();
   const isOffline = useOffline();
+  const { registerMacroHandler } = useGuidePage();
 
   const [visitStatus, setVisitStatus] = useState<'OPEN' | 'CLOSED'>('OPEN');
+  const [visitType, setVisitType] = useState<string | undefined>();
+  const [paymentStatus, setPaymentStatus] = useState<string | undefined>();
+  const [paymentBlocked, setPaymentBlocked] = useState(false);
   const [isClosingVisit, setIsClosingVisit] = useState(false);
   /** Bumps after catalog orders so doctor-facing charge list refetches */
   const [orderedChargesRefresh, setOrderedChargesRefresh] = useState(0);
+  /** Refetch diagnosis codes after scribe apply */
+  const [diagnosisCodesRefresh, setDiagnosisCodesRefresh] = useState(0);
 
   const [formData, setFormData] = useState<ConsultationData>({
     history: '',
@@ -80,6 +126,14 @@ export default function ConsultationPage({ visitId }: ConsultationPageProps) {
 
   const [originalData, setOriginalData] = useState<ConsultationData | null>(null);
   const [mergeWithPatientRecord, setMergeWithPatientRecord] = useState(false);
+
+  useRegisterGuidePage({
+    visitId,
+    visitStatus,
+    paymentStatus,
+    hasConsultation: !!consultation,
+    paymentBlocked,
+  });
 
   // Clear form data when visitId changes (navigating to a different visit)
   useEffect(() => {
@@ -151,6 +205,54 @@ export default function ConsultationPage({ visitId }: ConsultationPageProps) {
       [field]: value
     }));
   };
+
+  const handleApplyFormPatch = useCallback((patch: Partial<ConsultationData>) => {
+    setFormData((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  const handleMacroFromGuide = useCallback(
+    (trigger: string) => {
+      const updates = applyMacroTrigger(trigger, formData);
+      if (!updates) return false;
+      handleApplyFormPatch(updates);
+      showSuccess(`Macro ${trigger} inserted`);
+      return true;
+    },
+    [formData, handleApplyFormPatch, showSuccess]
+  );
+
+  useEffect(() => {
+    registerMacroHandler(handleMacroFromGuide);
+    return () => registerMacroHandler(null);
+  }, [handleMacroFromGuide, registerMacroHandler]);
+
+  const handleScribeApply = (sections: Partial<ConsultationData>) => {
+    setFormData(prev => ({
+      ...prev,
+      history: sections.history ?? prev.history,
+      examination: sections.examination ?? prev.examination,
+      diagnosis: sections.diagnosis ?? prev.diagnosis,
+      clinical_notes: sections.clinical_notes ?? prev.clinical_notes,
+    }));
+  };
+
+  /** Create consultation if needed so lab/radiology/prescription orders can be placed. */
+  const ensureConsultation = useCallback(async (): Promise<number> => {
+    if (consultation?.id) {
+      return consultation.id;
+    }
+    const saved = await saveConsultation(visitId, {
+      ...formData,
+      merge_with_patient_record: false,
+    });
+    setOriginalData({
+      history: formData.history,
+      examination: formData.examination,
+      diagnosis: formData.diagnosis,
+      clinical_notes: formData.clinical_notes,
+    });
+    return saved.id;
+  }, [consultation?.id, formData, saveConsultation, visitId]);
 
   const handleCopyFromPrevious = (previousConsultation: Consultation) => {
     // Copy data from previous consultation, appending to existing data if any
@@ -226,6 +328,17 @@ export default function ConsultationPage({ visitId }: ConsultationPageProps) {
       return;
     }
 
+    const paymentCleared =
+      paymentStatus === 'PAID' ||
+      paymentStatus === 'SETTLED' ||
+      paymentStatus === 'PARTIALLY_PAID';
+
+    if (paymentStatus && !paymentCleared) {
+      setPaymentBlocked(true);
+      showError('Payment must be cleared before closing this visit. Ask reception to clear billing.');
+      return;
+    }
+
     if (!window.confirm('Are you sure you want to close this visit? Once closed, no further changes can be made.')) {
       return;
     }
@@ -254,6 +367,15 @@ export default function ConsultationPage({ visitId }: ConsultationPageProps) {
         const { getVisit } = await import('../api/visits');
         const visit = await getVisit(parseInt(visitId));
         setVisitStatus(visit.status as 'OPEN' | 'CLOSED');
+        setPaymentStatus(visit.payment_status);
+        setVisitType(visit.visit_type);
+        const cleared =
+          visit.payment_status === 'PAID' ||
+          visit.payment_status === 'SETTLED' ||
+          visit.payment_status === 'PARTIALLY_PAID';
+        if (cleared) {
+          setPaymentBlocked(false);
+        }
       } catch (error) {
         console.error('Failed to load visit status:', error);
       }
@@ -261,9 +383,31 @@ export default function ConsultationPage({ visitId }: ConsultationPageProps) {
     loadVisitStatus();
   }, [visitId]);
 
-  // Show loading skeleton while consultation loads
-  if (loading) {
+  // Show loading skeleton while payment gates or consultation loads
+  if (gatesLoading || (consultationEnabled && loading)) {
     return <ConsultationSkeleton />;
+  }
+
+  if (registrationPaid === false) {
+    return (
+      <div className={styles.consultationWorkspace}>
+        <BackToDashboard />
+        <ConsultationHeader visitId={visitId} />
+        <div className={styles.errorContainer}>
+          <div className={styles.errorMessage}>Registration payment required</div>
+          <div className={styles.errorDetails}>
+            Collect registration payment at reception before opening the consultation workspace.
+          </div>
+          <button
+            type="button"
+            className={styles.primaryButton}
+            onClick={() => navigate(`/visits/${visitId}`)}
+          >
+            Go to visit billing
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // Show error state when consultation API fails
@@ -289,11 +433,14 @@ export default function ConsultationPage({ visitId }: ConsultationPageProps) {
       
       {/* Visit context header - always visible */}
       <ConsultationHeader visitId={visitId} />
+      <WorkflowRail visitId={visitId} />
       
       {/* Scrollable content area - form and inline components */}
       <div className={styles.consultationContent}>
         {/* Clinical Alerts - show first if any */}
-        <ClinicalAlertsInline visitId={visitId} />
+        <div data-guide-id="clinical-alerts">
+          <ClinicalAlertsInline visitId={visitId} />
+        </div>
         
         {/* Vital Signs - can be recorded anytime */}
         <VitalSignsInline visitId={visitId} />
@@ -310,11 +457,56 @@ export default function ConsultationPage({ visitId }: ConsultationPageProps) {
         <ConsultationForm
           formData={formData}
           onFieldChange={handleFieldChange}
+          onApplyFormPatch={handleApplyFormPatch}
+          visitId={visitId}
+          isNewConsultation={!consultation}
+          visitType={visitType}
         />
+
+        {/* Service Catalog — immediately after clinical notes */}
+        {user?.role === 'DOCTOR' && (
+          <ServiceCatalogInline
+            visitId={visitId}
+            onServiceAdded={() => setOrderedChargesRefresh((n) => n + 1)}
+          />
+        )}
+
+        {/* Lab → Radiology → Prescriptions → Ordered services → Referrals */}
+        <LabInline
+          visitId={visitId}
+          consultationId={consultation?.id}
+          ensureConsultation={ensureConsultation}
+        />
+        <RadiologyInline
+          visitId={visitId}
+          consultationId={consultation?.id}
+          ensureConsultation={ensureConsultation}
+        />
+        <PrescriptionInline
+          visitId={visitId}
+          consultationId={consultation?.id}
+          ensureConsultation={ensureConsultation}
+        />
+        {user?.role === 'DOCTOR' && (
+          <div className={styles.inlineComponent}>
+            <VisitChargesReadOnly
+              visitId={parseInt(visitId, 10)}
+              refreshTrigger={orderedChargesRefresh}
+              embedded
+            />
+          </div>
+        )}
+        {consultation && (
+          <ReferralsInline visitId={visitId} consultationId={consultation.id} />
+        )}
         
         {/* Diagnosis Codes - show after consultation is saved */}
         {consultation && (
-          <DiagnosisCodes visitId={visitId} consultationId={consultation.id} />
+          <DiagnosisCodes
+            key={diagnosisCodesRefresh}
+            visitId={visitId}
+            consultationId={consultation.id}
+          />
         )}
         
         {/* AI Features - available for doctors */}
@@ -335,39 +527,21 @@ export default function ConsultationPage({ visitId }: ConsultationPageProps) {
             }}
           />
         )}
+
+        {/* Clinical AI Scribe — after AI-Powered Features */}
+        {user?.role === 'DOCTOR' && (
+          <ConsultationScribePanel
+            visitId={visitId}
+            consultationId={consultation?.id}
+            initialTranscript={telemedicineTranscript}
+            onApplySections={handleScribeApply}
+            onCodesApplied={() => setDiagnosisCodesRefresh((n) => n + 1)}
+            onNhiaBilled={() => setOrderedChargesRefresh((n) => n + 1)}
+          />
+        )}
         
         {/* Documents - can be uploaded anytime */}
         <DocumentsInline visitId={visitId} />
-        
-        {/* Service Catalog - available for doctors to order services */}
-        {user?.role === 'DOCTOR' && (
-          <>
-            <ServiceCatalogInline
-              visitId={visitId}
-              onServiceAdded={() => setOrderedChargesRefresh((n) => n + 1)}
-            />
-            <div className={styles.inlineComponent}>
-              <VisitChargesReadOnly
-                visitId={parseInt(visitId, 10)}
-                refreshTrigger={orderedChargesRefresh}
-              />
-            </div>
-          </>
-        )}
-        
-        {/* Lab Orders & Results - show orders and their results */}
-        <LabInline visitId={visitId} consultationId={consultation?.id} />
-        
-        {/* Prescriptions - show prescribed medications */}
-        <PrescriptionInline visitId={visitId} consultationId={consultation?.id} />
-        
-        {/* Radiology Orders & Results - show imaging orders and reports */}
-        <RadiologyInline visitId={visitId} consultationId={consultation?.id} />
-        
-        {/* Referrals - requires consultation */}
-        {consultation && (
-          <ReferralsInline visitId={visitId} consultationId={consultation.id} />
-        )}
       </div>
       
       {/* Action buttons - fixed at bottom */}

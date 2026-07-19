@@ -1,18 +1,25 @@
 /* Outstanding Balance Styles */
 .container {
-  border-radius: 8px;
-  padding: 1rem;
-  border: 2px solid;
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.container:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .containerCleared {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
+  background: linear-gradient(135deg, #f0fdf4 0%, #bbf7d0 100%);
+  border-color: #86efac;
 }
 
 .containerPending {
-  background: #fef2f2;
-  border-color: #fecaca;
+  background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+  border-color: #fca5a5;
 }
 
 .content {
@@ -27,7 +34,7 @@
 
 .label {
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   margin: 0;
 }
 
@@ -56,6 +63,7 @@
 .statusText {
   font-size: 0.875rem;
   margin-top: 0.5rem;
+  font-weight: 500;
 }
 
 .statusTextCleared {
@@ -67,7 +75,7 @@
 }
 
 .statusValue {
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .visitClosedBadge {
@@ -96,5 +104,5 @@
 .warningText {
   font-size: 0.875rem;
   color: #991b1b;
+  font-weight: 500;
 }
-

@@ -227,9 +227,9 @@ export default function CollectPaymentModal({
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="relative rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" data-content-surface="billing-modal">
           {/* Header */}
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10">
+          <div className="sticky top-0 border-b border-gray-200 px-6 py-4 z-10" style={{ background: 'var(--bg-primary-solid)', borderColor: 'var(--border-color)' }}>
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">Collect Payment</h2>
               <button

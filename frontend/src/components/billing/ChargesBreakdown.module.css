@@ -14,18 +14,20 @@
 .headerTitle {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--page-title-color);
   margin: 0;
 }
 
 .headerSubtitle {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--text-on-glass-secondary);
   margin-top: 0.25rem;
+  line-height: 1.45;
 }
 
 .headerSubtitleAmount {
   font-weight: 600;
+  color: var(--page-title-color);
 }
 
 .actions {
@@ -67,10 +69,12 @@
 }
 
 .serviceSearchContainer {
-  background: #f0fdf4;
-  border-radius: 8px;
-  padding: 1rem;
-  border: 2px solid #bbf7d0;
+  background: var(--bg-secondary-solid);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-on-glass);
 }
 
 .serviceSearchHeader {
@@ -80,20 +84,21 @@
 .serviceSearchTitle {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--page-title-color);
   margin-bottom: 0.25rem;
 }
 
 .serviceSearchDescription {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--text-on-glass-secondary);
 }
 
 .addFormContainer {
-  background: #f9fafb;
-  border-radius: 8px;
-  padding: 1rem;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-primary-solid);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
 }
 
 .formHeader {
@@ -103,13 +108,13 @@
 .formTitle {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--page-title-color);
   margin-bottom: 0.25rem;
 }
 
 .formDescription {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--text-on-glass-secondary);
 }
 
 .formGrid {
@@ -132,17 +137,19 @@
 .formLabel {
   display: block;
   font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
+  font-weight: 600;
+  color: var(--page-title-color);
   margin-bottom: 0.25rem;
 }
 
 .formInput {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 0.875rem;
+  background: var(--input-bg);
+  color: var(--text-on-glass);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -182,12 +189,14 @@
 .emptyState {
   text-align: center;
   padding: 2rem;
-  background: #f9fafb;
+  background: var(--bg-secondary-solid);
   border-radius: 8px;
+  border: 1px solid var(--border-color);
 }
 
 .emptyStateText {
-  color: #6b7280;
+  color: var(--text-on-glass-secondary);
+  font-weight: 500;
 }
 
 .chargesList {
@@ -197,15 +206,35 @@
 }
 
 .departmentGroup {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  background: var(--bg-primary-solid);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideUpFade 0.4s ease-out forwards;
+}
+
+.departmentGroup:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px);
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .departmentHeader {
-  background: #f9fafb;
+  background: var(--bg-secondary-solid);
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -223,17 +252,17 @@
 
 .departmentName {
   font-weight: 600;
-  color: #111827;
+  color: var(--page-title-color);
 }
 
 .departmentCount {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--text-on-glass-secondary);
 }
 
 .departmentTotal {
   font-weight: 700;
-  color: #111827;
+  color: var(--page-title-color);
 }
 
 .chargesItems {
@@ -242,13 +271,16 @@
 }
 
 .chargeItem {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #f3f4f6;
-  transition: background-color 0.2s;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  background: var(--bg-primary-solid);
+  cursor: default;
 }
 
 .chargeItem:hover {
-  background: #f9fafb;
+  background: var(--bg-hover);
+  transform: scale(1.002) translateX(2px);
 }
 
 .chargeItem:last-child {
@@ -267,7 +299,7 @@
 
 .chargeDescription {
   font-weight: 500;
-  color: #111827;
+  color: var(--page-title-color);
 }
 
 .chargeMeta {
@@ -279,28 +311,30 @@
 
 .chargeDate {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--text-on-glass-secondary);
 }
 
 .systemBadge {
   font-size: 0.75rem;
-  background: #dbeafe;
-  color: #1e40af;
+  background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.15);
+  color: var(--primary, #2563eb);
   padding: 0.125rem 0.5rem;
   border-radius: 4px;
 }
 
 .chargeAmount {
   font-weight: 600;
-  color: #111827;
+  color: var(--page-title-color);
   text-align: right;
 }
 
 .totalSummary {
-  background: #eff6ff;
-  border-radius: 8px;
-  padding: 1rem;
-  border: 2px solid #bfdbfe;
+  background: var(--bg-secondary-solid);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  margin-top: 1rem;
 }
 
 .totalSummaryContent {
@@ -312,12 +346,55 @@
 .totalSummaryLabel {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #1e3a8a;
+  color: var(--page-title-color);
 }
 
 .totalSummaryAmount {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #2563eb;
+  color: var(--primary, #2563eb);
 }
 
+/* Consultation / visit read-only ordered services panel */
+.readOnlyPanel {
+  background: var(--bg-primary-solid);
+  color: var(--text-on-glass);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem;
+}
+
+/* Inside consultation inline cards — avoid double panel; parent supplies the card chrome */
+.readOnlyPanelEmbedded {
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+}
+
+.readOnlyPanel .departmentGroup {
+  background: var(--bg-secondary-solid);
+  border-color: var(--border-color);
+}
+
+.readOnlyPanel .departmentHeader {
+  background: var(--bg-tertiary);
+  border-bottom-color: var(--border-color);
+}
+
+.readOnlyPanel .chargeItem {
+  background: var(--bg-primary-solid);
+}
+
+.readOnlyPanel .chargeItem:hover {
+  background: var(--bg-hover);
+}
+
+.readOnlyPanel .emptyState {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+}
+
+.readOnlyPanel .emptyStateText {
+  color: var(--text-on-glass-secondary);
+}

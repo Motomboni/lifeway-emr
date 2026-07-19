@@ -3,21 +3,69 @@
  * 
  * Displays a list of visits with filtering options.
  * Per EMR Rules: Visit-scoped, role-based access.
+ * Honors URL query params (e.g. /visits?status=OPEN from voice commands).
  */
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchVisits } from '../api/visits';
+import { useRolePermissions } from '../hooks/useRolePermissions';
+import { fetchVisits, deleteVisit } from '../api/visits';
 import { Visit } from '../types/visit';
 import { useToast } from '../hooks/useToast';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import BackToDashboard from '../components/common/BackToDashboard';
 import styles from '../styles/VisitsList.module.css';
 
+type VisitFilters = {
+  status?: 'OPEN' | 'CLOSED';
+  payment_status?: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'INSURANCE_PENDING' | 'INSURANCE_CLAIMED' | 'SETTLED';
+  date_from?: string;
+  date_to?: string;
+  search?: string;
+};
+
+function filtersFromSearchParams(searchParams: URLSearchParams): VisitFilters {
+  const status = searchParams.get('status');
+  const payment = searchParams.get('payment_status');
+  const filters: VisitFilters = {};
+  if (status === 'OPEN' || status === 'CLOSED') {
+    filters.status = status;
+  }
+  if (
+    payment === 'UNPAID' ||
+    payment === 'PARTIALLY_PAID' ||
+    payment === 'PAID' ||
+    payment === 'INSURANCE_PENDING' ||
+    payment === 'INSURANCE_CLAIMED' ||
+    payment === 'SETTLED'
+  ) {
+    filters.payment_status = payment;
+  }
+  const dateFrom = searchParams.get('date_from');
+  const dateTo = searchParams.get('date_to');
+  const search = searchParams.get('search');
+  if (dateFrom) filters.date_from = dateFrom;
+  if (dateTo) filters.date_to = dateTo;
+  if (search) filters.search = search;
+  return filters;
+}
+
+function searchParamsFromFilters(filters: VisitFilters): URLSearchParams {
+  const params = new URLSearchParams();
+  if (filters.status) params.set('status', filters.status);
+  if (filters.payment_status) params.set('payment_status', filters.payment_status);
+  if (filters.date_from) params.set('date_from', filters.date_from);
+  if (filters.date_to) params.set('date_to', filters.date_to);
+  if (filters.search) params.set('search', filters.search);
+  return params;
+}
+
 export default function VisitsListPage() {
   const { user, isLoading: authLoading } = useAuth();
-  const { showError } = useToast();
+  const { isAdmin, isReceptionist, isDoctor, isNurse, canCreateVisit, canHardDeleteRecords } = useRolePermissions();
+  const { showError, showSuccess } = useToast();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,21 +80,35 @@ export default function VisitsListPage() {
     pageSize: 20,
     totalPages: 0,
   });
-  const [filters, setFilters] = useState<{
-    status?: 'OPEN' | 'CLOSED';
-    payment_status?: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'INSURANCE_PENDING' | 'INSURANCE_CLAIMED' | 'SETTLED';
-    date_from?: string;
-    date_to?: string;
-    search?: string;
-  }>({});
+  const [filters, setFilters] = useState<VisitFilters>(() =>
+    filtersFromSearchParams(searchParams),
+  );
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  const updateFilters = (nextFilters: typeof filters) => {
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
-    setFilters(nextFilters);
-  };
+  // Keep filters in sync when URL changes (voice command / deep link)
+  useEffect(() => {
+    setFilters(filtersFromSearchParams(searchParams));
+  }, [searchParams]);
 
-  const loadVisits = useCallback(async () => {
+  const updateFilters = useCallback(
+    (next: VisitFilters | ((prev: VisitFilters) => VisitFilters)) => {
+      setFilters((prev) => {
+        const resolved = typeof next === 'function' ? next(prev) : next;
+        setSearchParams(searchParamsFromFilters(resolved), { replace: true });
+        return resolved;
+      });
+    },
+    [setSearchParams],
+  );
+
+  // Only fetch when auth is ready
+  useEffect(() => {
+    if (authLoading || !user) return;
+    loadVisits();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, authLoading, user]);
+
+  const loadVisits = async () => {
     try {
       setLoading(true);
       const response = await fetchVisits({
@@ -78,21 +140,28 @@ export default function VisitsListPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters, pagination.currentPage, pagination.pageSize, showError]);
+  };
 
-  // Only fetch when auth is ready and user is present (avoids 401 from firing before session is set)
-  useEffect(() => {
-    if (authLoading || !user) return;
-    loadVisits();
-  }, [authLoading, user, loadVisits]);
+  const handleDeleteVisit = async (visitId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm(`Permanently delete visit #${visitId}? This cannot be undone.`)) {
+      return;
+    }
+    try {
+      await deleteVisit(visitId);
+      showSuccess(`Visit #${visitId} deleted.`);
+      loadVisits();
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Failed to delete visit');
+    }
+  };
 
   const handleVisitClick = (visitId: number) => {
-    if (user?.role === 'DOCTOR') {
+    if (isDoctor) {
       navigate(`/visits/${visitId}/consultation`);
-    } else if (user?.role === 'NURSE') {
+    } else if (isNurse) {
       navigate(`/visits/${visitId}/nursing`);
-    } else if (user?.role === 'RECEPTIONIST') {
-      // Receptionists navigate to visit details page for billing access
+    } else {
       navigate(`/visits/${visitId}`);
     }
   };
@@ -128,7 +197,7 @@ export default function VisitsListPage() {
       <header className={styles.header}>
         <h1>Visits</h1>
         <div className={styles.actions}>
-          {user?.role === 'RECEPTIONIST' && (
+          {canCreateVisit && (
             <button
               className={styles.newVisitButton}
               onClick={() => navigate('/visits/new')}
@@ -144,10 +213,12 @@ export default function VisitsListPage() {
           <label>Status:</label>
           <select
             value={filters.status || ''}
-            onChange={(e) => updateFilters({
-              ...filters,
-              status: e.target.value as 'OPEN' | 'CLOSED' | undefined || undefined
-            })}
+            onChange={(e) =>
+              updateFilters({
+                ...filters,
+                status: (e.target.value as 'OPEN' | 'CLOSED' | '') || undefined,
+              })
+            }
           >
             <option value="">All</option>
             <option value="OPEN">Open</option>
@@ -159,17 +230,19 @@ export default function VisitsListPage() {
           <label>Payment:</label>
           <select
             value={filters.payment_status || ''}
-            onChange={(e) => updateFilters({
-              ...filters,
-              payment_status: e.target.value as 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'INSURANCE_PENDING' | 'INSURANCE_CLAIMED' | 'SETTLED' | undefined || undefined
-            })}
+            onChange={(e) =>
+              updateFilters({
+                ...filters,
+                payment_status:
+                  (e.target.value as VisitFilters['payment_status'] | '') || undefined,
+              })
+            }
           >
             <option value="">All</option>
             <option value="UNPAID">Unpaid</option>
-            <option value="PARTIALLY_PAID">Partially paid</option>
+            <option value="PARTIALLY_PAID">Partially Paid</option>
             <option value="PAID">Paid</option>
-            <option value="INSURANCE_PENDING">Insurance pending</option>
-            <option value="INSURANCE_CLAIMED">Insurance claimed</option>
+            <option value="INSURANCE_PENDING">Insurance Pending</option>
             <option value="SETTLED">Settled</option>
           </select>
         </div>
@@ -187,7 +260,7 @@ export default function VisitsListPage() {
       ) : visits.length === 0 ? (
         <div className={styles.emptyState}>
           <p>No visits found</p>
-          {user?.role === 'RECEPTIONIST' && (
+          {canCreateVisit && (
             <button onClick={() => navigate('/visits/new')}>
               Create First Visit
             </button>
@@ -197,10 +270,11 @@ export default function VisitsListPage() {
         <div className={styles.visitsGrid}>
           {visits.map((visit) => {
             // All roles can click on visits, but navigation differs by role
-            const isClickable = 
-              user?.role === 'RECEPTIONIST' || // Receptionists can access all visits for billing
-              (user?.role === 'DOCTOR' && visit.status === 'OPEN') ||
-              (user?.role === 'NURSE' && visit.status === 'OPEN');
+            const isClickable =
+              isAdmin ||
+              isReceptionist ||
+              (isDoctor && visit.status === 'OPEN') ||
+              (isNurse && visit.status === 'OPEN');
             
             return (
               <div
@@ -226,7 +300,7 @@ export default function VisitsListPage() {
                   <p><strong>Created:</strong> {new Date(visit.created_at).toLocaleDateString()}</p>
                 </div>
 
-                {user?.role === 'DOCTOR' && visit.status === 'OPEN' && (
+                {isDoctor && visit.status === 'OPEN' && (
                   <div className={styles.visitActions}>
                     <button
                       className={styles.consultButton}
@@ -240,7 +314,7 @@ export default function VisitsListPage() {
                   </div>
                 )}
 
-                {user?.role === 'NURSE' && visit.status === 'OPEN' && (
+                {isNurse && visit.status === 'OPEN' && (
                   <div className={styles.visitActions}>
                     <button
                       className={styles.consultButton}
@@ -254,7 +328,19 @@ export default function VisitsListPage() {
                   </div>
                 )}
 
-                {user?.role === 'RECEPTIONIST' && (
+                {canHardDeleteRecords && (
+                  <div className={styles.visitActions}>
+                    <button
+                      type="button"
+                      className={styles.deleteButton}
+                      onClick={(e) => handleDeleteVisit(visit.id, e)}
+                    >
+                      Delete permanently
+                    </button>
+                  </div>
+                )}
+
+                {canCreateVisit && (
                   <div className={styles.visitActions}>
                     <button
                       className={styles.consultButton}
@@ -275,21 +361,6 @@ export default function VisitsListPage() {
 
       {!loading && visits.length > 0 && pagination.totalPages > 1 && (
         <div className={styles.pagination}>
-          <label className={styles.pageSizeControl}>
-            Rows per page:
-            <select
-              value={pagination.pageSize}
-              onChange={(e) => setPagination(prev => ({
-                ...prev,
-                currentPage: 1,
-                pageSize: Number(e.target.value),
-              }))}
-            >
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-            </select>
-          </label>
           <button
             className={styles.paginationButton}
             onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}

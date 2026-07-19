@@ -1,17 +1,17 @@
 /**
  * Wallet Page
- * 
- * View wallet balance, transactions, and top up wallet.
+ *
+ * Patients: view own wallet and top up.
+ * Receptionists/Admin: search for a patient wallet by name or MRN.
  */
-import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useRolePermissions } from '../hooks/useRolePermissions';
 import { useToast } from '../hooks/useToast';
 import {
   getMyWallet,
+  listWallets,
   getWalletTransactions,
   topUpWallet,
-  verifyPayment,
   getPaymentChannels,
 } from '../api/wallet';
 import {
@@ -22,14 +22,22 @@ import {
 } from '../types/wallet';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import BackToDashboard from '../components/common/BackToDashboard';
+import {
+  getOnlineTopUpChannels,
+  getPaymentChannelLabel,
+  parsePaymentChannelId,
+  pickDefaultTopUpChannelId,
+} from '../utils/walletPaymentChannels';
 import styles from '../styles/Wallet.module.css';
 
 export default function WalletPage() {
-  const { user } = useAuth();
-  const location = useLocation();
-  const { showSuccess, showError } = useToast();
+  const { isReceptionist, isAdmin } = useRolePermissions();
+  const { showError } = useToast();
 
   const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [searchResults, setSearchResults] = useState<Wallet[]>([]);
+  const [walletSearch, setWalletSearch] = useState('');
+  const [searching, setSearching] = useState(false);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [paymentChannels, setPaymentChannels] = useState<PaymentChannel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,32 +45,101 @@ export default function WalletPage() {
   const [topUpAmount, setTopUpAmount] = useState('');
   const [selectedChannel, setSelectedChannel] = useState<number | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    loadWalletData();
-  }, []);
+  const isStaffWalletView = isReceptionist || isAdmin;
 
-  const loadWalletData = async () => {
+  const formatCurrency = useCallback(
+    (amount: string, currency = wallet?.currency || 'NGN') =>
+      new Intl.NumberFormat('en-NG', {
+        style: 'currency',
+        currency,
+      }).format(parseFloat(amount)),
+    [wallet?.currency]
+  );
+
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleString();
+
+  const loadWalletForId = async (selected: Wallet) => {
+    setWallet(selected);
     try {
-      setLoading(true);
-      const [walletData, channels] = await Promise.all([
-        getMyWallet(),
-        getPaymentChannels(),
-      ]);
-      setWallet(walletData);
-      setPaymentChannels(channels);
-      
-      if (walletData) {
-        const txns = await getWalletTransactions(walletData.id);
-        setTransactions(txns);
-      }
+      const txns = await getWalletTransactions(selected.id);
+      setTransactions(txns);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load wallet';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load transactions';
       showError(errorMessage);
-    } finally {
-      setLoading(false);
+      setTransactions([]);
     }
   };
+
+  const loadPatientWalletData = useCallback(async () => {
+    const [walletData, channels] = await Promise.all([
+      getMyWallet(),
+      getPaymentChannels(),
+    ]);
+    const onlineChannels = getOnlineTopUpChannels(channels);
+    setWallet(walletData);
+    setPaymentChannels(onlineChannels);
+    setSelectedChannel(pickDefaultTopUpChannelId(onlineChannels));
+    if (walletData) {
+      const txns = await getWalletTransactions(walletData.id);
+      setTransactions(txns);
+    }
+  }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        if (!isStaffWalletView) {
+          await loadPatientWalletData();
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load wallet';
+        showError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [isStaffWalletView, loadPatientWalletData, showError]);
+
+  useEffect(() => {
+    if (!isStaffWalletView || wallet) {
+      return;
+    }
+
+    const query = walletSearch.trim();
+    if (query.length < 2) {
+      setSearchResults([]);
+      setSearching(false);
+      return;
+    }
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    setSearching(true);
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const wallets = await listWallets({ search: query });
+        setSearchResults(wallets);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Wallet search failed';
+        showError(errorMessage);
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 350);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [isStaffWalletView, wallet, walletSearch, showError]);
 
   const handleTopUp = async () => {
     if (!wallet || !selectedChannel || !topUpAmount) {
@@ -85,8 +162,7 @@ export default function WalletPage() {
       };
 
       const response = await topUpWallet(wallet.id, request);
-      
-      // Redirect to Paystack payment page
+
       if (response.authorization_url) {
         window.location.href = response.authorization_url;
       } else {
@@ -100,22 +176,119 @@ export default function WalletPage() {
     }
   };
 
-  const formatCurrency = (amount: string) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: wallet?.currency || 'NGN',
-    }).format(parseFloat(amount));
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
-
   if (loading) {
     return (
       <div className={styles.walletContainer}>
         <BackToDashboard />
         <LoadingSkeleton count={5} />
+      </div>
+    );
+  }
+
+  if (isStaffWalletView) {
+    return (
+      <div className={styles.walletContainer}>
+        <BackToDashboard />
+        <div className={styles.walletCard}>
+          <div className={styles.walletHeader}>
+            <h1>Patient Wallets</h1>
+            <p className={styles.pageHint}>
+              Search by patient name or MRN to view balance and transaction history.
+            </p>
+          </div>
+
+          {!wallet ? (
+            <>
+              <div className={styles.formGroup}>
+                <label htmlFor="walletSearch">Search patient</label>
+                <input
+                  id="walletSearch"
+                  type="text"
+                  value={walletSearch}
+                  onChange={(e) => setWalletSearch(e.target.value)}
+                  placeholder="Type at least 2 characters…"
+                  autoFocus
+                />
+              </div>
+
+              <div className={styles.transactionsList}>
+                {searching ? (
+                  <p className={styles.emptyMessage}>Searching…</p>
+                ) : walletSearch.trim().length < 2 ? (
+                  <p className={styles.emptyMessage}>
+                    Enter a patient name or MRN to find their wallet.
+                  </p>
+                ) : searchResults.length === 0 ? (
+                  <p className={styles.emptyMessage}>No wallets found for that search.</p>
+                ) : (
+                  searchResults.map((w) => (
+                    <button
+                      key={w.id}
+                      type="button"
+                      className={styles.walletSearchResult}
+                      onClick={() => loadWalletForId(w)}
+                    >
+                      <div className={styles.transactionInfo}>
+                        <strong>{w.patient_name || 'Unknown patient'}</strong>
+                        <p className={styles.transactionMeta}>
+                          MRN: {w.patient_id || '—'} · Balance: {formatCurrency(w.balance, w.currency)}
+                        </p>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className={styles.backLink}
+                onClick={() => {
+                  setWallet(null);
+                  setTransactions([]);
+                }}
+              >
+                ← Back to search
+              </button>
+              <div className={styles.balanceCard}>
+                <div className={styles.balanceLabel}>{wallet.patient_name}</div>
+                <div className={styles.balanceAmount}>{formatCurrency(wallet.balance)}</div>
+                <p className={styles.balanceSubtext}>MRN: {wallet.patient_id}</p>
+              </div>
+              <div className={styles.transactionsSection}>
+                <h2>Transaction History</h2>
+                {transactions.length === 0 ? (
+                  <p className={styles.emptyMessage}>No transactions yet</p>
+                ) : (
+                  <div className={styles.transactionsList}>
+                    {transactions.map((txn) => (
+                      <div key={txn.id} className={styles.transactionItem}>
+                        <div className={styles.transactionInfo}>
+                          <div className={styles.transactionType}>
+                            <span className={txn.transaction_type === 'CREDIT' ? styles.credit : styles.debit}>
+                              {txn.transaction_type}
+                            </span>
+                            <span className={styles.amount}>
+                              {txn.transaction_type === 'CREDIT' ? '+' : '-'}
+                              {formatCurrency(txn.amount)}
+                            </span>
+                          </div>
+                          <div className={styles.transactionDetails}>
+                            <p>{txn.description || 'No description'}</p>
+                            <p className={styles.transactionMeta}>
+                              {formatDate(txn.created_at)} · Balance: {formatCurrency(txn.balance_after)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
     );
   }
@@ -126,8 +299,8 @@ export default function WalletPage() {
         <BackToDashboard />
         <div className={styles.errorMessage}>
           <p>Wallet not found. Please contact support.</p>
-          <p style={{ fontSize: '0.9rem', marginTop: '8px', opacity: 0.8 }}>
-            If you just registered, please try refreshing the page or logging out and back in.
+          <p className={styles.pageHint}>
+            If you just registered, try refreshing the page or logging out and back in.
           </p>
         </div>
       </div>
@@ -171,30 +344,33 @@ export default function WalletPage() {
               />
             </div>
             <div className={styles.formGroup}>
-              <label>Payment Method</label>
+              <label htmlFor="walletPaymentMethod">Payment Method</label>
               <select
-                value={selectedChannel || ''}
-                onChange={(e) => setSelectedChannel(parseInt(e.target.value))}
+                id="walletPaymentMethod"
+                value={selectedChannel ?? ''}
+                onChange={(e) => setSelectedChannel(parsePaymentChannelId(e.target.value))}
+                disabled={paymentChannels.length === 0 || isProcessing}
               >
-                <option value="">Select payment method</option>
-                {paymentChannels
-                  .filter((channel) => {
-                    // Only show online payment channels for wallet top-up
-                    // CASH, BANK_TRANSFER, etc. cannot be used for online top-ups
-                    const onlineChannels = ['PAYSTACK', 'CARD'];
-                    return onlineChannels.includes(channel.channel_type);
-                  })
-                  .map((channel) => (
+                {paymentChannels.length === 0 ? (
+                  <option value="">No online payment methods available</option>
+                ) : (
+                  paymentChannels.map((channel) => (
                     <option key={channel.id} value={channel.id}>
-                      {channel.name}
+                      {getPaymentChannelLabel(channel)}
                     </option>
-                  ))}
+                  ))
+                )}
               </select>
+              {paymentChannels.length === 0 && (
+                <p className={styles.pageHint}>
+                  Online top-up is unavailable right now. Please contact the clinic.
+                </p>
+              )}
             </div>
             <button
               className={styles.submitButton}
               onClick={handleTopUp}
-              disabled={isProcessing}
+              disabled={isProcessing || !topUpAmount || !selectedChannel}
             >
               {isProcessing ? 'Processing...' : 'Continue to Payment'}
             </button>
@@ -222,7 +398,7 @@ export default function WalletPage() {
                     <div className={styles.transactionDetails}>
                       <p>{txn.description || 'No description'}</p>
                       <p className={styles.transactionMeta}>
-                        {formatDate(txn.created_at)} • Balance: {formatCurrency(txn.balance_after)}
+                        {formatDate(txn.created_at)} · Balance: {formatCurrency(txn.balance_after)}
                       </p>
                     </div>
                   </div>

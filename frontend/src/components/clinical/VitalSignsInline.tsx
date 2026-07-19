@@ -163,7 +163,7 @@ export default function VitalSignsInline({ visitId }: VitalSignsInlineProps) {
 
   if (loading) {
     return (
-      <div className={styles.inlineComponent}>
+      <div className={styles.inlineComponent} data-guide-id="vitals-inline">
         <h3>Vital Signs</h3>
         <p>Loading...</p>
       </div>
@@ -171,7 +171,7 @@ export default function VitalSignsInline({ visitId }: VitalSignsInlineProps) {
   }
 
   return (
-    <div className={styles.inlineComponent}>
+    <div className={styles.inlineComponent} data-guide-id="vitals-inline">
       <div className={styles.inlineHeader}>
         <h3>Vital Signs</h3>
         {!showForm && (

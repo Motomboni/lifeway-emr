@@ -26,25 +26,62 @@ import styles from '../../styles/ConsultationWorkspace.module.css';
 interface LabInlineProps {
   visitId: string;
   consultationId?: number;
+  /** Creates a consultation record when the doctor places an order before saving notes. */
+  ensureConsultation?: () => Promise<number>;
 }
 
 // Component for lab order create button with lock check
 function LabOrderCreateButton({
   visitId,
   consultationId,
+  ensureConsultation,
+  onConsultationResolved,
   onShowForm,
 }: {
   visitId: string;
-  consultationId: number;
+  consultationId?: number;
+  ensureConsultation?: () => Promise<number>;
+  onConsultationResolved: (id: number) => void;
   onShowForm: () => void;
 }) {
+  const { showError } = useToast();
+  const [resolvedId, setResolvedId] = useState<number | undefined>(consultationId);
+  const [ensuring, setEnsuring] = useState(false);
+
+  useEffect(() => {
+    if (consultationId) {
+      setResolvedId(consultationId);
+    }
+  }, [consultationId]);
+
   const labOrderLock = useActionLock({
     actionType: 'lab_order',
-    params: { visit_id: parseInt(visitId), consultation_id: consultationId },
-    enabled: !!visitId && !!consultationId,
+    params: { visit_id: parseInt(visitId), consultation_id: resolvedId ?? 0 },
+    enabled: !!visitId && !!resolvedId,
   });
 
-  if (labOrderLock.isLocked && labOrderLock.lockResult) {
+  const handleClick = async () => {
+    setEnsuring(true);
+    try {
+      let id = resolvedId;
+      if (!id && ensureConsultation) {
+        id = await ensureConsultation();
+        setResolvedId(id);
+        onConsultationResolved(id);
+      }
+      if (!id) {
+        showError('Consultation is required to create lab orders');
+        return;
+      }
+      onShowForm();
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Failed to start consultation');
+    } finally {
+      setEnsuring(false);
+    }
+  };
+
+  if (resolvedId && labOrderLock.isLocked && labOrderLock.lockResult) {
     return (
       <div>
         <LockIndicator
@@ -58,9 +95,9 @@ function LabOrderCreateButton({
 
   return (
     <LockedButton
-      lockResult={labOrderLock.lockResult}
-      loading={labOrderLock.loading}
-      onClick={onShowForm}
+      lockResult={resolvedId ? labOrderLock.lockResult : null}
+      loading={labOrderLock.loading || ensuring}
+      onClick={handleClick}
       variant="primary"
       showLockMessage={false}
       className={styles.addButton}
@@ -112,7 +149,7 @@ function LabResultPostButton({
   );
 }
 
-export default function LabInline({ visitId, consultationId }: LabInlineProps) {
+export default function LabInline({ visitId, consultationId, ensureConsultation }: LabInlineProps) {
   const { user } = useAuth();
   const {
     labOrders,
@@ -137,16 +174,34 @@ export default function LabInline({ visitId, consultationId }: LabInlineProps) {
   const [templates, setTemplates] = useState<LabTestTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [effectiveConsultationId, setEffectiveConsultationId] = useState<number | undefined>(consultationId);
+  const isDoctor = user?.role === 'DOCTOR';
+
+  useEffect(() => {
+    if (consultationId) {
+      setEffectiveConsultationId(consultationId);
+    }
+  }, [consultationId]);
 
   const handleLabOrderFormSubmit = async (labOrderDetails: LabOrderDetails) => {
-    if (!consultationId) {
+    let orderConsultationId = effectiveConsultationId;
+    if (!orderConsultationId && ensureConsultation) {
+      try {
+        orderConsultationId = await ensureConsultation();
+        setEffectiveConsultationId(orderConsultationId);
+      } catch {
+        showError('Consultation is required to create lab orders');
+        return;
+      }
+    }
+    if (!orderConsultationId) {
       showError('Consultation is required to create lab orders');
       return;
     }
 
     try {
       await createLabOrder(visitId, {
-        consultation: consultationId,
+        consultation: orderConsultationId,
         tests_requested: labOrderDetails.tests_requested,
         clinical_indication: labOrderDetails.clinical_indication
       });
@@ -242,7 +297,7 @@ export default function LabInline({ visitId, consultationId }: LabInlineProps) {
 
   if (loading) {
     return (
-      <div className={styles.inlineComponent}>
+      <div className={styles.inlineComponent} data-guide-id="lab-inline">
         <h3>Lab Orders</h3>
         <p>Loading...</p>
       </div>
@@ -250,14 +305,16 @@ export default function LabInline({ visitId, consultationId }: LabInlineProps) {
   }
 
   return (
-    <div className={styles.inlineComponent}>
+    <div className={styles.inlineComponent} data-guide-id="lab-inline">
       <div className={styles.inlineHeader}>
         <h3>Lab Orders</h3>
-        {consultationId && !showCreateOrderModal && (
+        {isDoctor && !showCreateOrderModal && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <LabOrderCreateButton
               visitId={visitId}
-              consultationId={consultationId}
+              consultationId={effectiveConsultationId}
+              ensureConsultation={ensureConsultation}
+              onConsultationResolved={setEffectiveConsultationId}
               onShowForm={() => {
                 setFormInitialValues(null);
                 setShowCreateOrderModal(true);
@@ -285,30 +342,34 @@ export default function LabInline({ visitId, consultationId }: LabInlineProps) {
 
       {/* Template selection (when "Use Template" clicked, before opening modal) */}
       {showTemplates && !showCreateOrderModal && (
-        <div className={styles.templateSelector} style={{ marginBottom: '1rem', padding: '1rem', background: '#f5f5f5', borderRadius: '4px' }}>
-          <h5 style={{ marginTop: 0, marginBottom: '0.75rem' }}>Select a Template:</h5>
+        <div className={styles.templateSelector}>
+          <h4>Select a Template</h4>
           {loadingTemplates ? (
-            <p>Loading templates...</p>
+            <p className={styles.templateStatus}>Loading templates...</p>
           ) : templates.length === 0 ? (
-            <p style={{ color: '#666', fontStyle: 'italic' }}>No templates available</p>
+            <p className={styles.helpText}>
+              No lab templates are configured yet. An administrator can load the starter set with{' '}
+              <code>python manage.py seed_lab_templates</code>.
+            </p>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem' }}>
-              {templates.map(template => (
+            <div className={styles.templateList}>
+              {templates.map((template) => (
                 <button
                   key={template.id}
                   type="button"
+                  className={styles.templateItem}
                   onClick={() => handleUseTemplate(template)}
-                  className={styles.secondaryButton}
-                  style={{ textAlign: 'left', padding: '0.75rem', fontSize: '0.875rem' }}
                 >
-                  <div style={{ fontWeight: 600 }}>{template.name}</div>
+                  <strong>{template.name}</strong>
                   {template.category && (
-                    <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>{template.category}</div>
+                    <span className={styles.templateCategory}>{template.category}</span>
                   )}
                   {template.description && (
-                    <div style={{ fontSize: '0.75rem', color: '#999', marginTop: '0.25rem' }}>
-                      {template.description.substring(0, 50)}...
-                    </div>
+                    <p className={styles.templateDescription}>
+                      {template.description.length > 80
+                        ? `${template.description.substring(0, 80)}…`
+                        : template.description}
+                    </p>
                   )}
                 </button>
               ))}
@@ -318,7 +379,7 @@ export default function LabInline({ visitId, consultationId }: LabInlineProps) {
       )}
 
       {/* Improved Lab Order modal (same form as Service Catalog) */}
-      {showCreateOrderModal && consultationId && (
+      {showCreateOrderModal && (
         <LabOrderDetailsForm
           serviceName="Lab tests"
           initialTests={formInitialValues?.tests}

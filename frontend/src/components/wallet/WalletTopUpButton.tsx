@@ -9,6 +9,12 @@ import { useToast } from '../../hooks/useToast';
 import { getMyWallet, topUpWallet, getPaymentChannels } from '../../api/wallet';
 import { Wallet, PaymentChannel, WalletTopUpRequest } from '../../types/wallet';
 import LoadingSpinner from '../common/LoadingSpinner';
+import {
+  getOnlineTopUpChannels,
+  getPaymentChannelLabel,
+  parsePaymentChannelId,
+  pickDefaultTopUpChannelId,
+} from '../../utils/walletPaymentChannels';
 import styles from '../../styles/Wallet.module.css';
 
 interface WalletTopUpButtonProps {
@@ -39,18 +45,10 @@ export default function WalletTopUpButton({ onTopUpSuccess }: WalletTopUpButtonP
         getMyWallet(),
         getPaymentChannels(),
       ]);
+      const onlineChannels = getOnlineTopUpChannels(channels);
       setWallet(walletData);
-      setPaymentChannels(channels);
-      
-      // Pre-select Paystack if available
-      const paystackChannel = channels.find(c => 
-        c.name.toLowerCase().includes('paystack')
-      );
-      if (paystackChannel) {
-        setSelectedChannel(paystackChannel.id);
-      } else if (channels.length > 0) {
-        setSelectedChannel(channels[0].id);
-      }
+      setPaymentChannels(onlineChannels);
+      setSelectedChannel(pickDefaultTopUpChannelId(onlineChannels));
     } catch (error) {
       console.warn('Failed to load wallet:', error);
     } finally {
@@ -132,17 +130,22 @@ export default function WalletTopUpButton({ onTopUpSuccess }: WalletTopUpButtonP
           </div>
 
           <div className={styles.formGroup}>
-            <label>Payment Method</label>
+            <label htmlFor="walletTopUpPaymentMethod">Payment Method</label>
             <select
-              value={selectedChannel || ''}
-              onChange={(e) => setSelectedChannel(parseInt(e.target.value))}
+              id="walletTopUpPaymentMethod"
+              value={selectedChannel ?? ''}
+              onChange={(e) => setSelectedChannel(parsePaymentChannelId(e.target.value))}
+              disabled={paymentChannels.length === 0 || isProcessing}
             >
-              <option value="">Select payment method...</option>
-              {paymentChannels.map((channel) => (
-                <option key={channel.id} value={channel.id}>
-                  {channel.name}
-                </option>
-              ))}
+              {paymentChannels.length === 0 ? (
+                <option value="">No online payment methods available</option>
+              ) : (
+                paymentChannels.map((channel) => (
+                  <option key={channel.id} value={channel.id}>
+                    {getPaymentChannelLabel(channel)}
+                  </option>
+                ))
+              )}
             </select>
           </div>
 

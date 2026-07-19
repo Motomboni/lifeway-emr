@@ -4,49 +4,60 @@ Global AI endpoints (not visit-scoped): clinical note generation.
 POST /api/v1/ai/generate-note — generate structured note (doctor approves before save).
 POST /api/v1/ai/notes/ — save approved/edited clinical note.
 """
+
 import logging
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import PermissionDenied, ValidationError
+
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
-from core.permissions import IsDoctor
 from core.audit import AuditLog
+from core.permissions import IsDoctor
+
 from .clinical_notes_service import generate_clinical_note
-from .services import AIServiceError
+from .models import ClinicalNote
 from .serializers import (
+    ClinicalNoteSerializer,
     GenerateNoteRequestSerializer,
     GenerateNoteResponseSerializer,
-    ClinicalNoteSerializer,
 )
-from .models import ClinicalNote
+from .services import AIServiceError
 
 logger = logging.getLogger(__name__)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated, IsDoctor])
 def generate_note(request):
     """
     POST /api/v1/ai/generate-note
-    Body: { "transcript": "...", "note_type": "SOAP"|"summary"|"discharge", "appointment_id": optional }
-    Returns structured note for doctor to edit/approve before save.
+    Body: { "transcript": "...", "note_type": "auto"|"SOAP"|"antenatal"|"summary"|"discharge", "appointment_id": optional }
+    Returns structured Nigerian EMR clinical note (SOAP or antenatal) with NHIA/ICD-11 guidance.
     """
     serializer = GenerateNoteRequestSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    transcript = serializer.validated_data.get('transcript', '')
-    note_type = serializer.validated_data.get('note_type', 'summary')
-    appointment_id = serializer.validated_data.get('appointment_id')
+    transcript = serializer.validated_data.get("transcript", "")
+    note_type = serializer.validated_data.get("note_type", "summary")
+    appointment_id = serializer.validated_data.get("appointment_id")
+    visit_id = serializer.validated_data.get("visit_id")
 
     visit = None
-    if appointment_id:
+    if visit_id:
+        from core.tenant import get_org_scoped_visit
+
+        visit = get_org_scoped_visit(request, visit_id)
+    elif appointment_id:
         from apps.appointments.models import Appointment
+
         appointment = get_object_or_404(Appointment, id=appointment_id)
         if appointment.doctor_id != request.user.id:
-            raise PermissionDenied("You can only generate notes for your own appointments.")
+            raise PermissionDenied(
+                "You can only generate notes for your own appointments."
+            )
         visit = appointment.visit
 
     try:
@@ -58,19 +69,19 @@ def generate_note(request):
         )
     except AIServiceError as e:
         return Response(
-            {'detail': str(e)},
+            {"detail": str(e)},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
     AuditLog.log(
         user=request.user,
-        role=getattr(request.user, 'role', 'DOCTOR'),
-        action='AI_CLINICAL_NOTE_GENERATED',
+        role=getattr(request.user, "role", "DOCTOR"),
+        action="AI_CLINICAL_NOTE_GENERATED",
         visit_id=visit.id if visit else None,
-        resource_type='clinical_note',
+        resource_type="clinical_note",
         resource_id=None,
         request=request,
-        metadata={'note_type': result['note_type']},
+        metadata={"note_type": result["note_type"]},
     )
     return Response(
         GenerateNoteResponseSerializer(result).data,
@@ -78,7 +89,7 @@ def generate_note(request):
     )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated, IsDoctor])
 def save_clinical_note(request):
     """
@@ -86,25 +97,26 @@ def save_clinical_note(request):
     Body: patient_id, appointment_id (optional), note_type, raw_transcript, ai_generated_note, doctor_edited_note
     Save approved/edited clinical note.
     """
-    from apps.patients.models import Patient
     from apps.appointments.models import Appointment
-    patient_id = request.data.get('patient_id')
+    from apps.patients.models import Patient
+
+    patient_id = request.data.get("patient_id")
     if not patient_id:
         return Response(
-            {'patient_id': ['This field is required.']},
+            {"patient_id": ["This field is required."]},
             status=status.HTTP_400_BAD_REQUEST,
         )
     patient = get_object_or_404(Patient, id=patient_id, is_active=True)
-    appointment_id = request.data.get('appointment_id')
+    appointment_id = request.data.get("appointment_id")
     appointment = None
     if appointment_id:
         appointment = get_object_or_404(Appointment, id=appointment_id)
         if appointment.doctor_id != request.user.id:
             raise PermissionDenied("You can only save notes for your own appointments.")
-    note_type = request.data.get('note_type', 'summary')
-    raw_transcript = request.data.get('raw_transcript', '')
-    ai_generated_note = request.data.get('ai_generated_note', '')
-    doctor_edited_note = request.data.get('doctor_edited_note', '') or ai_generated_note
+    note_type = request.data.get("note_type", "summary")
+    raw_transcript = request.data.get("raw_transcript", "")
+    ai_generated_note = request.data.get("ai_generated_note", "")
+    doctor_edited_note = request.data.get("doctor_edited_note", "") or ai_generated_note
     note = ClinicalNote.objects.create(
         patient=patient,
         doctor=request.user,
@@ -117,10 +129,10 @@ def save_clinical_note(request):
     )
     AuditLog.log(
         user=request.user,
-        role=getattr(request.user, 'role', 'DOCTOR'),
-        action='CLINICAL_NOTE_APPROVED',
+        role=getattr(request.user, "role", "DOCTOR"),
+        action="CLINICAL_NOTE_APPROVED",
         visit_id=note.appointment.visit_id if note.appointment else None,
-        resource_type='clinical_note',
+        resource_type="clinical_note",
         resource_id=note.id,
         request=request,
     )

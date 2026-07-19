@@ -62,3 +62,35 @@ export const getVisitsByStatus = async (
     `/reports/visits-by-status/?date_from=${startDate}&date_to=${endDate}`
   );
 };
+
+async function downloadRegulatoryCsv(path: string, filename: string): Promise<void> {
+  const { getAuthToken } = await import('../utils/apiClient');
+  const token = getAuthToken();
+  const orgId = localStorage.getItem('organization_id');
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (orgId) headers['X-Organization-Id'] = orgId;
+
+  const base = import.meta.env.VITE_API_URL || '/api/v1';
+  const response = await fetch(`${base}${path}`, { headers });
+  if (!response.ok) {
+    throw new Error('Failed to download regulatory export');
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function downloadMohSummaryCsv(startDate: string, endDate: string): Promise<void> {
+  const qs = new URLSearchParams({ format: 'csv', start_date: startDate, end_date: endDate });
+  await downloadRegulatoryCsv(`/reports/regulatory/moh/?${qs.toString()}`, 'moh-summary.csv');
+}
+
+export async function downloadDhis2ExportCsv(startDate: string, endDate: string): Promise<void> {
+  const qs = new URLSearchParams({ start_date: startDate, end_date: endDate });
+  await downloadRegulatoryCsv(`/reports/regulatory/dhis2/?${qs.toString()}`, 'dhis2-export.csv');
+}

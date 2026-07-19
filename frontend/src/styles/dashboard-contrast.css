@@ -1,0 +1,33 @@
+/**
+ * Dashboard contrast fixes — loaded last to override glass/theme heading rules.
+ * Uses global class names (not CSS modules) for reliable targeting.
+ */
+
+.nursing-care-title-bar {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #64b5f6;
+  border-left: 4px solid var(--primary, #2196f3);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.nursing-care-features-title {
+  margin: 0 !important;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: #020617 !important;
+  -webkit-text-fill-color: #020617 !important;
+  text-shadow: none !important;
+}
+
+html[data-theme="dark"] .nursing-care-title-bar {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: var(--primary, #42a5f5);
+}
+
+html[data-theme="dark"] .nursing-care-features-title {
+  color: #020617 !important;
+  -webkit-text-fill-color: #020617 !important;
+  text-shadow: none !important;
+}

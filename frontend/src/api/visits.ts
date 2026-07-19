@@ -26,9 +26,19 @@ export interface VisitDetails {
     age?: number;
     gender?: string;
     phone?: string;
+    allergies_text?: string;
+    structured_allergies?: Array<{
+      id: number;
+      allergen: string;
+      allergen_type: string;
+      severity: string;
+      reaction: string;
+      verified: boolean;
+    }>;
   };
   status: string;
   payment_status: string;
+  visit_type?: string;
   created_at: string;
 }
 
@@ -116,5 +126,14 @@ export async function createVisit(visitData: VisitCreateData): Promise<Visit> {
 export async function closeVisit(visitId: number): Promise<Visit> {
   return apiRequest<Visit>(`/visits/${visitId}/close/`, {
     method: 'POST',
+  });
+}
+
+/**
+ * Permanently delete a visit (Django superuser only).
+ */
+export async function deleteVisit(visitId: number): Promise<void> {
+  await apiRequest<void>(`/visits/${visitId}/`, {
+    method: 'DELETE',
   });
 }

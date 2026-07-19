@@ -6,11 +6,12 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useRolePermissions } from '../hooks/useRolePermissions';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
 import BackToDashboard from '../components/common/BackToDashboard';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
-import { getReportsSummary, ReportSummary } from '../api/reports';
+import { getReportsSummary, ReportSummary, downloadMohSummaryCsv, downloadDhis2ExportCsv } from '../api/reports';
 import {
   LineChart,
   Line,
@@ -38,24 +39,26 @@ import styles from '../styles/ReportsPage.module.css';
 
 export default function ReportsPage() {
   const { user } = useAuth();
+  const { isAdmin } = useRolePermissions();
   const navigate = useNavigate();
-  const { showError } = useToast();
-  
+  const { showError, showSuccess } = useToast();
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [exportingRegulatory, setExportingRegulatory] = useState(false);
   const [dateRange, setDateRange] = useState({
     start: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0],
   });
 
   useEffect(() => {
-    if (!user || user.role !== 'ADMIN') {
+    if (!user) return;
+    if (!isAdmin) {
       navigate('/dashboard');
       return;
     }
     loadReportData();
-  }, [user, dateRange]);
+  }, [user, dateRange, isAdmin, navigate]);
 
   const loadReportData = async () => {
     try {
@@ -81,7 +84,31 @@ export default function ReportsPage() {
     }).format(amount);
   };
 
-  if (!user || user.role !== 'ADMIN') {
+  const handleMohExport = async () => {
+    try {
+      setExportingRegulatory(true);
+      await downloadMohSummaryCsv(dateRange.start, dateRange.end);
+      showSuccess('MoH summary CSV downloaded');
+    } catch (e: unknown) {
+      showError(e instanceof Error ? e.message : 'Export failed');
+    } finally {
+      setExportingRegulatory(false);
+    }
+  };
+
+  const handleDhis2Export = async () => {
+    try {
+      setExportingRegulatory(true);
+      await downloadDhis2ExportCsv(dateRange.start, dateRange.end);
+      showSuccess('DHIS2 export CSV downloaded');
+    } catch (e: unknown) {
+      showError(e instanceof Error ? e.message : 'Export failed');
+    } finally {
+      setExportingRegulatory(false);
+    }
+  };
+
+  if (!user || !isAdmin) {
     return null;
   }
 
@@ -221,6 +248,19 @@ export default function ReportsPage() {
               ))}
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className={styles.chartCard} style={{ marginTop: '1.5rem' }}>
+        <h2>Regulatory Exports (Nigeria)</h2>
+        <p>Ministry of Health monthly summary and DHIS2-compatible facility data</p>
+        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+          <button type="button" onClick={handleMohExport} disabled={exportingRegulatory}>
+            Download MoH Summary CSV
+          </button>
+          <button type="button" onClick={handleDhis2Export} disabled={exportingRegulatory}>
+            Download DHIS2 Export CSV
+          </button>
         </div>
       </div>
     </div>
